@@ -1,0 +1,2078 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Find which EEG signals research papers link to topics like memory, attention and hearing, with the page to cite.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%230A6A6A' stroke-width='3'/%3E%3Ccircle cx='16' cy='9' r='3' fill='%230A6A6A'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230A6A6A'/%3E%3Ccircle cx='16' cy='23' r='3' fill='%230A6A6A'/%3E%3C/svg%3E">
+<title>EEG Construct–Measure Knowledge Base</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  /* Layout: chart-paper ground under a sticky instrument bar; one 1240px column; a measure's full record opens in a right-hand sheet */
+  --paper:#F1F4F3; --panel:#FFFFFF; --panel-2:#F6F8F7;
+  --ink:#14202A; --ink-2:#475665; --ink-3:#6F7D8A;
+  --rule:#D3DBDF; --grid:#E3E9EB;
+  --accent:#0A6A6A; --accent-ink:#FFFFFF; --accent-soft:#DCEDEB;
+  --time:#2650C4; --time-soft:#E3EAFA;
+  --freq:#9A5300; --freq-soft:#F6E9D6;
+  --phase:#86379A; --phase-soft:#F1E2F4;
+  --hl:#EFC94C; --hl-soft:rgba(239,201,76,.42);
+  --warn:#AE3D0C; --warn-soft:#FBE7DD; --ok:#2A774A; --ok-soft:#E0F1E6;
+  --scrim:rgba(12,18,22,.38);
+  --shadow:0 1px 2px rgba(20,32,42,.06),0 12px 32px rgba(20,32,42,.12);
+  --f-display:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  --r:10px;
+  --stick:calc(env(safe-area-inset-top,0px) + 108px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0D1317; --panel:#141C21; --panel-2:#1A232A;
+  --ink:#E3E9EC; --ink-2:#A6B2BB; --ink-3:#83909A;
+  --rule:#2B363E; --grid:#1E282E;
+  --accent:#4BC0B3; --accent-ink:#04201D; --accent-soft:#12332F;
+  --time:#8AA8FF; --time-soft:#1A2547;
+  --freq:#F0A650; --freq-soft:#382813;
+  --phase:#D394E5; --phase-soft:#33203A;
+  --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
+  --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
+  --scrim:rgba(0,0,0,.55);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.45);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0D1317; --panel:#141C21; --panel-2:#1A232A;
+  --ink:#E3E9EC; --ink-2:#A6B2BB; --ink-3:#83909A;
+  --rule:#2B363E; --grid:#1E282E;
+  --accent:#4BC0B3; --accent-ink:#04201D; --accent-soft:#12332F;
+  --time:#8AA8FF; --time-soft:#1A2547;
+  --freq:#F0A650; --freq-soft:#382813;
+  --phase:#D394E5; --phase-soft:#33203A;
+  --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
+  --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
+  --scrim:rgba(0,0,0,.55);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body)}
+a{color:var(--accent);text-underline-offset:2px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,3vw,32px)}
+.mono{font-family:var(--f-mono)}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+.eyebrow{font:500 11.5px/1.3 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+h1,h2,h3,h4{font-family:var(--f-display);text-wrap:balance;margin:0;color:var(--ink)}
+h2{font-size:24px;font-weight:700;font-stretch:108%;line-height:1.15}
+h3{font-size:16.5px;font-weight:700;font-stretch:104%;line-height:1.25}
+p{margin:0}
+ul{margin:0;padding-left:18px}
+.count{font:500 12px var(--f-mono);color:var(--ink-3);margin-left:6px}
+
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--panel);border-bottom:1px solid var(--rule)}
+.tb1{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding-block:10px 4px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.brand svg{flex:none}
+.brand b{display:block;font:760 16px/1.1 var(--f-display);font-stretch:116%;letter-spacing:-.005em}
+.brand small{display:block;font:500 10.5px/1.3 var(--f-mono);color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.search{position:relative;flex:1 1 280px;max-width:540px;margin-left:auto}
+.search input{width:100%;padding:9px 12px 9px 36px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2)}
+.search input::placeholder{color:var(--ink-3)}
+.search > svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.sres{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);max-height:min(70vh,520px);overflow:auto;padding:6px;z-index:35}
+.sres h4{margin:8px 8px 4px;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.sres button{display:flex;flex-direction:column;gap:1px;width:100%;text-align:left;border:0;background:none;padding:7px 8px;border-radius:6px;cursor:pointer}
+.sres button:hover,.sres button:focus-visible{background:var(--panel-2)}
+.sres .sub{color:var(--ink-3);font-size:12.5px}
+.sres .none{padding:10px 8px;color:var(--ink-2);font-size:14px}
+.live{display:inline-flex;align-items:center;gap:6px;font:500 11.5px var(--f-mono);color:var(--ink-3);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3);flex:none}
+.dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+.dot.wait{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.navrow{display:flex;align-items:stretch;gap:2px;margin-inline:-8px;min-width:0}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;background:none;padding:9px 10px 10px;font:700 14px var(--f-body);color:var(--ink-2);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.more{position:relative;flex:none}
+.more > .tab::after{content:"";display:inline-block;width:6px;height:6px;margin-left:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-3px) rotate(45deg)}
+.more-menu{position:absolute;right:0;top:calc(100% + 4px);min-width:250px;background:var(--panel);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:6px;z-index:36;display:flex;flex-direction:column}
+.more-menu button{display:flex;flex-direction:column;gap:1px;text-align:left;border:0;background:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+.more-menu button:hover,.more-menu button:focus-visible{background:var(--panel-2)}
+.more-menu button[aria-current="page"]{background:var(--accent-soft)}
+.more-menu b{font-size:14px}
+.more-menu span{font-size:12.5px;color:var(--ink-3)}
+body[data-route="overview"] .topbar .search{visibility:hidden}
+@media (max-width:680px){.topbar{position:static}.search{order:3;flex-basis:100%;max-width:none}.brand small{display:none}body[data-route="overview"] .topbar .search{display:none}}
+
+.banner{border-bottom:1px solid var(--rule);background:var(--panel-2)}
+.banner.warn{background:var(--warn-soft)}
+.banner .wrap{display:flex;gap:10px;align-items:flex-start;padding-block:10px;font-size:14px;color:var(--ink)}
+.banner .dot{margin-top:7px}
+
+main{padding-block:24px 72px}
+.view{display:flex;flex-direction:column;gap:30px}
+.sh{display:flex;align-items:flex-end;justify-content:space-between;gap:10px 24px;flex-wrap:wrap}
+.sh > div{display:flex;flex-direction:column;gap:4px}
+.sh p{color:var(--ink-2);max-width:68ch}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:clamp(16px,2.4vw,24px);display:flex;flex-direction:column;gap:14px;min-width:0}
+
+.btn{display:inline-flex;align-items:center;gap:6px;font:700 14px/1.2 var(--f-body);padding:9px 14px;border-radius:8px;border:1px solid var(--rule);background:var(--panel);color:var(--ink);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.link{border:0;background:none;padding:0;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;text-align:left;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px}
+.ref{border:0;background:none;padding:0;font:500 12px/1.4 var(--f-mono);color:var(--accent);cursor:pointer;text-align:left;text-decoration:underline dotted;text-underline-offset:3px;white-space:nowrap}
+.ref:hover{text-decoration-style:solid}
+.refs{display:inline-flex;flex-wrap:wrap;gap:2px 10px;margin-left:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px/1.25 var(--f-mono);padding:3px 8px;border-radius:999px;border:1px solid var(--rule);background:var(--panel-2);color:var(--ink-2);white-space:nowrap}
+.chip.t{background:var(--time-soft);color:var(--time);border-color:transparent}
+.chip.f{background:var(--freq-soft);color:var(--freq);border-color:transparent}
+.chip.p{background:var(--phase-soft);color:var(--phase);border-color:transparent}
+.chip.contributed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.cl-attributed{background:var(--panel);color:var(--ink);border-color:var(--ink-3)}
+.chip.cl-inferred{background:var(--time-soft);color:var(--time);border-color:transparent}
+.chip.cl-hypothesis{background:transparent;color:var(--ink-2);border-style:dashed;border-color:var(--ink-3)}
+.chip.cl-debated{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.cl-causal{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.ev{background:transparent;border-style:dotted;color:var(--ink-2)}
+button.chip{cursor:pointer;white-space:normal;text-align:left;font-family:var(--f-body);font-size:12.5px}
+button.chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.inf{display:inline-block;font:500 9.5px/1.4 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--warn);border:1px dashed currentColor;border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
+
+.hero{background:var(--panel);border:1px solid var(--rule);border-radius:14px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.hero-text{padding:clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.hero h1{font-size:clamp(28px,3.8vw,42px);font-weight:780;font-stretch:114%;line-height:1.05;letter-spacing:-.015em}
+.hero .lede{font-size:16.5px;color:var(--ink-2);max-width:52ch}
+.hero-trace{border-left:1px solid var(--rule);border-radius:0 13px 13px 0;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:14px;min-width:0;background-color:var(--panel-2);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px;background-position:-1px -1px}
+.trace-cap{font-size:13px;color:var(--ink-2);max-width:60ch;padding-inline:4px}
+.hsearch{position:relative;max-width:560px}
+.hsearch label{display:block;font:700 14px var(--f-body);margin-bottom:6px}
+.hsearch input{width:100%;padding:13px 14px 13px 42px;border:1.5px solid var(--ink-3);border-radius:10px;background:var(--panel);font-size:16px}
+.hsearch input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.hsearch > svg{position:absolute;left:14px;bottom:15px;color:var(--ink-3);pointer-events:none}
+.tries{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13.5px;color:var(--ink-2)}
+.tries button{border:1px solid var(--rule);background:var(--panel-2);border-radius:999px;padding:4px 11px;font-size:13.5px;cursor:pointer}
+.tries button:hover{border-color:var(--ink-3)}
+.hero-trace svg{width:100%;height:auto;display:block}
+.hero-trace .tr{fill:none;stroke:var(--ink);stroke-width:1.15;stroke-linejoin:round;opacity:.88}
+.hero-trace .chl{font:600 12px var(--f-mono);fill:var(--ink-2)}
+.hero-trace .hlw{fill:var(--hl-soft)}
+.hero-trace .stim{stroke:var(--accent);stroke-width:1.2;stroke-dasharray:3 3}
+.hero-trace .lab{font:11px var(--f-mono);fill:var(--ink-2)}
+.hero-trace .axl{stroke:var(--ink-3);stroke-width:1}
+@media (max-width:860px){.hero{grid-template-columns:1fr}.hero-trace{border-left:0;border-top:1px solid var(--rule);border-radius:0 0 13px 13px}}
+
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tile{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;min-width:0}
+.tile:hover{border-color:var(--accent)}
+.tile b{font:700 17px/1.2 var(--f-display);font-stretch:104%}
+.tile .d{font-size:14px;color:var(--ink-2)}
+.tile .n{margin-top:auto;padding-top:4px;font:12px var(--f-mono);color:var(--ink-3)}
+@media (max-width:860px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.tiles{grid-template-columns:1fr}}
+.sh-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px 16px;flex-wrap:wrap}
+.steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:st}
+.steps li{counter-increment:st;display:grid;grid-template-columns:34px minmax(0,1fr);gap:4px 12px;align-items:start;padding:16px;border-radius:var(--r);background:var(--panel-2);border:1px solid var(--grid)}
+.steps li::before{content:counter(st);grid-row:span 2;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 15px/30px var(--f-display);text-align:center}
+.steps b{font-size:15px}
+.steps span{font-size:14px;color:var(--ink-2)}
+@media (max-width:860px){.steps{grid-template-columns:1fr}}
+.basics{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;padding:18px 20px;border-radius:12px;background:var(--accent-soft);border:1px solid transparent}
+.basics > div{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:62ch}
+.basics h3{font-size:18px}
+.basics p{font-size:14.5px;color:var(--ink-2)}
+.footline{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:13.5px;color:var(--ink-3);padding-top:14px;border-top:1px solid var(--rule)}
+
+details.more-d{border-top:1px solid var(--grid);padding-top:10px}
+details.more-d > summary{list-style:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;color:var(--ink);padding:4px 0}
+details.more-d > summary::-webkit-details-marker{display:none}
+details.more-d > summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(-45deg);transition:transform .15s;flex:none;margin-right:2px}
+details.more-d[open] > summary::before{transform:rotate(45deg)}
+details.more-d > summary .count{margin-left:0}
+details.more-d > summary .hint{font-weight:400;font-size:13px;color:var(--ink-3)}
+details.more-d[open] > summary{margin-bottom:10px}
+.insum{font-size:15.5px;max-width:68ch}
+.nav-tools{display:flex;flex-direction:column;gap:8px;padding:2px 2px 8px;border-bottom:1px solid var(--grid);margin-bottom:4px}
+.nav-tools input,.nav-tools select{width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
+.feas{display:flex;flex-wrap:wrap;gap:6px}
+
+.learn{display:flex;flex-direction:column;gap:22px;max-width:920px}
+.learn .panel h2{font-size:22px}
+.learn p{max-width:68ch}
+.lgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.lgrid{grid-template-columns:1fr}}
+.lcard{border:1px solid var(--grid);background:var(--panel-2);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.lcard h3{font-size:16px}
+.lcard p{font-size:14.5px;color:var(--ink-2)}
+.ex-trace svg{width:100%;height:auto;display:block}
+.ex-trace{border:1px solid var(--grid);border-radius:var(--r);padding:8px;background-color:var(--panel-2);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:20px 20px}
+.ex-trace .tr{fill:none;stroke:var(--ink);stroke-width:1.15;opacity:.88}
+.ex-trace .chl{font:600 12px var(--f-mono);fill:var(--ink-2)}
+.ex-trace .hlw{fill:var(--hl-soft)}
+.ex-trace .stim{stroke:var(--accent);stroke-width:1.2;stroke-dasharray:3 3}
+.ex-trace .lab{font:11px var(--f-mono);fill:var(--ink-2)}
+.ex-trace .axl{stroke:var(--ink-3);stroke-width:1}
+.elec{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:center}
+@media (max-width:600px){.elec{grid-template-columns:1fr;justify-items:center}}
+.letters{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:0;font-size:14.5px}
+.letters dt{font:600 14px var(--f-mono)}
+.letters dd{margin:0;color:var(--ink-2)}
+.claims{display:flex;flex-direction:column}
+.claims > div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 14px;padding:9px 0;border-top:1px solid var(--grid);align-items:baseline;font-size:14.5px}
+.claims > div:first-child{border-top:0}
+@media (max-width:520px){.claims > div{grid-template-columns:1fr}}
+.walk{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;counter-reset:wk}
+.walk li{counter-increment:wk;display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:start;font-size:14.5px}
+.walk li::before{content:counter(wk);width:26px;height:26px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);font:700 13px/23px var(--f-display);text-align:center}
+.bg-note{font-size:13px;color:var(--ink-3)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--rule);border-radius:12px;background:var(--panel);overflow:hidden}
+.stat{padding:14px 18px;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:3px;min-width:0}
+.stat:first-child{border-left:0}
+.stat .v{font:720 32px/1 var(--f-display);font-stretch:110%;font-variant-numeric:tabular-nums}
+.stat .l{font-size:14px;color:var(--ink)}
+.stat .s{font:12px/1.35 var(--f-mono);color:var(--ink-3)}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(3){border-left:0}.stat:nth-child(n+3){border-top:1px solid var(--rule)}}
+
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
+.srccard{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;min-width:0}
+.srccard:hover{border-color:var(--ink-3)}
+.srccard b{font:700 15px/1.25 var(--f-display);font-stretch:106%}
+.srccard .ti{font-size:13.5px;color:var(--ink-2)}
+.srccard .n{margin-top:auto;font:12px var(--f-mono);color:var(--ink-3)}
+
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.legend > div{display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:13.5px;color:var(--ink-2)}
+
+.qgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.q{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer;min-width:0}
+.q:hover{border-color:var(--ink-3)}
+.q .qh{font:700 17px/1.25 var(--f-display);font-stretch:104%;color:var(--ink);text-wrap:balance}
+.q .go{margin-top:auto;font:700 13.5px var(--f-body);color:var(--accent)}
+@media (max-width:860px){.qgrid{grid-template-columns:1fr}}
+
+.fams{display:flex;flex-wrap:wrap;gap:8px}
+.fam{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
+.fam:hover{border-color:var(--ink-3)}
+.fam .n{font:12px var(--f-mono);color:var(--ink-3)}
+.fam[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.fam[aria-pressed="true"] .n{color:inherit;opacity:.75}
+
+.fw{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,1fr);align-items:stretch}
+.fw-box{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.fw-box ul{font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+.fw-mid{position:relative;display:flex;align-items:center;padding:0 22px}
+.fw-mid::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px dashed var(--ink-3)}
+.fw-mid .fw-box{position:relative;border-style:dashed;width:100%;background:var(--panel-2)}
+@media (max-width:860px){.fw{grid-template-columns:1fr;gap:0}.fw-mid{padding:16px 0}.fw-mid::before{left:50%;right:auto;top:0;bottom:0;border-top:0;border-left:2px dashed var(--ink-3)}}
+
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.mcard{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer;min-width:0;transition:border-color .15s,box-shadow .15s}
+.mcard:hover{border-color:var(--ink-3);box-shadow:var(--shadow)}
+.mc-name{font-size:17px;font-weight:680;font-stretch:104%;line-height:1.22}
+.mc-spec{font-size:13.5px;color:var(--ink-2)}
+.mc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid var(--grid);font:12px var(--f-mono);color:var(--ink-3)}
+.viz{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.viz-r{min-width:0}
+.cap{font:11.5px/1.4 var(--f-mono);color:var(--ink-2);margin-top:3px}
+
+.scalp{display:block;color:var(--ink-3);overflow:visible}
+.scalp.t{color:var(--time)} .scalp.f{color:var(--freq)} .scalp.p{color:var(--phase)}
+.scalp .hd,.scalp .ear,.scalp .nose{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:3}
+.scalp .el{fill:var(--rule)}
+.scalp .el.on{fill:currentColor;stroke:var(--panel);stroke-width:2}
+.scalp .lb{font:600 16px var(--f-mono);fill:var(--ink);paint-order:stroke;stroke:var(--panel-2);stroke-width:4px}
+.scalp .qm{font:600 54px var(--f-display);fill:var(--ink-3)}
+.scalp .lat{stroke:currentColor;stroke-width:2.5;stroke-dasharray:6 5;fill:none}
+
+.ruler{display:block;width:100%;height:auto}
+.ruler .ax,.ruler .tk{stroke:var(--ink-3);stroke-width:1}
+.ruler .tl{font:10px var(--f-mono);fill:var(--ink-3)}
+.ruler .cb0{fill:var(--grid)} .ruler .cb1{fill:transparent}
+.ruler .cbl{font:9.5px var(--f-mono);fill:var(--ink-3)}
+.ruler .rg{fill-opacity:.24}
+.ruler .rgl{stroke-width:3;stroke-linecap:round}
+.ruler.t .rg{fill:var(--time)} .ruler.t .rgl{stroke:var(--time)}
+.ruler.f .rg{fill:var(--freq)} .ruler.f .rgl{stroke:var(--freq)}
+.ruler.p .rg{fill:var(--phase)} .ruler.p .rgl{stroke:var(--phase)}
+.ruler .ns{fill:none;stroke:var(--ink-3);stroke-dasharray:3 3}
+.ruler .nst{font:10px var(--f-mono);fill:var(--ink-3)}
+
+.meter{display:inline-flex;align-items:center;gap:6px}
+.meter .bars{display:inline-flex;gap:2px}
+.meter i{display:block;width:9px;height:7px;border-radius:2px;background:var(--grid)}
+.meter i.on{background:var(--ink-2)}
+.meter.broad i.on{background:var(--warn)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);padding:10px}
+.toolbar input,.toolbar select{padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
+.toolbar .grow{flex:1 1 220px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--panel);padding:6px 10px;font-size:13px;cursor:pointer;color:var(--ink-2);border-left:1px solid var(--rule)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.resinfo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:12.5px var(--f-mono);color:var(--ink-3)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--r);background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:1040px;font-size:13.5px}
+th{text-align:left;font:600 11.5px/1.3 var(--f-mono);letter-spacing:.04em;color:var(--ink-3);background:var(--panel-2);padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:bottom}
+td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:top}
+tbody tr[data-act]{cursor:pointer}
+tbody tr[data-act]:hover td{background:var(--panel-2)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+table.mini{min-width:600px}
+
+.cv{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:20px;align-items:start}
+.cnav{position:sticky;top:calc(var(--stick) + 8px);max-height:calc(100vh - var(--stick) - 24px);overflow:auto;gap:4px;padding:12px}
+.cnav h4{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin:10px 8px 2px}
+.cnav h4:first-child{margin-top:2px}
+.cnav button{display:flex;justify-content:space-between;align-items:baseline;width:100%;text-align:left;padding:6px 8px;border:0;background:none;border-radius:6px;cursor:pointer;font-size:14px;gap:10px;color:var(--ink)}
+.cnav button:hover{background:var(--panel-2)}
+.cnav button[aria-current="true"]{background:var(--accent-soft)}
+.cnav .n{font:12px var(--f-mono);color:var(--ink-3);flex:none}
+@media (max-width:900px){.cv{grid-template-columns:1fr}.cnav{position:static;max-height:300px}}
+.cd-head{display:flex;flex-direction:column;gap:8px}
+.cd-head h2{font-size:28px;font-stretch:112%}
+.cd-def{font-size:16px;color:var(--ink-2);max-width:68ch}
+.mrow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 20px;padding:14px 0;border-top:1px solid var(--grid)}
+.mrow:first-of-type{border-top:0}
+.mrow .nm{display:flex;flex-direction:column;gap:6px;min-width:0}
+.mrow .nm .link{font-size:15.5px}
+@media (max-width:720px){.mrow{grid-template-columns:1fr}}
+.cover{display:flex;gap:8px;flex-wrap:wrap}
+.cover span{font:12.5px var(--f-mono);padding:4px 10px;border-radius:6px;border:1px solid var(--rule);color:var(--ink-3)}
+.cover span.yes{color:var(--ink);background:var(--panel-2)}
+.callout{border-radius:8px;padding:11px 13px;background:var(--panel-2);border:1px solid var(--rule);font-size:14px;display:flex;flex-direction:column;gap:6px}
+.callout.warn{background:var(--warn-soft);border-color:transparent}
+.callout.warn > b:first-child{color:var(--warn)}
+.callout.ok{background:var(--ok-soft);border-color:transparent}
+.disc{display:flex;flex-direction:column;gap:10px}
+
+.entries{display:flex;flex-direction:column;gap:10px}
+.entry{border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel);min-width:0}
+.en-top{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:14px}
+.en-claim{font-size:14.5px}
+.en-kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 14px;margin:0;font-size:13.5px}
+.en-kv dt{color:var(--ink-3)}
+.en-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.en-src{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:13px;color:var(--ink-2);border-top:1px solid var(--grid);padding-top:8px}
+.en-cites{font-size:12.5px;color:var(--ink-3)}
+
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:39}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--panel);border-left:1px solid var(--rule);box-shadow:var(--shadow);transform:translateX(102%);transition:transform .22s ease,visibility 0s linear .22s;z-index:40;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden}
+.drawer.open{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
+.dr-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 10px 20px;border-bottom:1px solid var(--rule)}
+.dr-body{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:22px}
+.dr-body h2{font-size:24px;font-stretch:110%}
+.dr-viz{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:start}
+.dr-viz figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.dr-viz figcaption{font:12px/1.4 var(--f-mono);color:var(--ink-2);text-align:center}
+@media (max-width:520px){.dr-viz{grid-template-columns:1fr}}
+.spec-text{font-size:15px}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:6px 0 0;font-size:13.5px}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{display:flex;align-items:baseline}
+.clist{list-style:none;padding:0;display:flex;flex-direction:column}
+.clist li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-top:1px solid var(--grid);font-size:14px}
+.clist li:first-child{border-top:0}
+.clist .sub{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;flex:none}
+.srcd{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.srcd li{position:relative;padding-left:18px}
+.srcd li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.srcd.warnl li::before{background:var(--warn)}
+.srcd.okl li::before{background:var(--accent)}
+.note{font-size:12.5px;color:var(--ink-3)}
+
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:1060px){.mapgrid{grid-template-columns:1fr}}
+.map-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);min-width:0}
+.map-cols{display:flex;justify-content:space-between;padding:12px 16px 0;min-width:760px}
+svg.map{min-width:760px;width:100%;height:auto;display:block}
+.map .lk{fill:none;stroke-linecap:round;transition:opacity .12s,stroke-width .12s}
+.map .lk.attributed{stroke:var(--ink);stroke-width:1.8;opacity:.6}
+.map .lk.inferred{stroke:var(--time);stroke-width:1.6;opacity:.6}
+.map .lk.causal{stroke:var(--accent);stroke-width:2.4;opacity:.85}
+.map .lk.tentative{stroke:var(--ink-3);stroke-width:1.4;stroke-dasharray:5 4;opacity:.7}
+.map .lk.contributed{stroke:var(--accent);stroke-width:1.8;stroke-dasharray:2 3}
+.map.dim .lk{opacity:.06}
+.map.dim .lk.on{opacity:1;stroke-width:2.8}
+.map .nd{cursor:pointer}
+.map .nd text{font:13px var(--f-body);fill:var(--ink)}
+.map .nd .hit{fill:transparent}
+.map .nd:hover .hit,.map .nd:focus .hit{fill:var(--panel-2)}
+.map .nd circle{fill:var(--ink-3)}
+.map .nd.t circle{fill:var(--time)} .map .nd.f circle{fill:var(--freq)} .map .nd.p circle{fill:var(--phase)}
+.map.dim .nd{opacity:.28}
+.map.dim .nd.on{opacity:1}
+.map .grp{font:600 10.5px var(--f-mono);fill:var(--ink-3);letter-spacing:.08em}
+.map .nd:focus{outline:none}
+.map .nd:focus-visible .hit{stroke:var(--accent);stroke-width:2}
+.mp-side{display:flex;flex-direction:column;gap:14px}
+.mp-legend{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2)}
+.mp-legend span{display:inline-flex;align-items:center;gap:8px}
+.mp-legend svg{flex:none}
+.rank{list-style:none;padding:0;display:flex;flex-direction:column}
+.rank li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:6px 0;border-top:1px solid var(--grid);font-size:14px;align-items:baseline}
+.rank li:first-child{border-top:0}
+.rank .n{font:12px var(--f-mono);color:var(--ink-3);display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+
+.pl{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:20px;align-items:start}
+.pl-form{position:sticky;top:calc(var(--stick) + 8px)}
+@media (max-width:900px){.pl{grid-template-columns:1fr}.pl-form{position:static}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field > label,legend{font-weight:700;font-size:13.5px}
+.field input,.field select,.field textarea{padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);width:100%;min-width:0}
+.field textarea{resize:vertical}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;min-width:0}
+.radios{display:flex;flex-wrap:wrap;gap:6px}
+.radio{display:inline-flex;position:relative}
+.radio input{position:absolute;opacity:0;width:1px;height:1px}
+.radio span{border:1px solid var(--rule);border-radius:999px;padding:5px 11px;font-size:13.5px;cursor:pointer;background:var(--panel)}
+.radio input:checked + span{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.radio input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.pl-out{display:flex;flex-direction:column;gap:18px}
+.cands{display:flex;flex-direction:column;gap:12px}
+.cand{border:1px solid var(--rule);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+.cand.miss{background:var(--panel-2)}
+.cand-top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:baseline;justify-content:space-between}
+.cand-top .link{font-size:16px}
+.cand .rk{font:600 12px var(--f-mono);color:var(--ink-3);margin-right:6px}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.bdg{font-size:12.5px;padding:3px 8px;border-radius:6px;background:var(--panel-2);border:1px solid var(--rule);color:var(--ink-2)}
+.bdg.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.bdg.no{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.cand-viz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:center}
+@media (max-width:640px){.cand-viz{grid-template-columns:1fr}}
+.checklist{display:flex;flex-direction:column}
+.checklist label{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:14px;border-top:1px solid var(--grid);cursor:pointer}
+.checklist label:first-child{border-top:0}
+.checklist input{margin-top:4px;accent-color:var(--accent);flex:none}
+.checklist .tag{font:11px var(--f-mono);color:var(--ink-3);margin-right:6px;text-transform:uppercase;letter-spacing:.05em}
+details > summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--ink-2)}
+details[open] > summary{margin-bottom:10px}
+
+.ct{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:1000px){.ct{grid-template-columns:1fr}}
+.ct form{display:flex;flex-direction:column;gap:14px}
+.frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.req{font:500 10px var(--f-mono);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+.subform{border:1px dashed var(--rule);border-radius:8px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;background:var(--panel-2)}
+.subform .field input,.subform .field select{background:var(--panel)}
+.subform .wide{grid-column:1/-1}
+.subform .eyebrow{grid-column:1/-1}
+.fmsg{font-size:14px;color:var(--ink-2)}
+.fmsg.err{color:var(--warn)}
+.gate{font-size:14px}
+.queue{display:flex;flex-direction:column;gap:10px}
+.qitem{border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.qitem.done{background:var(--panel-2)}
+.qmeta{font:12px var(--f-mono);color:var(--ink-3)}
+.qact{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.qact input{flex:1 1 160px;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
+.st{font:600 11px var(--f-mono);padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em}
+.st.pending{background:var(--hl-soft);color:var(--ink)}
+.st.accepted{background:var(--ok-soft);color:var(--ok)}
+.st.declined{background:var(--warn-soft);color:var(--warn)}
+.empty{border:1px dashed var(--rule);border-radius:10px;padding:18px;color:var(--ink-2);font-size:14px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+
+.health{display:flex;flex-direction:column}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:start;padding:12px 0;border-top:1px solid var(--grid)}
+.hrow:first-child{border-top:0}
+.hrow .hl{font-weight:700;font-size:14.5px}
+.hrow .hd{grid-column:1/-1;font-size:13.5px;color:var(--ink-2)}
+.hrow details{grid-column:1/-1}
+.pill{font:600 12.5px var(--f-mono);padding:3px 9px;border-radius:999px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.info{background:var(--panel-2);color:var(--ink-2);border:1px solid var(--rule)}
+pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border:1px solid var(--rule);border-radius:8px;padding:12px;font:12px/1.55 var(--f-mono);white-space:pre}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px 22px;margin:0}
+.gloss div{min-width:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:2px 0 0;color:var(--ink-2);font-size:14px}
+.inline-list{font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px;padding-left:18px}
+.cite{font-size:14.5px;line-height:1.55;padding:12px 14px;border-radius:8px;background:var(--panel-2);border:1px solid var(--rule)}
+
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.modal{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
+.modal .panel{width:min(640px,100%);max-height:calc(100% - 32px)}
+.modal textarea{width:100%;min-height:220px;font:12px/1.5 var(--f-mono);padding:10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2)}
+.skel{color:var(--ink-3);font-size:14px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<script>window.KB_STATIC = {data: "data/kb.json", repo: "https://github.com/ParsaBemani/eeg-knowledge-base"};</script>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="tb1">
+      <button class="brand" data-act="go" data-route="overview" aria-label="Go to overview">
+        <svg width="32" height="32" viewBox="-126 -124 252 250" aria-hidden="true">
+          <ellipse cx="-103" cy="0" rx="8" ry="19" fill="none" stroke="currentColor" stroke-width="9"/>
+          <ellipse cx="103" cy="0" rx="8" ry="19" fill="none" stroke="currentColor" stroke-width="9"/>
+          <path d="M-14 -98 L0 -118 L14 -98" fill="none" stroke="currentColor" stroke-width="9" stroke-linejoin="round"/>
+          <circle cx="0" cy="0" r="98" fill="none" stroke="currentColor" stroke-width="10"/>
+          <circle cx="0" cy="-46" r="15" fill="var(--accent)"/>
+          <circle cx="0" cy="0" r="15" fill="var(--accent)"/>
+          <circle cx="0" cy="46" r="15" fill="var(--accent)"/>
+          <circle cx="-46" cy="0" r="9" fill="currentColor" opacity=".45"/>
+          <circle cx="46" cy="0" r="9" fill="currentColor" opacity=".45"/>
+        </svg>
+        <span><b>EEG Construct–Measure KB</b><small>Find EEG measures by topic</small></span>
+      </button>
+      <div class="search" role="search">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search a topic or signal, e.g. memory, N400" aria-label="Search the knowledge base" aria-controls="sres">
+        <div id="sres" class="sres" hidden></div>
+      </div>
+    </div>
+    <nav class="navrow" aria-label="Sections">
+      <div class="tabs">
+        <button class="tab" data-act="go" data-route="overview">Home</button>
+        <button class="tab" data-act="go" data-route="constructs">Topics</button>
+        <button class="tab" data-act="go" data-route="measures">EEG signals</button>
+        <button class="tab" data-act="go" data-route="planner">Plan a study</button>
+        <button class="tab" data-act="go" data-route="learn">EEG basics</button>
+      </div>
+      <div class="more">
+        <button class="tab" id="more-btn" data-act="more" aria-expanded="false" aria-controls="more-menu">More</button>
+        <div class="more-menu" id="more-menu" hidden>
+          <button data-act="go" data-route="sources"><b>Source papers</b><span>The six papers every link comes from</span></button>
+          <button data-act="go" data-route="map"><b>Topic–signal map</b><span>Every link drawn as one diagram</span></button>
+          <button data-act="go" data-route="contribute"><b>Contribute</b><span>Suggest a new link from a paper</span></button>
+          <button data-act="go" data-route="data"><b>Data &amp; export</b><span>Download the data and see quality checks</span></button>
+        </div>
+      </div>
+    </nav>
+  </div>
+</header>
+<div id="banner" class="banner" hidden><div class="wrap"><span class="dot" id="banner-dot"></span><div id="banner-t"></div></div></div>
+
+<main class="wrap">
+  <section class="view" id="v-overview" aria-label="Home"></section>
+  <section class="view" id="v-constructs" aria-label="Topics" hidden></section>
+  <section class="view" id="v-measures" aria-label="EEG signals" hidden></section>
+  <section class="view" id="v-map" aria-label="Topic–signal map" hidden></section>
+  <section class="view" id="v-planner" aria-label="Plan a study" hidden></section>
+  <section class="view" id="v-learn" aria-label="EEG basics" hidden></section>
+  <section class="view" id="v-sources" aria-label="Sources" hidden></section>
+  <section class="view" id="v-contribute" aria-label="Contribute" hidden></section>
+  <section class="view" id="v-data" aria-label="Data and export" hidden></section>
+</main>
+
+<div id="scrim" class="scrim" hidden data-act="close-drawer"></div>
+<aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" aria-hidden="true">
+  <div class="dr-bar"><span class="eyebrow">EEG signal</span><button class="btn ghost sm" data-act="close-drawer">Close</button></div>
+  <div id="dr-body" class="dr-body"></div>
+</aside>
+
+<div id="modal" class="modal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="modal-h">
+    <h3 id="modal-h">Copy this text</h3>
+    <p class="muted small">Copying was blocked here. The text is selected below; press Ctrl+C (or ⌘C) to copy it.</p>
+    <textarea id="modal-text" readonly aria-label="Text to copy"></textarea>
+    <div class="btns"><button class="btn" data-act="close-modal">Done</button></div>
+  </div>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------- vocabulary ---------- */
+const FAMILIES = [
+  {id:'hearing', label:'Hearing & auditory processing', desc:'How the brain registers sounds and notices when they change.'},
+  {id:'attention', label:'Attention', desc:'Focusing on what matters and filtering out the rest.'},
+  {id:'memory', label:'Memory', desc:'Holding, updating and recognising information.'},
+  {id:'language', label:'Language', desc:'Understanding the meaning and grammar of words and sentences.'},
+  {id:'development', label:'Development', desc:'Brain responses in infants and young children.'},
+  {id:'emotion', label:'Emotion', desc:'Responses to emotional pictures, words and events.'},
+  {id:'control', label:'Cognitive control', desc:'Noticing mistakes, handling conflict and learning from feedback.'},
+  {id:'motor', label:'Motor & timing', desc:'Preparing, choosing and timing movements.'},
+  {id:'sensory', label:'Perception & sensory processing', desc:'Seeing, perceiving and becoming aware of what is in front of you.'},
+  {id:'state', label:'Brain state & network dynamics', desc:'Alertness, sleep, and how brain areas work together.'},
+  {id:'clinical', label:'Clinical & applied uses', desc:'Practical uses such as newborn hearing screening and brain–computer interfaces.'},
+  {id:'other', label:'Other', desc:'Topics that do not fit the areas above.'}
+];
+const FAM = Object.fromEntries(FAMILIES.map(f => [f.id, f]));
+const FEATURED = ['memory', 'attention', 'sensory', 'language', 'hearing', 'control'];
+const SIG = {
+  time:{label:'Time (ERP)', plain:'ERP', many:'ERPs', tip:'Event-related potential: the average voltage change locked to an event, measured in milliseconds.', k:'t'},
+  freq:{label:'Frequency', plain:'Brain rhythm', many:'brain rhythms', tip:'Oscillation: the strength of rhythmic activity in a frequency band, measured in hertz.', k:'f'},
+  phase:{label:'Frequency / phase', plain:'Rhythm coupling', many:'rhythm-coupling measures', tip:'How the timing of one rhythm relates to another rhythm.', k:'p'}
+};
+const CLAIM = {
+  attributed:{label:'Stated by the paper', tip:'The paper says this signal reflects the topic.', rank:4},
+  inferred:{label:'Used to infer', tip:'The paper describes studies that used this signal to draw a conclusion about the topic.', rank:3},
+  causal:{label:'Causal test', tip:'The paper reports that changing the brain signal (by stimulation or entrainment) changed the behaviour. The strongest kind of link.', rank:5},
+  hypothesis:{label:'Hypothesis', tip:'The paper proposes the link but does not treat it as established.', rank:2},
+  debated:{label:'Debated', tip:'The paper reports that researchers disagree about the link.', rank:1}
+};
+const EVID = {
+  'human-eeg':{label:'Human EEG/ERP'},
+  stimulation:{label:'Brain or sensory stimulation'},
+  intracranial:{label:'Animal or intracranial'},
+  review:{label:'Review-level summary'}
+};
+const SITES = {
+  Fpz:[0,92], Fp1:[-29,88], Fp2:[29,88],
+  F7:[-74,54], F3:[-39,50], Fz:[0,46], F4:[39,50], F8:[74,54],
+  FC3:[-42,24], FCz:[0,23], FC4:[42,24],
+  T7:[-92,0], C3:[-46,0], Cz:[0,0], C4:[46,0], T8:[92,0],
+  CP3:[-42,-24], CPz:[0,-23], CP4:[42,-24],
+  P7:[-74,-54], P3:[-39,-50], Pz:[0,-46], P4:[39,-50], P8:[74,-54],
+  PO7:[-54,-74], POz:[0,-69], PO8:[54,-74],
+  O1:[-29,-88], Oz:[0,-92], O2:[29,-88],
+  M1:[-112,-36], M2:[112,-36]
+};
+const POP = {adults:'Adults', children:'Children', infants:'Infants', clinical:'Clinical sample'};
+const PARA = {either:'Not sure yet', passive:'No task (passive)', active:'Yes, a task'};
+
+/* ---------- helpers ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uniq = a => Array.from(new Set(a));
+const num = v => { const n = Number(v); return Number.isFinite(n) ? String(Math.round(n * 100) / 100) : '?'; };
+const plural = (n, one, many) => n + ' ' + (n === 1 ? one : (many || one + 's'));
+const famOf = c => (c && FAM[c.family]) ? c.family : 'other';
+const sigOf = m => SIG[m && m.signal] ? m.signal : 'time';
+const sigK = m => SIG[sigOf(m)].k;
+const short = m => m ? (m.short || (m.name.length > 40 ? m.name.slice(0, 38) + '…' : m.name)) : '';
+const isInf = (m, f) => Array.isArray(m.inferred) && m.inferred.includes(f);
+const arr = v => Array.isArray(v) ? v : [];
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'x';
+const rid = () => Math.random().toString(36).slice(2, 7);
+const today = () => new Date().toISOString().slice(0, 10);
+function fmtDate(iso) { try { const d = /^\d{4}-\d{2}-\d{2}$/.test(String(iso)) ? new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) : new Date(iso); return d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}); } catch (e) { return iso || ''; } }
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+function bandsOf(m) { return arr(m.bands).filter(b => b && Number(b.lo) >= 0 && Number(b.hi) > Number(b.lo)); }
+function winOf(m) {
+  const w = m.window;
+  if (!w) return null;
+  if (Number.isFinite(Number(w.at)) && w.at !== null && w.at !== undefined) return {at: Number(w.at), lock: w.lock};
+  if (w.min !== undefined && w.max !== undefined && Number.isFinite(Number(w.min)) && Number.isFinite(Number(w.max))) return {min: Number(w.min), max: Number(w.max), lock: w.lock};
+  return null;
+}
+function sitesOf(m) { return arr(m.sites); }
+function specMissing(m) {
+  const miss = [], s = sigOf(m);
+  if (s === 'time' && !winOf(m)) miss.push('time window');
+  if (s !== 'time' && !bandsOf(m).length) miss.push('frequency band');
+  if (!sitesOf(m).length) miss.push('electrode sites');
+  return miss;
+}
+function winText(m) {
+  const w = winOf(m); if (!w) return '';
+  const lock = w.lock || 'stimulus';
+  return w.at != null ? '≈' + num(w.at) + ' ms after ' + lock : num(w.min) + '–' + num(w.max) + ' ms after ' + lock;
+}
+function bandText(b) { return (b.label ? b.label + ' ' : '') + num(b.lo) + '–' + num(b.hi) + ' Hz'; }
+function specCaptionText(m) {
+  const parts = [];
+  const b = bandsOf(m);
+  if (b.length) parts.push(b.map(bandText).join(' · '));
+  if (winOf(m)) parts.push(winText(m));
+  else if (m.windowNote && sigOf(m) === 'time') parts.push(m.windowNote);
+  return parts.join(' · ') || (m.bandsNote || m.windowNote || 'Not specified');
+}
+function specCaption(m) { return esc(specCaptionText(m)) + (isInf(m, 'bands') || isInf(m, 'window') ? '<span class="inf">inferred</span>' : ''); }
+function sigChip(m) { const s = SIG[sigOf(m)]; return '<span class="chip ' + s.k + '" title="' + esc(s.tip) + '">' + esc(s.plain) + '</span>'; }
+function whereWhen(m) {
+  const parts = [];
+  const b = bandsOf(m);
+  if (b.length) parts.push(b.map(bandText).join(', '));
+  else if (winOf(m)) parts.push(winText(m));
+  if (sitesOf(m).length) parts.push('at ' + sitesOf(m).slice(0, 4).join(', ') + (sitesOf(m).length > 4 ? '…' : ''));
+  return parts.join(' · ') || 'Timing and location not given in the papers';
+}
+function claimChip(t) { const k = CLAIM[t] ? t : 'attributed'; return '<span class="chip cl-' + k + '" title="' + esc(CLAIM[k].tip) + '">' + esc(CLAIM[k].label) + '</span>'; }
+function evidChip(e) { return (e && e !== 'human-eeg' && EVID[e]) ? '<span class="chip ev" title="Kind of evidence">' + esc(EVID[e].label) + '</span>' : ''; }
+function contribChip(p) { return p === 'contributed' ? '<span class="chip contributed" title="Submitted here and accepted by a curator">Contributed</span>' : ''; }
+function meter(n) {
+  const cls = n >= 4 ? 'meter broad' : 'meter';
+  let bars = '';
+  for (let i = 1; i <= 6; i++) bars += '<i class="' + (i <= n ? 'on' : '') + '"></i>';
+  return '<span class="' + cls + '" title="Linked to ' + plural(n, 'construct') + '"><span class="bars" aria-hidden="true">' + bars + '</span><span>' + plural(n, 'construct') + '</span></span>';
+}
+
+/* ---------- state ---------- */
+const COLS = ['measures', 'constructs', 'entries', 'sources', 'guidance', 'submissions'];
+const S = {
+  db: null, user: null, dl: null, static: null,
+  status: 'connecting',
+  raw: {measures: new Map(), constructs: new Map(), entries: new Map(), sources: new Map(), guidance: new Map(), submissions: new Map()},
+  loaded: {measures: false, constructs: false, entries: false, sources: false, guidance: false, submissions: false},
+  meta: null,
+  me: {id: null, canEdit: false, isOwner: false, canWrite: null},
+  readOnly: false, busy: false,
+  route: 'overview', mounted: {},
+  selC: null, cFam: 'all', cq: '', selS: null,
+  mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
+  mapFam: 'all', mapPin: null,
+  plan: {c: '', pop: 'adults', para: 'either'},
+  drawer: null, prefill: null
+};
+const ROUTES = ['overview', 'constructs', 'measures', 'map', 'planner', 'learn', 'sources', 'contribute', 'data'];
+const MORE_ROUTES = {sources:'Source papers', map:'Topic–signal map', contribute:'Contribute', data:'Data & export'};
+
+/* ---------- derived model ---------- */
+let MODEL = null;
+function invalidate() { MODEL = null; }
+function push(map, k, v) { if (!map.has(k)) map.set(k, []); map.get(k).push(v); }
+function model() {
+  if (MODEL) return MODEL;
+  const famIdx = id => { const i = FAMILIES.findIndex(f => f.id === id); return i < 0 ? 99 : i; };
+  const measures = Array.from(S.raw.measures.values()).filter(m => m && m.name)
+    .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999) || a.name.localeCompare(b.name));
+  const constructs = Array.from(S.raw.constructs.values()).filter(c => c && c.name)
+    .sort((a, b) => famIdx(famOf(a)) - famIdx(famOf(b)) || a.name.localeCompare(b.name));
+  const sources = Array.from(S.raw.sources.values()).filter(s => s && (s.short || s.cite))
+    .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999) || String(a.short).localeCompare(String(b.short)));
+  const guidance = Array.from(S.raw.guidance.values()).filter(g => g && g.t).sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  const mById = new Map(measures.map(m => [m.id, m]));
+  const cById = new Map(constructs.map(c => [c.id, c]));
+  const sById = new Map(sources.map(s => [s.id, s]));
+  const all = Array.from(S.raw.entries.values()).filter(e => e && e.status !== 'declined');
+  const byM = new Map(), byC = new Map(), byS = new Map(), orphanM = [], orphanC = [], orphanS = [], entries = [];
+  for (const e of all) {
+    if (!mById.has(e.measureId)) { orphanM.push(e); continue; }
+    if (!cById.has(e.constructId)) { orphanC.push(e); continue; }
+    if (!e.sourceId || !sById.has(e.sourceId)) orphanS.push(e);
+    entries.push(e); push(byM, e.measureId, e); push(byC, e.constructId, e); if (e.sourceId) push(byS, e.sourceId, e);
+  }
+  const consOfM = new Map(), measOfC = new Map();
+  byM.forEach((es, id) => consOfM.set(id, uniq(es.map(e => e.constructId))));
+  byC.forEach((es, id) => measOfC.set(id, uniq(es.map(e => e.measureId))));
+  const subs = Array.from(S.raw.submissions.values()).filter(Boolean)
+    .sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+  MODEL = {measures, constructs, sources, guidance, mById, cById, sById, entries, byM, byC, byS, consOfM, measOfC, orphanM, orphanC, orphanS, subs,
+    pending: subs.filter(s => s.status === 'pending')};
+  return MODEL;
+}
+const consFor = (M, mid) => (M.consOfM.get(mid) || []).map(id => M.cById.get(id)).filter(Boolean);
+const measFor = (M, cid) => (M.measOfC.get(cid) || []).map(id => M.mById.get(id)).filter(Boolean);
+const srcIdsForM = (M, mid) => uniq((M.byM.get(mid) || []).map(e => e.sourceId).filter(Boolean));
+
+function refHTML(refs) {
+  const M = model();
+  const list = arr(refs).filter(r => r && r.s);
+  if (!list.length) return '';
+  return '<span class="refs">' + list.map(r => {
+    const s = M.sById.get(r.s);
+    const lab = (s ? s.short : r.s) + (r.p ? ', p. ' + r.p : '');
+    return '<button class="ref" data-act="open-source" data-id="' + esc(r.s) + '" title="' + esc(s ? s.cite : '') + '">' + esc(lab) + '</button>';
+  }).join('') + '</span>';
+}
+function refText(refs) {
+  const M = model();
+  return arr(refs).filter(r => r && r.s).map(r => { const s = M.sById.get(r.s); return (s ? s.short : r.s) + (r.p ? ', p. ' + r.p : ''); }).join('; ');
+}
+function doiLink(doi) {
+  const d = String(doi || '').trim();
+  if (/^10\.\S+\/\S+$/.test(d)) return '<a href="https://doi.org/' + esc(encodeURI(d)) + '" target="_blank" rel="noopener">doi.org/' + esc(d) + ' ↗</a>';
+  if (/^https?:\/\/\S+$/i.test(d)) return '<a href="' + esc(d) + '" target="_blank" rel="noopener">link ↗</a>';
+  return '';
+}
+
+/* ---------- drawings ---------- */
+function scalp(m, size, labels) {
+  const k = sigK(m);
+  const on = new Set(sitesOf(m).filter(s => SITES[s]));
+  const label = on.size ? 'Electrode sites: ' + Array.from(on).join(', ') : 'Electrode sites not specified';
+  let s = '<svg class="scalp ' + k + '" viewBox="-128 -126 256 252" width="' + size + '" height="' + size + '" role="img" aria-label="' + esc(label) + '">';
+  s += '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>';
+  if (m.lateralized && labels) {
+    const pts = Array.from(on).map(n => SITES[n]);
+    const L = pts.find(p => p[0] < 0), R = pts.find(p => p[0] > 0);
+    if (L && R) s += '<path class="lat" d="M' + L[0] + ' ' + (-L[1]) + ' Q0 ' + (-Math.min(L[1], R[1]) + 26) + ' ' + R[0] + ' ' + (-R[1]) + '"/>';
+  }
+  for (const n in SITES) {
+    const o = on.has(n);
+    if ((n === 'M1' || n === 'M2') && !o) continue;
+    const p = SITES[n];
+    s += '<circle class="el' + (o ? ' on' : '') + '" cx="' + p[0] + '" cy="' + (-p[1]) + '" r="' + (o ? 9.5 : 4.2) + '"/>';
+  }
+  if (labels) on.forEach(n => { const p = SITES[n]; s += '<text class="lb" x="' + p[0] + '" y="' + (-p[1] - 14) + '" text-anchor="middle">' + n + '</text>'; });
+  if (!on.size) s += '<text class="qm" x="0" y="19" text-anchor="middle">?</text>';
+  return s + '</svg>';
+}
+function ruler(m, compact) {
+  const k = sigK(m);
+  const W = compact ? 240 : 440, H = compact ? 42 : 50, pad = 12, ax = H - 15, span = W - 2 * pad;
+  const b = bandsOf(m);
+  const freq = b.length > 0 || sigOf(m) !== 'time';
+  let s = '<svg class="ruler ' + k + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(specCaptionText(m)) + '">';
+  const range = (x1, x2) => '<rect class="rg" x="' + x1.toFixed(1) + '" y="2" width="' + Math.max(2, x2 - x1).toFixed(1) + '" height="' + (ax - 2) + '"/><line class="rgl" x1="' + x1.toFixed(1) + '" y1="' + ax + '" x2="' + Math.max(x1 + 2, x2).toFixed(1) + '" y2="' + ax + '"/>';
+  const none = t => '<rect class="ns" x="' + pad + '" y="2" width="' + span + '" height="' + (ax - 2) + '" rx="3"/><text class="nst" x="' + (W / 2) + '" y="' + (ax / 2 + 5) + '" text-anchor="middle">' + t + '</text>';
+  if (freq) {
+    const lo = 0.5, hi = 1000, L = Math.log10(hi / lo);
+    const x = f => pad + Math.log10(Math.min(hi, Math.max(lo, f)) / lo) / L * span;
+    [['δ', 1, 4], ['θ', 4, 8], ['α', 8, 13], ['β', 13, 30], ['γ', 30, 100]].forEach((g, i) => {
+      s += '<rect class="cb' + (i % 2) + '" x="' + x(g[1]).toFixed(1) + '" y="2" width="' + (x(g[2]) - x(g[1])).toFixed(1) + '" height="' + (ax - 2) + '"/>';
+      s += '<text class="cbl" x="' + ((x(g[1]) + x(g[2])) / 2).toFixed(1) + '" y="12" text-anchor="middle">' + g[0] + '</text>';
+    });
+    if (b.length) b.forEach(r => { s += range(x(Number(r.lo)), x(Number(r.hi))); });
+    else s += none('band not given in sources');
+    s += '<line class="ax" x1="' + pad + '" y1="' + ax + '" x2="' + (W - pad) + '" y2="' + ax + '"/>';
+    [[1, '1'], [10, '10'], [100, '100'], [1000, '1000 Hz']].forEach(t => {
+      const xx = x(t[0]).toFixed(1);
+      s += '<line class="tk" x1="' + xx + '" y1="' + ax + '" x2="' + xx + '" y2="' + (ax + 4) + '"/><text class="tl" x="' + xx + '" y="' + (H - 2) + '" text-anchor="' + (t[0] === 1000 ? 'end' : 'middle') + '">' + t[1] + '</text>';
+    });
+  } else {
+    const lo = 1, hi = 3000, L = Math.log10(hi / lo);
+    const x = t => pad + Math.log10(Math.min(hi, Math.max(lo, t)) / lo) / L * span;
+    [['early', 1, 10], ['middle', 10, 50], ['late', 50, 3000]].forEach((g, i) => {
+      s += '<rect class="cb' + (i % 2) + '" x="' + x(g[1]).toFixed(1) + '" y="2" width="' + (x(g[2]) - x(g[1])).toFixed(1) + '" height="' + (ax - 2) + '"/>';
+      s += '<text class="cbl" x="' + ((x(g[1]) + x(Math.min(g[2], 600))) / 2).toFixed(1) + '" y="12" text-anchor="middle">' + g[0] + '</text>';
+    });
+    const w = winOf(m);
+    if (w && w.at != null) s += range(x(w.at * 0.96), x(w.at * 1.04));
+    else if (w) s += range(x(Math.max(1, w.min)), x(w.max));
+    else s += none('window not given in sources');
+    s += '<line class="ax" x1="' + pad + '" y1="' + ax + '" x2="' + (W - pad) + '" y2="' + ax + '"/>';
+    [[1, '1'], [10, '10'], [100, '100'], [1000, '1000 ms']].forEach(t => {
+      const xx = x(t[0]).toFixed(1);
+      s += '<line class="tk" x1="' + xx + '" y1="' + ax + '" x2="' + xx + '" y2="' + (ax + 4) + '"/><text class="tl" x="' + xx + '" y="' + (H - 2) + '" text-anchor="middle">' + t[1] + '</text>';
+    });
+  }
+  return s + '</svg>';
+}
+function heroTrace() {
+  const host = $('#hero-trace'); if (!host) return;
+  host.innerHTML = traceSVG() + '<p class="trace-cap">A schematic recording from three scalp electrodes. The highlighted bump is one EEG signal, the P3. This site tells you which signals like it have been linked to which topics.</p>';
+}
+function traceSVG() {
+  const W = 600, H = 236, x0 = 40, x1 = 590, t0 = -200, t1 = 800;
+  const X = t => x0 + (t - t0) / (t1 - t0) * (x1 - x0);
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const g = (t, mu, sd) => Math.exp(-((t - mu) * (t - mu)) / (2 * sd * sd));
+  const ch = [{n:'Fz', y:52, p3:0.35, n1:1.0}, {n:'Cz', y:118, p3:0.7, n1:0.85}, {n:'Pz', y:184, p3:1.0, n1:0.5}];
+  let out = '';
+  ch.forEach((c, ci) => {
+    let d = '', pink = 0;
+    for (let t = t0; t <= t1; t += 4) {
+      pink = pink * 0.8 + (rnd() - 0.5) * 3.4;
+      const alpha = Math.sin((t / 1000) * 2 * Math.PI * 10 + ci * 1.3) * (t < 150 ? 4.2 : 2.4);
+      const erp = t > 0 ? (-c.n1 * 9 * g(t, 100, 22) + 6.5 * g(t, 195, 30) + c.p3 * 23 * g(t, 430, 95)) : 0;
+      d += (d ? 'L' : 'M') + X(t).toFixed(1) + ' ' + (c.y - (alpha + pink + erp)).toFixed(1);
+    }
+    out += '<path class="tr" d="' + d + '"/><text class="chl" x="4" y="' + (c.y + 4) + '">' + c.n + '</text>';
+  });
+  const hx = X(300), hw = X(600) - X(300);
+  let ticks = '';
+  [-200, 0, 200, 400, 600, 800].forEach(t => { ticks += '<line class="axl" x1="' + X(t) + '" y1="' + (H - 22) + '" x2="' + X(t) + '" y2="' + (H - 18) + '"/><text class="lab" x="' + X(t) + '" y="' + (H - 6) + '" text-anchor="' + (t === 800 ? 'end' : 'middle') + '">' + t + (t === 800 ? ' ms' : '') + '</text>'; });
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Schematic EEG at Fz, Cz and Pz with the P3 region highlighted at Pz">' +
+    '<rect class="hlw" x="' + hx.toFixed(1) + '" y="146" width="' + hw.toFixed(1) + '" height="66" rx="3"/>' +
+    '<line class="stim" x1="' + X(0) + '" y1="12" x2="' + X(0) + '" y2="' + (H - 24) + '"/>' +
+    '<text class="lab" x="' + (X(0) + 5) + '" y="20">stimulus</text>' + out +
+    '<text class="lab" x="' + (hx + 5) + '" y="141">P3 (P300) region · Pz</text>' +
+    '<line class="axl" x1="' + x0 + '" y1="' + (H - 22) + '" x2="' + x1 + '" y2="' + (H - 22) + '"/>' + ticks +
+    '<text class="lab" x="' + x1 + '" y="20" text-anchor="end">schematic · positive up</text></svg>';
+}
+
+/* ---------- shared fragments ---------- */
+function entryCard(e, M, opts) {
+  opts = opts || {};
+  const m = M.mById.get(e.measureId), c = M.cById.get(e.constructId), s = e.sourceId ? M.sById.get(e.sourceId) : null;
+  const row = (k, v) => (v === 0 || v) ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
+  const head = [claimChip(e.claimType), evidChip(e.evidence), contribChip(e.provenance)].filter(Boolean);
+  if (opts.showMeasure && m) head.push('<button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(short(m)) + '</button>');
+  if (opts.showMeasure && opts.showConstruct) head.push('<span aria-hidden="true">→</span>');
+  if (opts.showConstruct && c) head.push('<button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>');
+  let src;
+  if (s) src = '<button class="ref" data-act="open-source" data-id="' + esc(s.id) + '" title="' + esc(s.cite || '') + '">' + esc(s.short) + (e.pages ? ', p. ' + esc(e.pages) : '') + '</button>' + (s.doi ? doiLink(s.doi) : '');
+  else if (e.reference && e.reference.cite) src = '<span>' + esc(e.reference.cite) + (e.pages ? ', p. ' + esc(e.pages) : '') + '</span>' + doiLink(e.reference.doi);
+  else src = '<span class="muted">No source recorded.</span>';
+  return '<article class="entry"><div class="en-top">' + head.join(' ') + '</div>' +
+    (e.claim ? '<p class="en-claim">' + esc(e.claim) + '</p>' : '') +
+    '<dl class="en-kv">' + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
+    '<div class="en-src"><span class="eyebrow">Source</span>' + src + '</div>' +
+    (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') + '</article>';
+}
+function mcard(m, M) {
+  const cs = consFor(M, m.id);
+  const n = (M.byM.get(m.id) || []).length;
+  const ns = srcIdsForM(M, m.id).length;
+  const chips = cs.slice(0, 2).map(c => '<button class="chip" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>').join('') +
+    (cs.length > 2 ? '<span class="chip">+' + (cs.length - 2) + ' more</span>' : '');
+  return '<div class="mcard" role="button" tabindex="0" data-act="open-measure" data-id="' + esc(m.id) + '" aria-label="Open ' + esc(m.name) + '">' +
+    '<div class="chips">' + sigChip(m) + contribChip(m.provenance) + '</div>' +
+    '<h3 class="mc-name">' + esc(m.name) + '</h3>' +
+    '<p class="mc-spec">' + esc(m.spec) + '</p>' +
+    '<div class="viz">' + scalp(m, 56, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + '</div></div></div>' +
+    '<div class="chips">' + (chips || '<span class="muted small">No links yet</span>') + '</div>' +
+    '<div class="mc-foot"><span>' + plural(cs.length, 'topic') + '</span><span>' + plural(n, 'link') + ' · ' + plural(ns, 'paper') + '</span></div></div>';
+}
+function emptyState(what) {
+  if (S.status === 'connecting') return '<div class="empty"><b>Connecting to the knowledge base…</b><span>' + esc(what) + ' will appear here once the shared database answers.</span></div>';
+  if (S.static && (S.status === 'unavailable' || S.status === 'error')) return '<div class="empty"><b>The data file did not load.</b><span>Reload the page. If it keeps failing, check your connection; ' + esc(what.toLowerCase()) + ' come from a file published with the site.</span></div>';
+  if (S.status === 'unavailable' || S.status === 'error') return '<div class="empty"><b>The knowledge base did not load.</b><span>Its records live in this page\'s shared database, which loads for signed-in viewers on claude.ai. Open the page there while signed in to see ' + esc(what.toLowerCase()) + '.</span></div>';
+  return '<div class="empty"><b>Nothing here yet.</b><span>' + esc(what) + ' will appear once records are added.</span></div>';
+}
+function hrow(label, desc, n, kind, extra) {
+  return '<div class="hrow"><span class="hl">' + esc(label) + '</span><span class="pill ' + kind + '">' + (kind === 'ok' && n === 0 ? '0 ✓' : n) + '</span><span class="hd">' + esc(desc) + '</span>' + (extra || '') + '</div>';
+}
+function claimSummary(es) {
+  const types = uniq(es.map(e => e.claimType).filter(t => CLAIM[t])).sort((a, b) => CLAIM[b].rank - CLAIM[a].rank);
+  return types.map(claimChip).join('');
+}
+
+/* ---------- views ---------- */
+const V = {};
+
+V.overview = {
+  mount(el) {
+    el.innerHTML =
+      '<div class="hero"><div class="hero-text">' +
+        '<h1>Find the EEG signal that fits what you want to study</h1>' +
+        '<p class="lede">Pick a topic such as memory or attention. You will see which EEG signals research papers link to it, how strong each link is, and the page to cite.</p>' +
+        '<div class="hsearch" role="search"><label for="hq">What do you want to study?</label>' +
+          '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="Type a topic or a signal name" aria-controls="hres">' +
+          '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+          '<div id="hres" class="sres" hidden></div></div>' +
+        '<div class="tries" id="ov-tries"><span>Try:</span></div>' +
+      '</div><div class="hero-trace" id="hero-trace"></div></div>' +
+      '<div class="sh-row"><h2>Or start with a topic area</h2><button class="link" data-act="family" data-fam="all">See all topics</button></div>' +
+      '<div class="tiles" id="ov-tiles"></div>' +
+      '<div class="sh-row"><h2>How to use the site</h2></div>' +
+      '<ol class="steps">' +
+        '<li><b>Pick a topic</b><span>Choose what you want to study, for example working memory.</span></li>' +
+        '<li><b>Compare the signals</b><span>See which EEG signals are linked to it, and when and where on the head each one is measured.</span></li>' +
+        '<li><b>Check the source</b><span>Every link names the paper and page it comes from, so you can read it and cite it.</span></li>' +
+      '</ol>' +
+      '<div class="basics"><div><h3>New to EEG?</h3><p>A five-minute primer covers the two kinds of EEG signals, how electrode names work, and how to read the labels on this site.</p></div><button class="btn primary" data-act="go" data-route="learn">Learn the basics</button></div>' +
+      '<div class="footline" id="ov-foot"></div>';
+    heroTrace();
+    const hq = $('#hq');
+    hq.addEventListener('input', () => runSearch(hq, $('#hres')));
+    hq.addEventListener('focus', () => { if (hq.value.trim()) runSearch(hq, $('#hres')); });
+    hq.addEventListener('keydown', ev => { if (ev.key === 'Enter') { const b = $('#hres button'); if (b) { ev.preventDefault(); b.click(); } } });
+  },
+  update(el) {
+    const M = model();
+    const ready = S.status === 'ready' || S.status === 'empty';
+    const tries = [['c-memory', null], ['c-attention', null], ['c-aud-deviance', null], [null, 'm-n400'], [null, 'm-alpha']];
+    $('#ov-tries').innerHTML = '<span>Try:</span>' + tries.map(t => {
+      if (t[0] && M.cById.has(t[0])) return '<button data-act="open-construct" data-id="' + t[0] + '">' + esc(M.cById.get(t[0]).name) + '</button>';
+      if (t[1] && M.mById.has(t[1])) return '<button data-act="open-measure" data-id="' + t[1] + '">' + esc(short(M.mById.get(t[1]))) + '</button>';
+      return '';
+    }).join('');
+    const tiles = FEATURED.map(id => {
+      const cs = M.constructs.filter(c => famOf(c) === id);
+      if (ready && !cs.length) return '';
+      return '<button class="tile" data-act="family" data-fam="' + id + '"><b>' + esc(FAM[id].label) + '</b><span class="d">' + esc(FAM[id].desc) + '</span><span class="n">' + (ready ? plural(cs.length, 'topic') : 'Loading…') + '</span></button>';
+    }).join('');
+    $('#ov-tiles').innerHTML = tiles;
+    $('#ov-foot').innerHTML = ready
+      ? '<span>Built from ' + plural(M.sources.length, 'research paper') + ': ' + plural(M.entries.length, 'link') + ' between ' + plural(M.constructs.length, 'topic') + ' and ' + plural(M.measures.length, 'EEG signal') + '.</span><button class="link" data-act="go" data-route="sources">See the papers</button>' +
+        (S.static && S.static.repo ? '<a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">Source on GitHub ↗</a>' : '')
+      : (S.status === 'connecting' ? '<span>Loading the knowledge base…</span>' : '<span>The knowledge base did not load. Open this page from claude.ai while signed in.</span>');
+  }
+};
+
+V.constructs = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Topics</h2></div><p>Pick a topic from the list to see which EEG signals the papers link to it. Researchers call these topics <i>constructs</i>.</p></div>' +
+      '<div class="cv"><nav class="panel cnav" aria-label="Topic list"><div class="nav-tools">' +
+        '<input id="cv-q" type="search" placeholder="Filter topics" aria-label="Filter topics" autocomplete="off">' +
+        '<select id="cv-fam" aria-label="Topic area"></select></div><div id="cv-nav"></div></nav>' +
+      '<section class="panel" id="cv-detail" aria-live="polite"></section></div>';
+  },
+  update(el) {
+    const M = model();
+    const counts = {};
+    M.constructs.forEach(c => { counts[famOf(c)] = (counts[famOf(c)] || 0) + 1; });
+    const fam = $('#cv-fam');
+    if (S.cFam !== 'all' && !counts[S.cFam] && M.constructs.length) S.cFam = 'all';
+    fam.innerHTML = '<option value="all">All areas (' + M.constructs.length + ')</option>' + FAMILIES.filter(f => counts[f.id]).map(f => '<option value="' + f.id + '">' + esc(f.label) + ' (' + counts[f.id] + ')</option>').join('');
+    fam.value = S.cFam;
+    const qi = $('#cv-q'); if (qi.value !== S.cq && document.activeElement !== qi) qi.value = S.cq;
+    const ql = S.cq.trim().toLowerCase();
+    const list = M.constructs.filter(c => (S.cFam === 'all' || famOf(c) === S.cFam) && (!ql || [c.name, c.definition].join(' ').toLowerCase().includes(ql)));
+    if (!S.selC || !M.cById.has(S.selC) || (S.cFam !== 'all' && famOf(M.cById.get(S.selC)) !== S.cFam)) {
+      const pref = list.find(c => c.id === 'c-memory') || list[0];
+      S.selC = pref ? pref.id : null;
+    }
+    let nav = '', lastF = null;
+    list.forEach(c => {
+      const f = famOf(c);
+      if (f !== lastF) { nav += '<h4>' + esc(FAM[f].label) + '</h4>'; lastF = f; }
+      const n = (M.measOfC.get(c.id) || []).length;
+      nav += '<button data-act="sel-construct" data-id="' + esc(c.id) + '" aria-current="' + (c.id === S.selC) + '"><span>' + esc(c.name) + '</span><span class="n" title="' + plural(n, 'linked signal') + '">' + n + '</span></button>';
+    });
+    $('#cv-nav').innerHTML = nav || (M.constructs.length ? '<p class="small muted" style="padding:8px">No topic matches “' + esc(S.cq) + '”.</p>' : emptyState('Topics'));
+    const c = S.selC ? M.cById.get(S.selC) : null;
+    $('#cv-detail').innerHTML = c ? constructDetail(c, M) : emptyState('Topic details');
+  }
+};
+function constructDetail(c, M) {
+  const es = M.byC.get(c.id) || [];
+  const ms = measFor(M, c.id);
+  const sigs = uniq(ms.map(sigOf));
+  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span>' + contribChip(c.provenance) + '</div><h2>' + esc(c.name) + '</h2>' +
+    (c.definition ? '<p class="cd-def">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') + '</div>';
+  if (!ms.length) {
+    h += '<div class="empty">No EEG signal is linked to this topic yet. <button class="link" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest the first link</button></div>';
+    return h;
+  }
+  const srcN = uniq(es.map(e => e.sourceId).filter(Boolean)).length;
+  h += '<p class="insum">' + (ms.length === 1
+    ? 'The papers link <b>one EEG signal</b> to this topic'
+    : 'The papers link <b>' + ms.length + ' EEG signals</b> to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Click a signal to see how it is measured.</p>';
+  h += '<div class="sec">';
+  ms.forEach(m => {
+    const mes = es.filter(e => e.measureId === m.id);
+    const best = mes.slice().sort((a, b) => (CLAIM[b.claimType] || CLAIM.attributed).rank - (CLAIM[a.claimType] || CLAIM.attributed).rank)[0];
+    h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
+      '<span class="small muted">' + esc(m.spec || '') + '</span></div>' +
+      '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
+  });
+  h += '</div>';
+  const shared = ms.map(m => ({m: m, others: consFor(M, m.id).filter(x => x.id !== c.id)})).filter(x => x.others.length);
+  if (shared.length) {
+    h += '<div class="callout warn"><b>Heads up: ' + (shared.length === 1 ? esc(short(shared[0].m)) + ' is' : shared.length + ' of these signals are') + ' also linked to other topics</b><span>A change in ' + (shared.length === 1 ? 'it' : 'them') + ' does not prove ' + esc(c.name.toLowerCase()) + ' on its own. A good design includes a condition that rules the other topics out.</span></div>';
+    h += '<details class="more-d"><summary>Which other topics<span class="hint">' + plural(shared.length, 'signal') + '</span></summary><ul class="srcd warnl">' + shared.map(x =>
+      '<li><b>' + esc(short(x.m)) + '</b> is also linked to ' + x.others.map(o => '<button class="link" data-act="open-construct" data-id="' + esc(o.id) + '">' + esc(o.name) + '</button>').join(', ') + '</li>').join('') + '</ul></details>';
+  } else if (ms.length === 1) {
+    h += '<div class="callout"><b>Only one signal so far</b><span>These papers link a single EEG signal to this topic, so treat the link as a starting point and pair it with a behavioural measure.</span></div>';
+  }
+  const beh = uniq(es.map(e => e.behaviour).filter(Boolean));
+  h += '<details class="more-d"><summary>Evidence from the papers<span class="hint">' + plural(es.length, 'link') + ' with page numbers</span></summary>' +
+    (beh.length ? '<p class="small"><b>Behaviour measured alongside:</b> ' + esc(beh.join('; ')) + '</p>' : '') +
+    '<p class="small muted">' + (ms.length > 1 && sigs.length > 1 ? 'Both ERPs and brain rhythms are linked, so a study could record both for converging evidence.' : 'All linked signals are ' + SIG[sigs[0]].many + '.') + '</p>' +
+    '<div class="entries">' + es.map(e => entryCard(e, M, {showMeasure: true})).join('') + '</div></details>';
+  h += '<div class="btns"><button class="btn primary" data-act="plan-c" data-id="' + esc(c.id) + '">Plan a study on this topic</button><button class="btn ghost" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest a link</button></div>';
+  return h;
+}
+
+V.measures = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>EEG signals</h2></div><p>Every EEG signal in the knowledge base, with when and where on the head it is measured. Click a card for the full details.</p></div>' +
+      '<div class="toolbar">' +
+        '<input id="mf-q" class="grow" type="search" placeholder="Search by name, topic or electrode" aria-label="Search signals">' +
+        '<div class="seg" role="group" aria-label="Signal type" id="mf-sig"></div>' +
+      '</div>' +
+      '<details class="more-d" id="mf-more"><summary>More filters<span class="hint">topic area, paper, sort order, spreadsheet view</span></summary><div class="toolbar">' +
+        '<select id="mf-fam" aria-label="Topic area"></select>' +
+        '<select id="mf-src" aria-label="Paper"></select>' +
+        '<select id="mf-sort" aria-label="Sort"><option value="index">Default order</option><option value="entries">Most links</option><option value="constructs">Most topics</option><option value="sources">Most papers</option><option value="az">A–Z</option></select>' +
+        '<div class="seg" role="group" aria-label="View" id="mf-view"></div>' +
+      '</div></details>' +
+      '<div class="resinfo" id="mf-info"></div><div id="mv-out"></div>';
+  },
+  update(el) {
+    const M = model(), f = S.mf;
+    const q = $('#mf-q'); if (q && q.value !== f.q && document.activeElement !== q) q.value = f.q;
+    $('#mf-sig').innerHTML = [['all', 'All'], ['time', 'ERPs'], ['freq', 'Brain rhythms'], ['phase', 'Rhythm coupling']].map(o => '<button data-act="mf-sig" data-v="' + o[0] + '" aria-pressed="' + (f.signal === o[0]) + '">' + o[1] + '</button>').join('');
+    $('#mf-view').innerHTML = [['cards', 'Cards'], ['table', 'Spreadsheet']].map(o => '<button data-act="mf-view" data-v="' + o[0] + '" aria-pressed="' + (f.view === o[0]) + '">' + o[1] + '</button>').join('');
+    const fam = $('#mf-fam');
+    fam.innerHTML = '<option value="all">All topic areas</option>' + FAMILIES.filter(x => M.constructs.some(c => famOf(c) === x.id)).map(x => '<option value="' + x.id + '">' + esc(x.label) + '</option>').join('');
+    fam.value = f.family; if (fam.value !== f.family) { f.family = 'all'; fam.value = 'all'; }
+    const srcSel = $('#mf-src');
+    srcSel.innerHTML = '<option value="all">All papers</option>' + M.sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.short) + '</option>').join('');
+    srcSel.value = f.source; if (srcSel.value !== f.source) { f.source = 'all'; srcSel.value = 'all'; }
+    $('#mf-sort').value = f.sort;
+    const ql = f.q.trim().toLowerCase();
+    let ms = M.measures.filter(m => {
+      if (f.signal !== 'all' && sigOf(m) !== f.signal) return false;
+      if (f.site && !sitesOf(m).includes(f.site)) return false;
+      if (f.source !== 'all' && !srcIdsForM(M, m.id).includes(f.source)) return false;
+      if (f.family !== 'all' && !consFor(M, m.id).some(c => famOf(c) === f.family)) return false;
+      if (ql) {
+        const hay = [m.name, m.short, m.spec, m.domain].concat(arr(m.aka), arr(m.caveats).map(x => x.t), sitesOf(m), consFor(M, m.id).map(c => c.name)).join(' ').toLowerCase();
+        if (!hay.includes(ql)) return false;
+      }
+      return true;
+    });
+    const nE = m => (M.byM.get(m.id) || []).length, nC = m => (M.consOfM.get(m.id) || []).length, nS = m => srcIdsForM(M, m.id).length;
+    if (f.sort === 'entries') ms.sort((a, b) => nE(b) - nE(a) || a.name.localeCompare(b.name));
+    else if (f.sort === 'constructs') ms.sort((a, b) => nC(b) - nC(a) || a.name.localeCompare(b.name));
+    else if (f.sort === 'sources') ms.sort((a, b) => nS(b) - nS(a) || a.name.localeCompare(b.name));
+    else if (f.sort === 'az') ms.sort((a, b) => a.name.localeCompare(b.name));
+    if ((f.family !== 'all' || f.source !== 'all' || f.sort !== 'index' || f.view !== 'cards') && $('#mf-more')) $('#mf-more').open = true;
+    $('#mf-info').innerHTML = '<span>Showing ' + ms.length + ' of ' + M.measures.length + ' signals</span>' +
+      (f.site ? '<button class="chip" data-act="clear-site">Recorded at ' + esc(f.site) + ' ✕</button>' : '');
+    const out = $('#mv-out');
+    if (!M.measures.length) { out.innerHTML = emptyState('Measures'); return; }
+    if (!ms.length) { out.innerHTML = '<div class="empty"><b>No signals match.</b><span>Clear the search, or pick All above.</span></div>'; return; }
+    if (f.view === 'table') {
+      out.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th style="width:18%">EEG Measure</th><th style="width:8%">Domain</th><th style="width:20%">Specification (band/component, window, site)</th><th style="width:18%">Constructs it has been attributed to (auto, from Entries)</th><th style="width:6%"># Entries in database</th><th style="width:18%">Key caveat</th><th>Sources</th></tr></thead><tbody>' +
+        ms.map(m => { const cv = arr(m.caveats)[0]; return '<tr data-act="open-measure" data-id="' + esc(m.id) + '" tabindex="0"><td><b>' + esc(m.name) + '</b></td><td>' + esc(m.domain || SIG[sigOf(m)].label) + '</td><td>' + esc(m.spec) + '</td><td>' + esc(consFor(M, m.id).map(c => c.name).join('; ')) + '</td><td class="num">' + nE(m) + '</td><td>' + (cv ? esc(cv.t) + ' <span class="note">(' + esc(refText(cv.refs)) + ')</span>' : '<span class="muted">None recorded</span>') + '</td><td>' + esc(srcIdsForM(M, m.id).map(id => (M.sById.get(id) || {}).short || id).join('; ')) + '</td></tr>'; }).join('') +
+        '</tbody></table></div><p class="note" style="margin-top:8px">Entries whose measure is not on this index (should be 0): <b class="mono">' + M.orphanM.length + '</b></p>';
+    } else {
+      out.innerHTML = '<div class="mgrid">' + ms.map(m => mcard(m, M)).join('') + '</div>';
+    }
+  }
+};
+
+V.map = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Topic–signal map</h2></div><p>Each line links a topic (left) to an EEG signal (right), drawn by the strongest link between them. Hover a name to trace its lines; click to pin it.</p></div>' +
+      '<div class="fams" id="mp-fams"></div>' +
+      '<div class="mapgrid"><div class="map-wrap" id="mp-wrap"></div><div class="mp-side"><div class="panel" id="mp-info"></div><div class="panel"><h3>Legend</h3><div class="mp-legend">' +
+        '<span><svg width="34" height="8" aria-hidden="true"><line x1="2" y1="4" x2="32" y2="4" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/></svg>Causal test</span>' +
+        '<span><svg width="34" height="8" aria-hidden="true"><line x1="2" y1="4" x2="32" y2="4" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></svg>Stated by the paper</span>' +
+        '<span><svg width="34" height="8" aria-hidden="true"><line x1="2" y1="4" x2="32" y2="4" stroke="var(--time)" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></svg>Used to infer</span>' +
+        '<span><svg width="34" height="8" aria-hidden="true"><line x1="2" y1="4" x2="32" y2="4" stroke="var(--ink-3)" stroke-width="1.4" stroke-dasharray="5 4"/></svg>Hypothesis or debated</span>' +
+        '<span><svg width="34" height="10" aria-hidden="true"><circle cx="6" cy="5" r="4" fill="var(--time)"/><circle cx="17" cy="5" r="4" fill="var(--freq)"/><circle cx="28" cy="5" r="4" fill="var(--phase)"/></svg>ERP · Brain rhythm · Rhythm coupling</span>' +
+      '</div></div></div></div>' +
+      '<div class="two"><div class="panel"><h3>Measures linked to the most constructs</h3><p class="small muted">Least specific first. Results that rely on these need designs that separate the constructs.</p><ul class="rank" id="mp-broad"></ul></div><div class="panel"><h3>Constructs with only one EEG measure</h3><p class="small muted">No converging EEG evidence in these sources yet.</p><ul class="rank" id="mp-single"></ul></div></div>';
+    const wrap = $('#mp-wrap');
+    wrap.addEventListener('mouseover', ev => { const n = ev.target.closest('.nd'); if (n && !S.mapPin) highlight(n.getAttribute('data-c') ? {c: n.getAttribute('data-c')} : {m: n.getAttribute('data-m')}); });
+    wrap.addEventListener('mouseout', ev => { const n = ev.target.closest('.nd'); if (n && !S.mapPin && !(ev.relatedTarget && n.contains(ev.relatedTarget))) highlight(null); });
+    wrap.addEventListener('focusin', ev => { const n = ev.target.closest('.nd'); if (n && !S.mapPin) highlight(n.getAttribute('data-c') ? {c: n.getAttribute('data-c')} : {m: n.getAttribute('data-m')}); });
+  },
+  update(el) {
+    const M = model();
+    const counts = {};
+    M.constructs.forEach(c => { if ((M.measOfC.get(c.id) || []).length) counts[famOf(c)] = (counts[famOf(c)] || 0) + 1; });
+    if (S.mapFam !== 'all' && !counts[S.mapFam]) S.mapFam = 'all';
+    $('#mp-fams').innerHTML = '<button class="fam" data-act="mapfam" data-fam="all" aria-pressed="' + (S.mapFam === 'all') + '">All domains</button>' +
+      FAMILIES.filter(f => counts[f.id]).map(f => '<button class="fam" data-act="mapfam" data-fam="' + f.id + '" aria-pressed="' + (S.mapFam === f.id) + '">' + esc(f.label) + '<span class="n">' + counts[f.id] + '</span></button>').join('');
+    $('#mp-wrap').innerHTML = M.entries.length ? mapSVG(M) : '<div style="padding:16px">' + emptyState('The map') + '</div>';
+    if (S.mapPin && !((S.mapPin.c && M.cById.has(S.mapPin.c)) || (S.mapPin.m && M.mById.has(S.mapPin.m)))) S.mapPin = null;
+    highlight(S.mapPin);
+    renderMapInfo(M);
+    const broad = M.measures.map(m => ({m: m, n: (M.consOfM.get(m.id) || []).length})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || a.m.name.localeCompare(b.m.name)).slice(0, 8);
+    $('#mp-broad').innerHTML = broad.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(x.m.name) + '</button><span class="n">' + plural(x.n, 'construct') + '</span></li>').join('') || '<li class="muted">No entries yet.</li>';
+    const single = M.constructs.filter(c => (M.measOfC.get(c.id) || []).length === 1);
+    $('#mp-single').innerHTML = single.slice(0, 14).map(c => '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="n">' + esc(short(measFor(M, c.id)[0])) + '</span></li>').join('') +
+      (single.length > 14 ? '<li class="muted small">and ' + (single.length - 14) + ' more</li>' : '') || '<li class="muted">Every construct has two or more measures.</li>';
+  }
+};
+function linkClass(t, prov) {
+  if (prov === 'contributed') return 'contributed';
+  if (t === 'causal') return 'causal';
+  if (t === 'inferred') return 'inferred';
+  if (t === 'hypothesis' || t === 'debated') return 'tentative';
+  return 'attributed';
+}
+function mapSVG(M) {
+  let cons = M.constructs.filter(c => (M.measOfC.get(c.id) || []).length);
+  if (S.mapFam !== 'all') cons = cons.filter(c => famOf(c) === S.mapFam);
+  const mids = new Set();
+  cons.forEach(c => (M.measOfC.get(c.id) || []).forEach(id => mids.add(id)));
+  const meas = M.measures.filter(m => mids.has(m.id));
+  const left = [], right = [];
+  FAMILIES.forEach(f => { const cs = cons.filter(c => famOf(c) === f.id); if (cs.length) { left.push({grp: f.label}); cs.forEach(c => left.push({c: c})); } });
+  ['time', 'freq', 'phase'].forEach(s => { const ms = meas.filter(m => sigOf(m) === s); if (ms.length) { right.push({grp: SIG[s].label}); ms.forEach(m => right.push({m: m})); } });
+  const rowH = 22, grpH = 30, top = 14;
+  const colH = rows => rows.reduce((h, r) => h + (r.grp ? grpH : rowH), 0);
+  const H = Math.max(colH(left), colH(right)) + top * 2;
+  const place = rows => {
+    const nodes = rows.filter(r => !r.grp).length;
+    const gap = nodes > 0 ? (H - top * 2 - colH(rows)) / nodes : 0;
+    let y = top;
+    rows.forEach(r => { if (r.grp) { r.y = y + 20; y += grpH; } else { r.y = y + (rowH + gap) / 2; y += rowH + gap; } });
+  };
+  place(left); place(right);
+  const W = 1100, lx = 372, rx = 728;
+  const yC = new Map(), yM = new Map();
+  left.forEach(r => { if (r.c) yC.set(r.c.id, r.y); });
+  right.forEach(r => { if (r.m) yM.set(r.m.id, r.y); });
+  const pairs = new Map();
+  M.entries.forEach(e => {
+    if (!yC.has(e.constructId) || !yM.has(e.measureId)) return;
+    const k = e.constructId + '|' + e.measureId, p = pairs.get(k);
+    const r = (CLAIM[e.claimType] || CLAIM.attributed).rank;
+    if (!p) pairs.set(k, {c: e.constructId, m: e.measureId, t: e.claimType, r: r, prov: e.provenance});
+    else if (r > p.r) { p.t = e.claimType; p.r = r; p.prov = e.provenance; }
+  });
+  let s = '<svg class="map" id="map-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Links between ' + cons.length + ' constructs and ' + meas.length + ' EEG measures">';
+  const mx = (lx + rx) / 2;
+  Array.from(pairs.values()).sort((a, b) => a.r - b.r).forEach(L => {
+    const y1 = yC.get(L.c).toFixed(1), y2 = yM.get(L.m).toFixed(1);
+    s += '<path class="lk ' + linkClass(L.t, L.prov) + '" data-c="' + esc(L.c) + '" data-m="' + esc(L.m) + '" d="M' + (lx + 10) + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + (rx - 10) + ' ' + y2 + '"/>';
+  });
+  left.forEach(r => {
+    if (r.grp) { s += '<text class="grp" x="' + (lx + 10) + '" y="' + r.y + '" text-anchor="end">' + esc(r.grp.toUpperCase()) + '</text>'; return; }
+    const c = r.c;
+    s += '<g class="nd" data-c="' + esc(c.id) + '" tabindex="0" role="button" aria-label="' + esc(c.name) + '"><title>' + esc(c.name) + '</title>' +
+      '<rect class="hit" x="0" y="' + (r.y - 10).toFixed(1) + '" width="' + (lx + 18) + '" height="20" rx="4"/>' +
+      '<text x="' + lx + '" y="' + (r.y + 4.5).toFixed(1) + '" text-anchor="end">' + esc(c.name.length > 50 ? c.name.slice(0, 48) + '…' : c.name) + '</text><circle cx="' + (lx + 10) + '" cy="' + r.y.toFixed(1) + '" r="4.5"/></g>';
+  });
+  right.forEach(r => {
+    if (r.grp) { s += '<text class="grp" x="' + (rx - 10) + '" y="' + r.y + '">' + esc(r.grp.toUpperCase()) + '</text>'; return; }
+    const m = r.m;
+    s += '<g class="nd ' + sigK(m) + '" data-m="' + esc(m.id) + '" tabindex="0" role="button" aria-label="' + esc(m.name) + '"><title>' + esc(m.name) + '</title>' +
+      '<rect class="hit" x="' + (rx - 18) + '" y="' + (r.y - 10).toFixed(1) + '" width="' + (W - rx + 18) + '" height="20" rx="4"/>' +
+      '<circle cx="' + (rx - 10) + '" cy="' + r.y.toFixed(1) + '" r="5"/><text x="' + rx + '" y="' + (r.y + 4.5).toFixed(1) + '">' + esc(short(m)) + '</text></g>';
+  });
+  return '<div class="map-cols"><span class="eyebrow">Constructs</span><span class="eyebrow">EEG measures</span></div>' + s + '</svg>';
+}
+function highlight(key) {
+  const svg = $('#map-svg'); if (!svg) return;
+  $$('.on', svg).forEach(n => n.classList.remove('on'));
+  if (!key) { svg.classList.remove('dim'); return; }
+  svg.classList.add('dim');
+  const cs = new Set(), ms = new Set();
+  if (key.c) cs.add(key.c); if (key.m) ms.add(key.m);
+  $$('.lk', svg).forEach(l => {
+    if ((key.c && l.getAttribute('data-c') === key.c) || (key.m && l.getAttribute('data-m') === key.m)) {
+      l.classList.add('on'); cs.add(l.getAttribute('data-c')); ms.add(l.getAttribute('data-m'));
+    }
+  });
+  $$('.nd', svg).forEach(n => {
+    const c = n.getAttribute('data-c'), m = n.getAttribute('data-m');
+    if ((c && cs.has(c)) || (m && ms.has(m))) n.classList.add('on');
+  });
+}
+function renderMapInfo(M) {
+  const box = $('#mp-info'); if (!box) return;
+  const p = S.mapPin;
+  if (p && p.m && M.mById.has(p.m)) {
+    const m = M.mById.get(p.m), cs = consFor(M, m.id), es = M.byM.get(m.id) || [];
+    box.innerHTML = '<div class="chips">' + sigChip(m) + '</div><h3>' + esc(m.name) + '</h3>' +
+      '<ul class="rank">' + cs.map(c => '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="n">' + claimSummary(es.filter(e => e.constructId === c.id)) + '</span></li>').join('') + '</ul>' +
+      '<div class="btns"><button class="btn sm primary" data-act="open-measure" data-id="' + esc(m.id) + '">Open measure</button><button class="btn sm" data-act="unpin">Clear</button></div>';
+  } else if (p && p.c && M.cById.has(p.c)) {
+    const c = M.cById.get(p.c), ms = measFor(M, c.id), es = M.byC.get(c.id) || [];
+    box.innerHTML = '<div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span></div><h3>' + esc(c.name) + '</h3>' +
+      '<ul class="rank">' + ms.map(m => '<li><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button><span class="n">' + claimSummary(es.filter(e => e.measureId === m.id)) + '</span></li>').join('') + '</ul>' +
+      '<div class="btns"><button class="btn sm primary" data-act="open-construct" data-id="' + esc(c.id) + '">Open construct</button><button class="btn sm" data-act="unpin">Clear</button></div>';
+  } else {
+    const links = new Set(M.entries.map(e => e.constructId + '|' + e.measureId)).size;
+    box.innerHTML = '<h3>Read the map</h3><p class="small muted">' + plural(links, 'link') + ' between ' + plural(M.constructs.filter(c => (M.measOfC.get(c.id) || []).length).length, 'construct') + ' and ' + plural(M.measures.filter(m => (M.consOfM.get(m.id) || []).length).length, 'measure') + '. Click any name to pin it and list its links here.</p>' +
+      '<p class="small muted">Try <button class="link" data-act="pin" data-m="m-alpha">Alpha power</button> or <button class="link" data-act="pin" data-c="c-memory">Memory processes</button>.</p>';
+  }
+}
+
+V.planner = {
+  mount(el) {
+    const radios = (name, opts, cur) => '<div class="radios">' + Object.keys(opts).map(k => '<label class="radio"><input type="radio" name="' + name + '" value="' + k + '"' + (k === cur ? ' checked' : '') + '><span>' + esc(opts[k]) + '</span></label>').join('') + '</div>';
+    el.innerHTML = '<div class="sh"><div><h2>Plan a study</h2></div><p>Answer three questions. You get the EEG signals that fit, ranked, plus a design checklist drawn from the papers.</p></div>' +
+      '<div class="pl"><form class="panel pl-form" id="pl-form" onsubmit="return false">' +
+        '<div class="field"><label for="pl-c">1. What do you want to study?</label><select id="pl-c"></select></div>' +
+        '<fieldset><legend>2. Who are your participants?</legend>' + radios('pl-pop', POP, S.plan.pop) + '</fieldset>' +
+        '<fieldset><legend>3. Will participants do a task?</legend>' + radios('pl-para', PARA, S.plan.para) + '</fieldset>' +
+        '<p class="note">A green tick appears only where a paper says so, for example that the MMN can be recorded without a task. Anything a paper does not say is left blank rather than guessed.</p>' +
+      '</form><div class="pl-out" id="pl-out"></div></div>';
+  },
+  update(el) {
+    const M = model();
+    const sel = $('#pl-c');
+    if (!S.plan.c || !M.cById.has(S.plan.c)) S.plan.c = M.cById.has('c-aud-deviance') ? 'c-aud-deviance' : (M.constructs[0] ? M.constructs[0].id : '');
+    let opts = '';
+    FAMILIES.forEach(f => {
+      const cs = M.constructs.filter(c => famOf(c) === f.id);
+      if (!cs.length) return;
+      opts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>';
+    });
+    sel.innerHTML = opts || '<option value="">No constructs loaded</option>';
+    sel.value = S.plan.c;
+    $('#pl-out').innerHTML = planHTML(M);
+  }
+};
+function planCands(M, cid) {
+  const es = M.byC.get(cid) || [];
+  return uniq(es.map(e => e.measureId)).map(mid => {
+    const m = M.mById.get(mid); if (!m) return null;
+    const f = m.feasibility || {};
+    const fits = [], misses = [];
+    const fref = refText(f.refs);
+    if (S.plan.para === 'passive') { if (f.passive === true) fits.push(['Works without a task', fref]); else if (f.passive === false) misses.push(['Needs a task', fref]); }
+    if (S.plan.para === 'active' && f.passive === false) fits.push(['Task-based', fref]);
+    if (S.plan.pop === 'infants' && f.infants === true) fits.push(['Used with infants', fref]);
+    const mes = es.filter(e => e.measureId === mid);
+    const srcs = uniq(mes.map(e => e.sourceId).filter(Boolean));
+    const others = consFor(M, mid).filter(c => c.id !== cid);
+    const best = Math.max.apply(null, mes.map(e => (CLAIM[e.claimType] || CLAIM.attributed).rank));
+    const pops = uniq((M.byM.get(mid) || []).map(e => e.population).filter(Boolean));
+    const score = srcs.length * 2 + mes.length + (best >= 4 ? 1 : 0) + fits.length - misses.length * 4 - others.length * 0.2;
+    return {m: m, mes: mes, srcs: srcs, fits: fits, misses: misses, others: others, pops: pops, score: score};
+  }).filter(Boolean).sort((a, b) => b.score - a.score || a.m.name.localeCompare(b.m.name));
+}
+function planData(M) {
+  const c = M.cById.get(S.plan.c);
+  if (!c) return null;
+  const cands = planCands(M, c.id);
+  const fit = cands.filter(x => !x.misses.length), miss = cands.filter(x => x.misses.length);
+  const sigs = uniq(fit.map(x => sigOf(x.m)));
+  let conv;
+  if (!cands.length) conv = 'No EEG measure is linked to this construct in the sources yet.';
+  else if (!fit.length) conv = 'None of the linked measures suits this paradigm according to the sources.';
+  else if (fit.length === 1) conv = 'Only one linked measure (' + short(fit[0].m) + '). Pair it with a behavioural outcome and treat the EEG result as provisional.';
+  else if (sigs.includes('time') && sigs.some(s => s !== 'time')) {
+    const a = fit.find(x => sigOf(x.m) === 'time'), b = fit.find(x => sigOf(x.m) !== 'time');
+    conv = 'Both an ERP and an oscillatory measure are linked, for example ' + short(a.m) + ' and ' + short(b.m) + '. Recording both allows converging evidence.';
+  } else conv = 'All linked measures are ' + SIG[sigs[0]].label.toLowerCase() + ' measures; a behavioural outcome or a measure from another signal domain would add converging evidence.';
+  const es = M.byC.get(c.id) || [];
+  const beh = uniq(es.map(e => e.behaviour).filter(Boolean));
+  const top = fit.slice(0, 2);
+  const mMethods = [];
+  top.forEach(x => arr(x.m.methods).concat(arr(x.m.caveats)).forEach(t => mMethods.push({m: short(x.m), t: t.t, refs: t.refs})));
+  return {c: c, cands: cands, fit: fit, miss: miss, conv: conv, beh: beh, mMethods: mMethods, guidance: M.guidance};
+}
+function candHTML(x, i, c) {
+  const m = x.m;
+  return '<article class="cand' + (x.misses.length ? ' miss' : '') + '"><div class="cand-top"><span>' + (x.misses.length ? '' : '<span class="rk">#' + (i + 1) + '</span>') + '<button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button></span><span class="chips">' + sigChip(m) + claimSummary(x.mes) + '</span></div>' +
+    '<div class="cand-viz"><div class="viz">' + scalp(m, 56, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + '</div></div></div>' +
+    '<div class="badges">' + x.fits.map(t => '<span class="bdg ok" title="' + esc(t[1]) + '">✓ ' + esc(t[0]) + '</span>').join('') + x.misses.map(t => '<span class="bdg no" title="' + esc(t[1]) + '">✕ ' + esc(t[0]) + '</span>').join('') +
+    '<span class="bdg">' + plural(x.mes.length, 'link') + ' · ' + plural(x.srcs.length, 'paper') + '</span>' +
+    (x.pops.length ? '<span class="bdg" title="Populations named in this signal\'s links">Studied in: ' + esc(x.pops.join('; ')) + '</span>' : '') + '</div></div>' +
+    (x.others.length ? '<p class="small muted">Also linked to ' + x.others.map(o => esc(o.name)).join(', ') + '. Include a condition that separates these from ' + esc(c.name.toLowerCase()) + '.</p>' : '') + '</article>';
+}
+function planHTML(M) {
+  const P = planData(M);
+  if (!P) return emptyState('Study plans');
+  const c = P.c;
+  let h = '<div class="panel"><div class="eyebrow">Your plan · ' + esc(POP[S.plan.pop]) + ' · ' + esc(PARA[S.plan.para]) + '</div><h2>' + esc(c.name) + '</h2>' + (c.definition ? '<p class="muted">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') +
+    '<div class="callout"><b>Tip</b><span>' + esc(P.conv) + '</span></div></div>';
+  h += '<div class="sec"><h3>Signals that fit, best first<span class="count">' + P.fit.length + '</span></h3>' + (P.fit.length ? '<div class="cands">' + P.fit.map((x, i) => candHTML(x, i, c)).join('') + '</div>' : '<div class="empty">According to the papers, none of the linked signals suits this kind of study.</div>') + '</div>';
+  if (P.miss.length) h += '<div class="panel"><details class="more-d" style="border:0;padding:0"><summary>Linked, but these need a task<span class="hint">' + P.miss.length + '</span></summary><div class="cands">' + P.miss.map((x, i) => candHTML(x, i, c)).join('') + '</div></details></div>';
+  h += '<div class="panel"><details class="more-d" style="border:0;padding:0"><summary>Behaviour to measure alongside<span class="hint">from the papers</span></summary>' + (P.beh.length ? '<div class="chips">' + P.beh.map(a => '<span class="chip">' + esc(a) + '</span>').join('') + '</div>' : '<p class="muted small">None recorded for this topic.</p>') + '</details>' +
+    (P.mMethods.length ? '<details class="more-d"><summary>Cautions and method tips for the top signals<span class="hint">' + P.mMethods.length + '</span></summary><ul class="srcd">' + P.mMethods.map(x => '<li><b>' + esc(x.m) + ':</b> ' + esc(x.t) + ' ' + refHTML(x.refs) + '</li>').join('') + '</ul></details>' : '') +
+    '<details class="more-d"><summary>Design checklist<span class="hint">' + plural(P.guidance.length, 'item') + ' from the papers</span></summary><p class="small muted">Ticks are not saved.</p><div class="checklist">' + P.guidance.map((g, i) => '<label><input type="checkbox" id="chk-' + i + '"><span><span class="tag">' + esc(g.topic || '') + '</span>' + esc(g.t) + ' ' + refHTML(g.refs) + '</span></label>').join('') + '</div></details></div>';
+  h += '<div class="btns"><button class="btn primary" data-act="copy-plan">Copy plan as text</button><button class="btn ghost" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest a link for this topic</button></div>';
+  return h;
+}
+function planText(M) {
+  const P = planData(M); if (!P) return '';
+  const L = [];
+  L.push('STUDY PLAN: ' + P.c.name);
+  L.push('From the EEG Construct–Measure Knowledge Base, ' + today());
+  L.push('Participants: ' + POP[S.plan.pop] + ' | Paradigm: ' + PARA[S.plan.para]);
+  L.push('');
+  L.push('LINKED EEG MEASURES (ranked)');
+  P.fit.forEach((x, i) => {
+    L.push((i + 1) + '. ' + x.m.name + ' [' + (x.m.domain || SIG[sigOf(x.m)].label) + ']');
+    L.push('   Specification: ' + x.m.spec);
+    x.mes.forEach(e => L.push('   - ' + (CLAIM[e.claimType] || CLAIM.attributed).label + ': ' + e.claim + ' (' + refText([{s: e.sourceId, p: e.pages}]) + ')'));
+    if (x.others.length) L.push('   Also linked to: ' + x.others.map(o => o.name).join('; '));
+  });
+  if (!P.fit.length) L.push('None suits this paradigm according to the sources.');
+  L.push('');
+  L.push('CONVERGING EVIDENCE: ' + P.conv);
+  L.push('BEHAVIOURAL OUTCOMES IN THE SOURCES: ' + (P.beh.join('; ') || 'none recorded'));
+  L.push('');
+  L.push('METHODS AND CAVEATS FOR THE TOP MEASURES');
+  P.mMethods.forEach(x => L.push('- ' + x.m + ': ' + x.t + ' (' + refText(x.refs) + ')'));
+  L.push('');
+  L.push('DESIGN AND REPORTING CHECKLIST');
+  P.guidance.forEach(g => L.push('[ ] ' + g.t + ' (' + refText(g.refs) + ')'));
+  L.push('');
+  L.push('SOURCES');
+  model().sources.forEach(s => L.push('- ' + s.cite + (s.doi ? ' https://doi.org/' + s.doi : '')));
+  return L.join('\n');
+}
+function preregText(m, M) {
+  const cs = consFor(M, m.id).map(c => c.name);
+  const b = bandsOf(m);
+  return [
+    'EEG MEASURE: ' + m.name,
+    'Domain: ' + (m.domain || SIG[sigOf(m)].label),
+    'Operationalization: ' + m.spec + (arr(m.specRefs).length ? ' (' + refText(m.specRefs) + ')' : ''),
+    'Time window: ' + (winOf(m) ? winText(m) : (sigOf(m) === 'time' ? '[specify; not given in the sources]' : 'n/a')),
+    'Frequency band(s): ' + (b.length ? b.map(bandText).join(', ') : (sigOf(m) === 'time' ? 'n/a' : '[specify; not given in the sources]')),
+    'Electrode sites: ' + (sitesOf(m).length ? sitesOf(m).join(', ') + (isInf(m, 'sites') ? ' [interpreted from a region named in the source; confirm]' : '') : '[specify; not given in the sources]') + (m.lateralized ? ' (contralateral minus ipsilateral)' : ''),
+    'Quantification: [mean amplitude in an a priori window / fractional-area latency / power]',
+    'Interpreted as indexing: [construct]. Also linked in the knowledge base to: ' + (cs.join('; ') || 'none'),
+    'Known caveats:',
+    ...arr(m.caveats).map(t => '- ' + t.t + ' (' + refText(t.refs) + ')'),
+    'Methods notes:',
+    ...arr(m.methods).map(t => '- ' + t.t + ' (' + refText(t.refs) + ')'),
+    '',
+    'Source: EEG Construct–Measure Knowledge Base, accessed ' + today() + '.'
+  ].join('\n');
+}
+
+V.learn = {
+  mount(el) {
+    const demo = {signal: 'time', sites: ['Fz', 'Cz', 'Pz', 'Oz', 'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'T7', 'T8']};
+    el.innerHTML = '<div class="learn">' +
+      '<div class="sh"><div><h2>EEG basics</h2></div><p>What you need to know to use this site, in about five minutes. <span class="bg-note">This page is general background written for the site. Everything else on the site comes from the six source papers.</span></p></div>' +
+      '<div class="panel"><h2>Two kinds of EEG signal</h2><p>EEG records tiny voltage changes through electrodes on the scalp. Researchers turn that recording into specific numbers. This site calls those numbers <b>EEG signals</b>; papers often call them <i>EEG measures</i>. Most fall into one of two kinds.</p>' +
+        '<div class="lgrid"><div class="lcard"><div class="chips"><span class="chip t">ERP</span></div><h3>Event-related potentials</h3><p>Average the EEG over many repeats of the same event, such as a tone or a picture, and a series of bumps appears. Each bump is a component. Its name gives its direction (P for positive, N for negative) and either its order or its rough timing: the P3 is the third positive peak, also called the P300, and the N400 is a negative peak near 400 ms. ERPs are measured in milliseconds after the event.</p></div>' +
+        '<div class="lcard"><div class="chips"><span class="chip f">Brain rhythm</span></div><h3>Oscillations</h3><p>The EEG also contains rhythmic activity at different speeds. Researchers measure how strong a rhythm is within a frequency band. From slowest to fastest the common bands are delta, theta, alpha, beta and gamma. Rhythms are measured in hertz (cycles per second). Band edges differ a little between papers, so each signal page shows the bands its papers use.</p></div></div>' +
+        '<div class="ex-trace">' + traceSVG() + '</div><p class="small muted">A schematic ERP recorded at three electrodes. Time 0 is the moment the stimulus appears; positive voltage is drawn upward. The highlighted area is the P3.</p></div>' +
+      '<div class="panel"><h2>Reading electrode names</h2><div class="elec"><div>' + scalp(demo, 210, true) + '</div><div class="sec"><p>Electrodes are named by the area of the head they sit over, using the international 10–20 system.</p>' +
+        '<dl class="letters"><dt>Fp</dt><dd>Frontopolar, on the forehead</dd><dt>F</dt><dd>Frontal</dd><dt>C</dt><dd>Central, on top of the head</dd><dt>T</dt><dd>Temporal, above the ears</dd><dt>P</dt><dd>Parietal, toward the back of the top</dd><dt>O</dt><dd>Occipital, at the back of the head</dd></dl>' +
+        '<p>A <b>z</b> means the midline. Odd numbers are on the left, even numbers on the right. So <b>Pz</b> sits on the midline over the parietal area, and <b>C3</b> sits over the left central area.</p>' +
+        '<p class="small muted">On signal pages, coloured dots show where a signal is measured. When a paper names only a region, such as "posterior sites", the site picks matching electrodes and marks them <span class="inf">inferred</span>.</p></div></div></div>' +
+      '<div class="panel"><h2>Three words used everywhere</h2><div class="lgrid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))">' +
+        '<div class="lcard"><h3>Topic</h3><p>The mental process a study wants to measure, such as working memory. Papers call this a <i>construct</i>.</p></div>' +
+        '<div class="lcard"><h3>EEG signal</h3><p>The number taken from the EEG, such as P3 amplitude or alpha power. Papers call this a <i>measure</i>.</p></div>' +
+        '<div class="lcard"><h3>Link</h3><p>One paper\'s statement that a signal relates to a topic, with the page number where it says so.</p></div></div></div>' +
+      '<div class="panel"><h2>How strong is a link?</h2><p>Every link carries a label saying how firmly the paper makes the claim, strongest first.</p><div class="claims">' +
+        ['causal', 'attributed', 'inferred', 'hypothesis', 'debated'].map(k => '<div><span>' + claimChip(k) + '</span><span>' + esc(CLAIM[k].tip) + '</span></div>').join('') + '</div>' +
+        '<p class="small muted">Some links carry a second label for the kind of evidence: <span class="chip ev">Animal or intracranial</span> means the finding comes from recordings in animals or inside the skull rather than scalp EEG. Stimulation studies and review-level summaries are labelled the same way.</p>' +
+        '<div class="callout warn"><b>One signal, several topics</b><span>Many signals are linked to more than one topic. When that happens, a change in the signal alone cannot tell you which topic is involved. The site flags this with a "Heads up" box so you can plan a design that separates them.</span></div></div>' +
+      '<div class="panel"><h2>Try it: a worked example</h2><ol class="walk" id="ln-walk"></ol></div>' +
+      '<div class="basics"><div><h3>Ready to start?</h3><p>Pick a topic and see which EEG signals the papers link to it.</p></div><button class="btn primary" data-act="family" data-fam="all">Browse topics</button></div>' +
+    '</div>';
+  },
+  update(el) {
+    const M = model();
+    const c = M.cById.get('c-aud-deviance'), m = M.mById.get('m-mmn');
+    const cB = c ? '<button class="link" data-act="open-construct" data-id="' + c.id + '">' + esc(c.name) + '</button>' : 'a topic';
+    const mB = m ? '<button class="link" data-act="open-measure" data-id="' + m.id + '">' + esc(short(m)) + '</button>' : 'one of its signals';
+    $('#ln-walk').innerHTML =
+      '<li><span>Open <b>Topics</b> and pick ' + cB + ', which sits under Hearing.</span></li>' +
+      '<li><span>Click the ' + mB + ' signal. The panel shows when it appears after a sound and where on the head it is measured.</span></li>' +
+      (m && m.feasibility && m.feasibility.passive === true
+        ? '<li><span>Check the green badges near the top. A paper notes that this signal can be recorded without a task, which matters if you study infants or patients.</span></li>'
+        : '<li><span>Read the short description at the top, then the list of topics the signal is linked to.</span></li>') +
+      '<li><span>Open <b>Evidence from the papers</b>. Each link ends with a page reference, written as author and page; click it to see the paper it comes from.</span></li>' +
+      '<li><span>Go to <button class="link" data-act="go" data-route="planner">Plan a study</button> for a ranked list of signals and a design checklist.</span></li>';
+  }
+};
+
+V.sources = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Source papers</h2></div><p>The papers every link is drawn from. Pick one to see its citation, what it covers, and everything the site takes from it.</p></div>' +
+      '<div class="cv"><nav class="panel cnav" id="sv-nav" aria-label="Source list"></nav><section class="panel" id="sv-detail" aria-live="polite"></section></div>';
+  },
+  update(el) {
+    const M = model();
+    if (!S.selS || !M.sById.has(S.selS)) S.selS = M.sources[0] ? M.sources[0].id : null;
+    $('#sv-nav').innerHTML = M.sources.length ? M.sources.map(s => '<button data-act="sel-source" data-id="' + esc(s.id) + '" aria-current="' + (s.id === S.selS) + '"><span>' + esc(s.short) + '<br><span class="note">' + esc(s.type || '') + '</span></span><span class="n">' + (M.byS.get(s.id) || []).length + '</span></button>').join('') : emptyState('Sources');
+    const s = S.selS ? M.sById.get(S.selS) : null;
+    $('#sv-detail').innerHTML = s ? sourceDetail(s, M) : emptyState('Source details');
+  }
+};
+function sourceDetail(s, M) {
+  const es = M.byS.get(s.id) || [];
+  const mids = uniq(es.map(e => e.measureId)), cids = uniq(es.map(e => e.constructId));
+  const guid = M.guidance.filter(g => arr(g.refs).some(r => r.s === s.id));
+  const cav = [];
+  M.measures.forEach(m => arr(m.caveats).concat(arr(m.methods)).forEach(t => { if (arr(t.refs).some(r => r.s === s.id)) cav.push({m: m, t: t}); }));
+  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(s.type || 'Source') + '</span>' + contribChip(s.provenance) + '</div><h2>' + esc(s.short) + '</h2>' + (s.title ? '<p class="cd-def">' + esc(s.title) + '</p>' : '') + '</div>';
+  h += '<div class="sec"><div class="cite">' + esc(s.cite || '') + '</div><div class="btns"><button class="btn sm" data-act="copy-cite" data-id="' + esc(s.id) + '">Copy citation</button>' + (s.doi ? doiLink(s.doi) : '') + (s.title ? '<a href="https://scholar.google.com/scholar?q=' + encodeURIComponent(s.title) + '" target="_blank" rel="noopener">Google Scholar ↗</a>' : '') + '</div>' +
+    (s.scope ? '<p>' + esc(s.scope) + '</p>' : '') + (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') + (s.file && !S.static ? '<p class="note">File: <span class="mono">' + esc(s.file) + '</span></p>' : '') + '</div>';
+  h += '<div class="cover"><span class="yes">' + plural(es.length, 'entry', 'entries') + '</span><span class="yes">' + plural(mids.length, 'measure') + '</span><span class="yes">' + plural(cids.length, 'construct') + '</span><span class="yes">' + plural(guid.length, 'guidance item') + '</span></div>';
+  h += '<div class="sec"><h3>Entries from this source<span class="count">' + es.length + '</span></h3>' + (es.length ? '<div class="tbl-wrap"><table class="mini"><thead><tr><th>Measure</th><th>Construct</th><th>Claim</th><th>Pages</th></tr></thead><tbody>' +
+    es.slice().sort((a, b) => String(a.pages).localeCompare(String(b.pages), undefined, {numeric: true})).map(e => { const m = M.mById.get(e.measureId), c = M.cById.get(e.constructId); return '<tr><td><button class="link" data-act="open-measure" data-id="' + esc(e.measureId) + '">' + esc(short(m)) + '</button></td><td><button class="link" data-act="open-construct" data-id="' + esc(e.constructId) + '">' + esc(c ? c.name : e.constructId) + '</button></td><td><span class="chips">' + claimChip(e.claimType) + evidChip(e.evidence) + '</span></td><td class="mono">' + esc(e.pages || '') + '</td></tr>'; }).join('') +
+    '</tbody></table></div>' : '<p class="muted small">No entries yet.</p>') + '</div>';
+  if (guid.length) h += '<div class="sec"><h3>Design and reporting guidance from this source</h3><ul class="srcd okl">' + guid.map(g => '<li>' + esc(g.t) + ' ' + refHTML(g.refs) + '</li>').join('') + '</ul></div>';
+  if (cav.length) h += '<div class="sec"><h3>Measure caveats and methods from this source</h3><ul class="srcd warnl">' + cav.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(short(x.m)) + '</button>: ' + esc(x.t.t) + ' ' + refHTML(x.t.refs) + '</li>').join('') + '</ul></div>';
+  return h;
+}
+
+V.contribute = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (window.KB_STATIC ? 'Curators review each suggestion on GitHub and add accepted links in the next update of the site.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
+      '<div class="ct"><section class="panel"><h3>Suggest a link</h3><div id="ct-gate" class="gate"></div>' +
+      '<form id="ct-form" novalidate>' +
+        '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
+        '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
+        '<div class="subform" id="f-newm" hidden><span class="eyebrow">New measure</span>' +
+          '<div class="field"><label for="f-m-name">Measure name</label><input id="f-m-name" maxlength="140"></div>' +
+          '<div class="field"><label for="f-m-signal">Signal domain</label><select id="f-m-signal"><option value="time">Time (ERP)</option><option value="freq">Frequency</option><option value="phase">Frequency / phase</option></select></div>' +
+          '<div class="field wide"><label for="f-m-spec">Specification as the source gives it</label><input id="f-m-spec" maxlength="300"></div></div>' +
+        '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
+          '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div>' +
+          '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
+        '<div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
+          '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
+        '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
+          '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
+          '<div class="field wide"><label for="f-doi">DOI or URL</label><input id="f-doi" maxlength="300" placeholder="10.xxxx/xxxxx"></div></div>' +
+        '<div class="field"><label for="f-claim">What the source says (paraphrase)<span class="req">required</span></label><textarea id="f-claim" rows="3" maxlength="700" placeholder="One or two sentences in your own words, not a quotation."></textarea></div>' +
+        '<div class="frow"><div class="field"><label for="f-ctype">Claim type</label><select id="f-ctype">' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
+          '<div class="field"><label for="f-evid">Kind of evidence</label><select id="f-evid">' + Object.keys(EVID).map(k => '<option value="' + k + '">' + esc(EVID[k].label) + '</option>').join('') + '</select></div></div>' +
+        '<div class="frow"><div class="field"><label for="f-paradigm">Paradigm or task</label><input id="f-paradigm" maxlength="200"></div>' +
+          '<div class="field"><label for="f-pop">Population</label><input id="f-pop" maxlength="200"></div></div>' +
+        '<div class="frow"><div class="field"><label for="f-beh">Behavioural outcome</label><input id="f-beh" maxlength="200"></div>' +
+          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div>' +
+        '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
+      '</form></section>' +
+      '<section class="panel"><div class="sh"><h3>Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
+    $('#ct-form').addEventListener('submit', submitEntry);
+    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; });
+    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
+    $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; });
+  },
+  update(el) {
+    const M = model();
+    const fill = (sel, items, label, ph) => {
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">' + ph + '</option>' + items + '<option value="__new">+ ' + label + '…</option>';
+      if (cur && Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+    };
+    fill($('#f-measure'), M.measures.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>').join(''), 'New signal', 'Choose a signal…');
+    let cOpts = '';
+    FAMILIES.forEach(f => { const cs = M.constructs.filter(c => famOf(c) === f.id); if (cs.length) cOpts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>'; });
+    fill($('#f-construct'), cOpts, 'New topic', 'Choose a topic…');
+    fill($('#f-source'), M.sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.short) + '</option>').join(''), 'Other paper', 'Choose a paper…');
+    if (S.prefill) {
+      if (S.prefill.m && M.mById.has(S.prefill.m)) $('#f-measure').value = S.prefill.m;
+      if (S.prefill.c && M.cById.has(S.prefill.c)) $('#f-construct').value = S.prefill.c;
+      S.prefill = null;
+    }
+    $('#f-newm').hidden = $('#f-measure').value !== '__new';
+    $('#f-newc').hidden = $('#f-construct').value !== '__new';
+    $('#f-news').hidden = $('#f-source').value !== '__new';
+    if (S.static) {
+      const issues = S.static.repo ? String(S.static.repo).replace(/\/$/, '') + '/issues' : '';
+      $('#ct-gate').innerHTML = '<div class="callout"><b>Suggestions are collected on GitHub</b><span>Fill in the form and press the button. It opens a pre-filled GitHub issue for you to check and post. You need a free GitHub account.</span></div>';
+      $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !issues; });
+      $('#f-submit').textContent = 'Open a GitHub issue';
+      $('#ct-role').textContent = '';
+      $('#ct-queue').innerHTML = '<div class="empty"><b>Suggestions are reviewed on GitHub.</b><span>' + (issues ? 'Curators read each issue and add accepted links to the data file. <a href="' + esc(issues) + '" target="_blank" rel="noopener">See open suggestions ↗</a>' : 'No repository is configured for suggestions.') + '</span></div>';
+      return;
+    }
+    let gate = '', block = false;
+    if (S.status !== 'ready' && S.status !== 'empty') { gate = '<div class="callout"><b>Submissions are off until the knowledge base connects.</b></div>'; block = true; }
+    else if (S.me.canWrite === false || S.readOnly) { gate = '<div class="callout"><b>You can read this knowledge base but not add to it.</b><span>Ask the owner for Contributor access, then reload.</span></div>'; block = true; }
+    $('#ct-gate').innerHTML = gate;
+    $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = block; });
+    $('#ct-role').textContent = S.me.canEdit ? 'You can accept or decline submissions' : 'Curators (editors) review submissions';
+    const q = $('#ct-queue');
+    const pend = M.subs.filter(s => s.status === 'pending'), done = M.subs.filter(s => s.status !== 'pending').slice(0, 12);
+    let h = pend.length ? pend.map(s => subHTML(s, M)).join('') : '<div class="empty"><b>No submissions waiting.</b><span>Submit an entry with the form to see how review works.</span></div>';
+    if (done.length) h += '<details><summary>Recently reviewed (' + done.length + ')</summary><div class="queue">' + done.map(s => subHTML(s, M)).join('') + '</div></details>';
+    q.innerHTML = h;
+    fillNames(q);
+  }
+};
+function subHTML(s, M) {
+  const m = s.measureId ? S.raw.measures.get(s.measureId) : null, c = s.constructId ? S.raw.constructs.get(s.constructId) : null, src = s.sourceId ? S.raw.sources.get(s.sourceId) : null;
+  const mName = m ? m.name : (s.newMeasure && s.newMeasure.name ? 'New measure: ' + s.newMeasure.name : 'Unknown measure');
+  const cName = c ? c.name : (s.newConstruct && s.newConstruct.name ? 'New construct: ' + s.newConstruct.name : 'Unknown construct');
+  const row = (k, v) => (v === 0 || v) ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
+  const st = ['pending', 'accepted', 'declined'].includes(s.status) ? s.status : 'pending';
+  let act = '';
+  if (st === 'pending') {
+    act = S.me.canEdit ? '<div class="qact"><button class="btn sm primary" data-act="accept" data-id="' + esc(s.id) + '">Accept</button><input id="rn-' + esc(s.id) + '" placeholder="Reason, if declining" aria-label="Reason for declining" maxlength="300"><button class="btn sm" data-act="decline" data-id="' + esc(s.id) + '">Decline</button></div>'
+      : '<p class="note">Waiting for a curator.</p>';
+  }
+  return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
+    '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
+    '<span class="qmeta">Submitted by <span data-uid="' + esc(s.submittedBy || '') + '">' + (s.submittedBy ? 'someone' : 'unknown') + '</span> · ' + esc(fmtDate(s.submittedAt)) + '</span>' + act + '</article>';
+}
+async function fillNames(root) {
+  if (!S.user) return;
+  const els = $$('[data-uid]', root).filter(e => e.getAttribute('data-uid'));
+  const ids = uniq(els.map(e => e.getAttribute('data-uid')));
+  if (!ids.length) return;
+  try {
+    const ps = await S.user.profiles(ids);
+    els.forEach(e => { const p = ps[e.getAttribute('data-uid')]; if (p) e.textContent = p.isMe ? 'you' : (p.name || 'someone'); });
+  } catch (e) {}
+}
+function errText(e) {
+  const code = e && e.code;
+  if (code === 'invalid_argument') return 'This change was refused. Your access level may not allow it.';
+  if (code === 'resource_exhausted') return 'Too many changes at once. Wait a moment and try again.';
+  if (code === 'quota_exceeded') return 'The knowledge base is full. Remove old submissions before adding more.';
+  if (code === 'revoked' || code === 'not_granted') return 'Access to the shared database was withdrawn. Reload the page.';
+  return 'Could not save the change. Check your connection and try again.';
+}
+async function submitEntry(ev) {
+  ev.preventDefault();
+  const msg = $('#f-msg');
+  const v = id => ($('#' + id) && $('#' + id).value || '').trim();
+  const setMsg = (t, err) => { msg.textContent = t; msg.className = 'fmsg' + (err ? ' err' : ''); };
+  if (!S.db && !S.static) return setMsg('The knowledge base is not connected.', true);
+  const mSel = v('f-measure'), cSel = v('f-construct'), sSel = v('f-source');
+  const probs = [];
+  if (!mSel) probs.push('choose a measure');
+  if (mSel === '__new' && !v('f-m-name')) probs.push('name the new measure');
+  if (!cSel) probs.push('choose a construct');
+  if (cSel === '__new' && !v('f-c-name')) probs.push('name the new construct');
+  if (!sSel) probs.push('choose a source');
+  if (sSel === '__new' && !v('f-cite')) probs.push('give the full citation');
+  if (!v('f-pages')) probs.push('add page numbers');
+  if (!v('f-claim')) probs.push('describe what the source says');
+  if (probs.length) return setMsg('To submit, ' + probs.join(', ') + '.', true);
+  if (S.static) {
+    if (!S.static.repo) return setMsg('No repository is configured for suggestions.', true);
+    const M = model();
+    const mName = mSel === '__new' ? v('f-m-name') + ' (new signal)' : ((M.mById.get(mSel) || {}).name || mSel);
+    const cName = cSel === '__new' ? v('f-c-name') + ' (new topic)' : ((M.cById.get(cSel) || {}).name || cSel);
+    const sName = sSel === '__new' ? v('f-cite') + (v('f-doi') ? ' ' + v('f-doi') : '') : ((M.sById.get(sSel) || {}).cite || sSel);
+    const ln = (k, x) => x ? '**' + k + ':** ' + x : '';
+    const body = [
+      ln('EEG signal', mName),
+      mSel === '__new' ? ln('Signal type', (SIG[v('f-m-signal')] || SIG.time).plain) : '',
+      mSel === '__new' ? ln('How the paper specifies it', v('f-m-spec')) : '',
+      ln('Topic', cName),
+      cSel === '__new' ? ln('Topic area', (FAM[v('f-c-family')] || FAM.other).label) : '',
+      ln('Paper', sName), ln('Pages', v('f-pages')),
+      ln('What the paper says (paraphrase)', v('f-claim')),
+      ln('Link strength', (CLAIM[v('f-ctype')] || CLAIM.attributed).label),
+      ln('Kind of evidence', (EVID[v('f-evid')] || EVID['human-eeg']).label),
+      ln('Task', v('f-paradigm')), ln('Participants', v('f-pop')), ln('Behavioural outcome', v('f-beh')),
+      ln('Original studies the paper cites', v('f-cites'))
+    ].filter(Boolean).join('\n\n') + '\n\n_Sent from the Contribute form on the site._';
+    const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(body);
+    try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+    msg.className = 'fmsg';
+    msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press Submit there.';
+    return;
+  }
+  const doc = {
+    status: 'pending', submittedAt: new Date().toISOString(), submittedBy: S.me.id || null,
+    measureId: mSel === '__new' ? null : mSel,
+    newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
+    constructId: cSel === '__new' ? null : cSel,
+    newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
+    sourceId: sSel === '__new' ? null : sSel,
+    reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
+    pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
+    paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
+  };
+  const btn = $('#f-submit');
+  btn.disabled = true; setMsg('Submitting…');
+  try {
+    await S.db.collection('submissions').add(doc);
+    $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true;
+    setMsg('Submitted. It is now in the review queue.');
+    toast('Submitted for review');
+  } catch (e) {
+    if (e && e.code === 'invalid_argument') { S.readOnly = true; scheduleUpdate(); }
+    setMsg(errText(e), true);
+  } finally { btn.disabled = false; }
+}
+async function acceptSub(id) {
+  const s = S.raw.submissions.get(id);
+  if (!s || !S.db || S.busy) return;
+  S.busy = true;
+  const now = new Date().toISOString();
+  try {
+    let mid = s.measureId, cid = s.constructId, sid = s.sourceId;
+    if (!mid && s.newMeasure && s.newMeasure.name) {
+      const sig = SIG[s.newMeasure.signal] ? s.newMeasure.signal : 'time';
+      mid = 'm-' + slug(s.newMeasure.name) + '-' + rid();
+      await S.db.doc('measures/' + mid).set({name: String(s.newMeasure.name), short: '', aka: [], domain: SIG[sig].label, signal: sig, spec: String(s.newMeasure.spec || ''), specRefs: [],
+        window: null, windowNote: '', bands: [], bandsNote: '', sites: [], sitesNote: '', inferred: [], lateralized: false,
+        caveats: [], methods: [], feasibility: {passive: null, infants: null, note: '', refs: []}, provenance: 'contributed', order: 500, addedAt: now, submissionId: id});
+    }
+    if (!cid && s.newConstruct && s.newConstruct.name) {
+      cid = 'c-' + slug(s.newConstruct.name) + '-' + rid();
+      await S.db.doc('constructs/' + cid).set({name: String(s.newConstruct.name), family: FAM[s.newConstruct.family] ? s.newConstruct.family : 'other',
+        definition: '', defRefs: [], provenance: 'contributed', addedAt: now, submissionId: id});
+    }
+    if (!sid && s.reference && s.reference.cite) {
+      sid = 'src-' + slug(s.reference.cite).slice(0, 24) + '-' + rid();
+      const cite = String(s.reference.cite);
+      await S.db.doc('sources/' + sid).set({short: cite.length > 48 ? cite.slice(0, 46) + '…' : cite, cite: cite, title: '', venue: '', doi: String(s.reference.doi || ''), type: 'Contributed reference', scope: '', note: '', file: '', year: null, order: 500, provenance: 'contributed', addedAt: now});
+    }
+    if (!mid || !cid || !sid) throw {code: 'invalid_argument'};
+    const eid = 'e-c-' + Date.now().toString(36) + rid();
+    await S.db.doc('entries/' + eid).set({provenance: 'contributed', measureId: mid, constructId: cid, sourceId: sid, pages: String(s.pages || ''),
+      claim: String(s.claim || ''), claimType: CLAIM[s.claimType] ? s.claimType : 'attributed', evidence: EVID[s.evidence] ? s.evidence : 'human-eeg',
+      paradigm: String(s.paradigm || ''), population: String(s.population || ''), behaviour: String(s.behaviour || ''), cites: String(s.cites || ''),
+      status: 'accepted', addedAt: now.slice(0, 10), submissionId: id, submittedBy: s.submittedBy || null, reviewedBy: S.me.id || null});
+    await S.db.doc('submissions/' + id).update({status: 'accepted', reviewedAt: now, reviewedBy: S.me.id || null, entryId: eid, measureId: mid, constructId: cid, sourceId: sid});
+    toast('Accepted into the knowledge base');
+  } catch (e) { toast(errText(e)); }
+  finally { S.busy = false; }
+}
+async function declineSub(id) {
+  if (!S.db || S.busy) return;
+  S.busy = true;
+  const inp = document.getElementById('rn-' + id);
+  try {
+    await S.db.doc('submissions/' + id).update({status: 'declined', reviewedAt: new Date().toISOString(), reviewedBy: S.me.id || null, reviewNote: inp ? inp.value.trim().slice(0, 300) : ''});
+    toast('Submission declined');
+  } catch (e) { toast(errText(e)); }
+  finally { S.busy = false; }
+}
+
+V.data = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><div class="eyebrow">Integrity and portability</div><h2>Data &amp; export</h2></div><p>Checks that keep the knowledge base consistent, and exports that paste straight into a spreadsheet.</p></div>' +
+      '<div class="panel" id="dt-src"></div>' +
+      '<div class="panel"><h3>How a record is built</h3><p class="small muted">Every link between a topic and a signal is one record with a paper and page. Topic and signal summaries are computed from these links.</p>' +
+      '<div class="fw"><div class="fw-box"><div class="eyebrow">Topic (construct)</div><h3>What a study claims to measure</h3><ul><li>Name and topic area</li><li>Definition, with the page it comes from</li></ul></div>' +
+        '<div class="fw-mid"><div class="fw-box"><div class="eyebrow">Link (entry)</div><h3>Topic ↔ signal, with evidence</h3><ul><li>Paper and page</li><li>Paraphrased claim</li><li>Link strength and kind of evidence</li><li>Task, participants, behavioural outcome</li><li>Original studies the paper cites</li></ul></div></div>' +
+        '<div class="fw-box"><div class="eyebrow">EEG signal (measure)</div><h3>What is quantified in the EEG</h3><ul><li>Time window or band, and electrode sites</li><li>Cautions and method tips, each with a page</li><li>Linked topics and link counts, computed</li></ul></div></div></div>' +
+      '<div class="panel"><h3>Data health</h3><div class="health" id="dt-health"></div></div>' +
+      '<div class="panel"><h3>Export</h3><div class="btns" id="dt-btns"></div><p class="small muted">CSV text pastes straight into Excel or Google Sheets.</p><div class="eyebrow">Preview · Measure Index CSV</div><pre class="csv" id="dt-prev"></pre></div>' +
+      '<div class="panel"><h3>Glossary</h3><dl class="gloss" id="dt-gloss"></dl></div>';
+  },
+  update(el) {
+    const M = model();
+    const mt = S.meta;
+    const ready = S.status === 'ready' || S.status === 'empty';
+    $('#dt-src').innerHTML = '<div class="eyebrow">About this dataset</div><h3>' + esc(mt && mt.name ? mt.name : 'EEG Construct–Measure Knowledge Base') + '</h3>' +
+      (mt ? '<p class="small muted">Built ' + esc(fmtDate(mt.builtAt)) + ' from ' + plural(M.sources.length, 'source paper') + ': ' + plural(M.measures.length, 'measure') + ', ' + plural(M.constructs.length, 'construct') + ', ' + plural(M.entries.length, 'entry', 'entries') + ' and ' + plural(M.guidance.length, 'guidance item') + '. ' + esc(mt.note || '') + '</p>' +
+        (S.static ? '<p class="small muted">This copy of the site reads its records from <span class="mono">' + esc(S.static.data) + '</span>' + (S.static.repo ? ' in the <a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">GitHub repository ↗</a>' : '') + '. It changes when that file is updated.</p>' : '') : '<p class="skel">' + (ready ? 'No dataset record found.' : 'Loading…') + '</p>');
+    if (!ready) $('#dt-health').innerHTML = '<p class="skel">Checks run once the knowledge base loads.</p>';
+    else {
+      const single = M.measures.filter(m => srcIdsForM(M, m.id).length === 1);
+      const incomplete = M.measures.filter(m => specMissing(m).length);
+      const oneMeas = M.constructs.filter(c => (M.measOfC.get(c.id) || []).length === 1);
+      const noMeas = M.constructs.filter(c => !(M.measOfC.get(c.id) || []).length);
+      const noPage = M.entries.filter(e => !e.pages);
+      const inferredSites = M.measures.filter(m => isInf(m, 'sites'));
+      const list = (items, fn) => items.length ? '<details><summary>Show ' + items.length + '</summary><ul class="inline-list">' + items.map(fn).join('') + '</ul></details>' : '';
+      const mLink = m => '<li><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button></li>';
+      const cLink = c => '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button></li>';
+      $('#dt-health').innerHTML =
+        hrow('Entries whose measure is not on this index', 'Should be 0; the same check as the last row of your original spreadsheet.', M.orphanM.length, M.orphanM.length ? 'warn' : 'ok') +
+        hrow('Entries whose construct is not in the construct list', 'Should be 0.', M.orphanC.length, M.orphanC.length ? 'warn' : 'ok') +
+        hrow('Entries without a source record', 'Should be 0. Every entry should point to a source.', M.orphanS.length, M.orphanS.length ? 'warn' : 'ok') +
+        hrow('Entries without page numbers', 'Should be 0.', noPage.length, noPage.length ? 'warn' : 'ok') +
+        hrow('Measures the sources do not fully specify', 'The sources give no time window, band or electrode names for these. Define them before analysis.', incomplete.length, incomplete.length ? 'info' : 'ok',
+          list(incomplete, m => '<li><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>: ' + esc(specMissing(m).join(', ')) + '</li>')) +
+        hrow('Measures with electrode sites interpreted from a region', 'The source names a region (for example, occipitotemporal); the electrodes shown are an interpretation.', inferredSites.length, 'info', list(inferredSites, mLink)) +
+        hrow('Measures supported by a single source', 'A second, independent source would help.', single.length, single.length ? 'info' : 'ok', list(single, mLink)) +
+        hrow('Constructs with a single EEG measure', 'No converging EEG evidence in these sources yet.', oneMeas.length, oneMeas.length ? 'info' : 'ok', list(oneMeas, cLink)) +
+        hrow('Constructs with no measure', 'Usually new constructs waiting for their first entry.', noMeas.length, noMeas.length ? 'info' : 'ok', list(noMeas, cLink)) +
+        hrow('Submissions waiting for review', 'See Contribute.', M.pending.length, M.pending.length ? 'info' : 'ok');
+    }
+    $('#dt-btns').innerHTML = '<button class="btn primary" data-act="copy-index">Copy Measure Index CSV</button><button class="btn" data-act="copy-entries">Copy Entries CSV</button><button class="btn" data-act="copy-refs">Copy reference list</button><button class="btn" data-act="copy-guidance">Copy methods guidance</button>' +
+      (S.dl ? '<button class="btn" data-act="dl-index">Download Measure Index .csv</button><button class="btn" data-act="dl-entries">Download Entries .csv</button>' : '');
+    $('#dt-prev').textContent = ready ? indexCSV(M).split('\r\n').slice(0, 7).join('\n') + (M.measures.length > 5 ? '\n…' : '') : 'Loading…';
+    $('#dt-gloss').innerHTML =
+      '<div><dt>Construct</dt><dd>The psychological or physiological process a study claims to measure.</dd></div>' +
+      '<div><dt>EEG measure</dt><dd>A quantified feature of the EEG signal: an ERP component, a difference wave, oscillatory power or phase.</dd></div>' +
+      '<div><dt>Entry</dt><dd>One source\'s link between a measure and a construct, with page numbers and a paraphrased claim.</dd></div>' +
+      ['causal', 'attributed', 'inferred', 'hypothesis', 'debated'].map(k => '<div><dt>' + esc(CLAIM[k].label) + '</dt><dd>' + esc(CLAIM[k].tip) + '</dd></div>').join('') +
+      '<div><dt>Animal or intracranial evidence</dt><dd>Findings from animal or intracranial recordings. Useful for mechanism, but not the same as a human scalp-EEG measure.</dd></div>' +
+      '<div><dt>Inferred field</dt><dd>A value the site derived from a source\'s description (for example, electrodes for "occipitotemporal sites"), marked so it is never mistaken for the source\'s own words.</dd></div>' +
+      '<div><dt>Specificity</dt><dd>How many constructs one measure is linked to. A measure linked to many needs a design that separates them.</dd></div>';
+  }
+};
+function csvCell(v) { v = String(v == null ? '' : v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function toCSV(rows) { return rows.map(r => r.map(csvCell).join(',')).join('\r\n'); }
+function indexCSV(M) {
+  const rows = [['EEG Measure', 'Domain', 'Specification (band/component, window, site)', 'Constructs it has been attributed to (auto, from Entries)', '# Entries in database', 'Key caveat', 'Sources']];
+  M.measures.forEach(m => {
+    const cv = arr(m.caveats)[0];
+    rows.push([m.name, m.domain || SIG[sigOf(m)].label, m.spec, consFor(M, m.id).map(c => c.name).join('; '), (M.byM.get(m.id) || []).length, cv ? cv.t + ' (' + refText(cv.refs) + ')' : '', srcIdsForM(M, m.id).map(id => (M.sById.get(id) || {}).short || id).join('; ')]);
+  });
+  rows.push(['Entries whose measure is not on this index (should be 0)', M.orphanM.length, '', '', '', '', '']);
+  return toCSV(rows);
+}
+function entriesCSV(M) {
+  const rows = [['Entry ID', 'EEG Measure', 'Construct', 'Construct domain', 'Claim type', 'Evidence', 'Claim (paraphrase)', 'Source', 'Pages', 'Paradigm', 'Population', 'Behavioural outcome', 'Primary studies cited by the source', 'DOI']];
+  M.entries.forEach(e => {
+    const m = M.mById.get(e.measureId), c = M.cById.get(e.constructId), s = M.sById.get(e.sourceId) || {};
+    rows.push([e.id, m ? m.name : e.measureId, c ? c.name : e.constructId, c ? FAM[famOf(c)].label : '', (CLAIM[e.claimType] || CLAIM.attributed).label, (EVID[e.evidence] || EVID['human-eeg']).label, e.claim || '', s.cite || (e.reference && e.reference.cite) || '', e.pages || '', e.paradigm || '', e.population || '', e.behaviour || '', e.cites || '', s.doi || '']);
+  });
+  return toCSV(rows);
+}
+function refsText(M) { return M.sources.map(s => s.cite + (s.doi ? ' https://doi.org/' + s.doi : '')).join('\n'); }
+function guidanceText(M) { return M.guidance.map(g => '- [' + (g.topic || '') + '] ' + g.t + ' (' + refText(g.refs) + ')').join('\n'); }
+
+/* ---------- drawer ---------- */
+function drawerHTML(m, M) {
+  const es = M.byM.get(m.id) || [];
+  const cs = consFor(M, m.id);
+  const fams = uniq(cs.map(famOf));
+  const miss = specMissing(m);
+  const b = bandsOf(m);
+  const n = cs.length;
+  const f = m.feasibility || {};
+  const specLine = n === 0 ? 'No paper links this signal to a topic yet.' : n === 1 ? 'Linked to one topic in these papers. That reflects the papers, not proof that the signal reflects only this topic.' : 'Linked to ' + n + ' topics across ' + plural(fams.length, 'area') + ', so a change in it alone does not tell you which one is involved.';
+  const feas = [];
+  if (f.passive === true) feas.push(['ok', '✓ Works without a task']);
+  if (f.passive === false) feas.push(['', 'Needs a task']);
+  if (f.infants === true) feas.push(['ok', '✓ Used with infants']);
+  const nCav = arr(m.caveats).length, nMet = arr(m.methods).length;
+  return '<div class="sec"><div class="chips">' + sigChip(m) + contribChip(m.provenance) + '</div><h2 id="dr-title">' + esc(m.name) + '</h2>' + (arr(m.aka).length ? '<p class="small muted">Also called: ' + esc(m.aka.join(', ')) + '</p>' : '') +
+      '<p class="spec-text">' + esc(m.spec) + ' ' + refHTML(m.specRefs) + '</p>' +
+      (feas.length ? '<div class="feas">' + feas.map(t => '<span class="bdg ' + t[0] + '" title="' + esc(refText(f.refs)) + '">' + esc(t[1]) + '</span>').join('') + '</div>' : '') + '</div>' +
+    '<div class="sec"><h3>When and where it is measured</h3><div class="dr-viz"><figure>' + scalp(m, 160, true) + '<figcaption>' + esc(m.sitesNote || sitesOf(m).join(', ') || 'Sites not specified') + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + (m.lateralized ? '<br>opposite side minus same side' : '') + '</figcaption></figure>' +
+      '<div class="sec">' + ruler(m, false) +
+      '<dl class="kv"><dt>' + (sigOf(m) === 'time' ? 'When' : 'Frequency') + '</dt><dd>' + (sigOf(m) === 'time'
+          ? (winOf(m) ? esc(winText(m)) + (m.windowNote ? '<br><span class="note">' + esc(m.windowNote) + '</span>' : '') : esc(m.windowNote || 'Not given in the papers'))
+          : (b.length ? esc(b.map(bandText).join(', ')) : 'Not given in the papers') + (m.bandsNote ? '<br><span class="note">' + esc(m.bandsNote) + '</span>' : '')) + '</dd>' +
+      '<dt>Where</dt><dd>' + (sitesOf(m).length ? esc(sitesOf(m).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : 'Not given in the papers') + '</dd></dl>' +
+      (miss.length ? '<div class="callout warn"><b>The papers do not give the ' + esc(miss.join(' or ')) + '</b><span>Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.</span></div>' : '') + '</div></div></div>' +
+    '<div class="sec"><h3>Topics it is linked to<span class="count">' + n + '</span></h3><p class="small muted">' + esc(specLine) + '</p>' +
+      (n ? '<ul class="clist">' + cs.map(c => { const ce = es.filter(e => e.constructId === c.id); return '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="sub">' + claimSummary(ce) + '</span></li>'; }).join('') + '</ul>' : '') + '</div>' +
+    (nCav ? '<details class="more-d"><summary>Cautions from the papers<span class="hint">' + nCav + '</span></summary><ul class="srcd warnl">' + m.caveats.map(t => '<li>' + esc(t.t) + ' ' + refHTML(t.refs) + '</li>').join('') + '</ul></details>' : '') +
+    (nMet ? '<details class="more-d"><summary>Method tips<span class="hint">' + nMet + '</span></summary><ul class="srcd okl">' + m.methods.map(t => '<li>' + esc(t.t) + ' ' + refHTML(t.refs) + '</li>').join('') + '</ul></details>' : '') +
+    (feas.length && f.note ? '<details class="more-d"><summary>Who it can be used with</summary><p class="small">' + esc(f.note) + ' ' + refHTML(f.refs) + '</p></details>' : '') +
+    '<details class="more-d"><summary>Evidence from the papers<span class="hint">' + plural(es.length, 'link') + '</span></summary><div class="entries">' + (es.length ? es.map(e => entryCard(e, M, {showConstruct: true})).join('') : '<div class="empty">No links yet.</div>') + '</div></details>' +
+    '<div class="btns"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy preregistration notes</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
+}
+let lastFocus = null;
+function openMeasure(id) {
+  if (!S.raw.measures.has(id)) return;
+  S.drawer = id;
+  lastFocus = document.activeElement;
+  renderDrawer();
+  $('#scrim').hidden = false;
+  const d = $('#drawer'); d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
+  $('#dr-body').scrollTop = 0;
+  setTimeout(() => { const b = $('.dr-bar .btn'); if (b) b.focus(); }, 30);
+}
+function closeDrawer() {
+  if (!S.drawer) return;
+  S.drawer = null;
+  $('#scrim').hidden = true;
+  const d = $('#drawer'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true');
+  if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+}
+function renderDrawer() {
+  if (!S.drawer) return;
+  const M = model();
+  const m = M.mById.get(S.drawer);
+  $('#dr-body').innerHTML = m ? drawerHTML(m, M) : '<div class="empty">This measure is no longer in the knowledge base.</div>';
+}
+
+/* ---------- search ---------- */
+let searchIn = null;
+function runSearch(input, box) {
+  input = input || searchIn || $('#q'); box = box || (input.id === 'hq' ? $('#hres') : $('#sres'));
+  if (!box) return;
+  searchIn = input;
+  const q = input.value.trim();
+  if (!q) { box.hidden = true; box.innerHTML = ''; return; }
+  const M = model(), ql = q.toLowerCase();
+  const byName = (a, b, n) => (n(b).toLowerCase().includes(ql) ? 1 : 0) - (n(a).toLowerCase().includes(ql) ? 1 : 0);
+  const cons = M.constructs.filter(c => [c.name, c.definition, FAM[famOf(c)].label].join(' ').toLowerCase().includes(ql))
+    .sort((a, b) => byName(a, b, c => c.name)).slice(0, 6);
+  const meas = M.measures.filter(m => [m.name, m.short, m.spec, m.domain].concat(arr(m.aka)).join(' ').toLowerCase().includes(ql))
+    .sort((a, b) => byName(a, b, m => m.name + ' ' + (m.short || ''))).slice(0, 6);
+  const srcs = M.sources.filter(s => [s.short, s.cite, s.title].join(' ').toLowerCase().includes(ql)).slice(0, 4);
+  const site = Object.keys(SITES).find(s => s.toLowerCase() === ql);
+  const siteN = site ? M.measures.filter(m => sitesOf(m).includes(site)).length : 0;
+  let h = '';
+  if (site) h += '<h4>Electrode</h4><button data-act="site" data-v="' + site + '"><span>Signals measured at ' + site + '</span><span class="sub">' + plural(siteN, 'signal') + '</span></button>';
+  if (cons.length) h += '<h4>Topics</h4>' + cons.map(c => '<button data-act="open-construct" data-id="' + esc(c.id) + '"><span>' + esc(c.name) + '</span><span class="sub">' + esc(FAM[famOf(c)].label) + ' · ' + plural((M.measOfC.get(c.id) || []).length, 'linked signal') + '</span></button>').join('');
+  if (meas.length) h += '<h4>EEG signals</h4>' + meas.map(m => '<button data-act="open-measure" data-id="' + esc(m.id) + '"><span>' + esc(m.name) + '</span><span class="sub">' + esc(SIG[sigOf(m)].plain) + ' · ' + esc(m.spec) + '</span></button>').join('');
+  if (srcs.length) h += '<h4>Papers</h4>' + srcs.map(s => '<button data-act="open-source" data-id="' + esc(s.id) + '"><span>' + esc(s.short) + '</span><span class="sub">' + esc(s.title || '') + '</span></button>').join('');
+  box.innerHTML = h || '<div class="none">Nothing matches “' + esc(q) + '”. Try a broader word such as memory, attention or hearing.' + (S.status !== 'ready' ? ' The knowledge base has not loaded yet.' : '') + '</div>';
+  box.hidden = false;
+}
+function closeSearch() { $('#sres').hidden = true; const h = $('#hres'); if (h) h.hidden = true; }
+
+/* ---------- copy / download / toast ---------- */
+let toastT = null;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2600); }
+function copyText(text, label) {
+  const fallback = () => { $('#modal-text').value = text; $('#modal').hidden = false; setTimeout(() => { const ta = $('#modal-text'); ta.focus(); ta.select(); }, 20); };
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return fallback();
+    navigator.clipboard.writeText(text).then(() => toast(label + ' copied'), fallback);
+  } catch (e) { fallback(); }
+}
+async function download(filename, data) {
+  if (!S.dl) return;
+  try { await S.dl.save({filename: filename, data: data}); toast('Saved ' + filename); }
+  catch (e) {
+    const c = e && e.code;
+    if (c === 'declined') return;
+    if (c === 'rate_limited') return toast('A save prompt is already open.');
+    toast('This view cannot save files. Use Copy instead.');
+  }
+}
+
+/* ---------- routing + rendering ---------- */
+function go(r, setHash) {
+  if (!ROUTES.includes(r)) r = 'overview';
+  S.route = r;
+  if (setHash !== false) { try { if (location.hash.slice(1) !== r) history.replaceState(null, '', '#' + r); } catch (e) {} }
+  document.body.setAttribute('data-route', r);
+  $$('.tabs .tab, .more-menu button').forEach(t => t.setAttribute('aria-current', t.getAttribute('data-route') === r ? 'page' : 'false'));
+  const mb = $('#more-btn');
+  mb.setAttribute('aria-current', MORE_ROUTES[r] ? 'page' : 'false');
+  mb.textContent = MORE_ROUTES[r] || 'More';
+  toggleMore(false);
+  ROUTES.forEach(x => { $('#v-' + x).hidden = x !== r; });
+  const el = $('#v-' + r);
+  if (!S.mounted[r]) { V[r].mount(el); S.mounted[r] = true; }
+  closeSearch();
+  render();
+  try { window.scrollTo(0, 0); } catch (e) {}
+}
+function toggleMore(open) {
+  const menu = $('#more-menu'), btn = $('#more-btn');
+  if (open === undefined) open = menu.hidden;
+  menu.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  if (open) { const first = $('#more-menu button'); if (first) setTimeout(() => first.focus(), 0); }
+}
+let tmr = 0;
+function scheduleUpdate() { if (tmr) return; tmr = setTimeout(() => { tmr = 0; render(); }, 16); }
+function render() {
+  const st = S.status;
+  const ban = $('#banner'), bt = $('#banner-t');
+  if (st === 'unavailable' || st === 'error') {
+    ban.hidden = false; ban.className = 'banner warn'; $('#banner-dot').className = 'dot warn';
+    bt.innerHTML = S.static
+      ? '<b>The data file did not load.</b> Reload the page. If it keeps failing, check your connection.'
+      : '<b>The knowledge base did not load.</b> Its records are kept in this page\'s shared database, which loads for signed-in viewers on claude.ai. If you opened this page another way, open it from claude.ai while signed in.';
+  } else if (st === 'empty') {
+    ban.hidden = false; ban.className = 'banner'; $('#banner-dot').className = 'dot';
+    bt.innerHTML = '<b>The knowledge base is empty.</b> Records are loaded by the owner.';
+  } else ban.hidden = true;
+  const el = $('#v-' + S.route);
+  if (S.mounted[S.route]) { try { V[S.route].update(el); } catch (e) { console.error(e); } }
+  if (S.drawer) renderDrawer();
+  if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) runSearch();
+}
+
+/* ---------- events ---------- */
+function onAct(t) {
+  const a = t.getAttribute('data-act'), id = t.getAttribute('data-id');
+  const M = model();
+  switch (a) {
+    case 'go': closeDrawer(); go(t.getAttribute('data-route')); break;
+    case 'more': toggleMore(); break;
+    case 'open-measure': closeSearch(); openMeasure(id); break;
+    case 'open-construct': closeSearch(); closeDrawer(); S.selC = id; S.cq = ''; if (M.cById.has(id) && S.cFam !== 'all' && famOf(M.cById.get(id)) !== S.cFam) S.cFam = 'all'; go('constructs'); break;
+    case 'open-source': closeSearch(); closeDrawer(); S.selS = id; go('sources'); break;
+    case 'sel-construct': S.selC = id; render(); { const d = $('#cv-detail'); if (d && window.innerWidth <= 900) d.scrollIntoView({block: 'start'}); } break;
+    case 'sel-source': S.selS = id; render(); { const d = $('#sv-detail'); if (d && window.innerWidth <= 900) d.scrollIntoView({block: 'start'}); } break;
+    case 'close-drawer': closeDrawer(); break;
+    case 'close-modal': $('#modal').hidden = true; break;
+    case 'family': S.cFam = t.getAttribute('data-fam'); S.selC = null; go('constructs'); break;
+    case 'cfam': S.cFam = t.getAttribute('data-fam'); S.selC = null; render(); break;
+    case 'mapfam': S.mapFam = t.getAttribute('data-fam'); S.mapPin = null; render(); break;
+    case 'mf-sig': S.mf.signal = t.getAttribute('data-v'); render(); break;
+    case 'mf-view': S.mf.view = t.getAttribute('data-v'); store('eegkb.view', S.mf.view); render(); break;
+    case 'clear-site': S.mf.site = ''; render(); break;
+    case 'site': S.mf.site = t.getAttribute('data-v'); S.mf.q = ''; $('#q').value = ''; closeSearch(); closeDrawer(); go('measures'); break;
+    case 'pin': S.mapPin = t.getAttribute('data-c') ? {c: t.getAttribute('data-c')} : {m: t.getAttribute('data-m')}; render(); break;
+    case 'unpin': S.mapPin = null; render(); break;
+    case 'plan-c': S.plan.c = id; closeDrawer(); go('planner'); break;
+    case 'contribute-c': S.prefill = {c: id}; closeDrawer(); go('contribute'); break;
+    case 'contribute-m': S.prefill = {m: id}; closeDrawer(); go('contribute'); break;
+    case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); break; }
+    case 'copy-cite': { const s = M.sById.get(id); if (s) copyText(s.cite + (s.doi ? ' https://doi.org/' + s.doi : ''), 'Citation'); break; }
+    case 'copy-plan': copyText(planText(M), 'Study plan'); break;
+    case 'copy-index': copyText(indexCSV(M), 'Measure Index CSV'); break;
+    case 'copy-entries': copyText(entriesCSV(M), 'Entries CSV'); break;
+    case 'copy-refs': copyText(refsText(M) || 'No sources recorded.', 'Reference list'); break;
+    case 'copy-guidance': copyText(guidanceText(M) || 'No guidance recorded.', 'Methods guidance'); break;
+    case 'dl-index': download('measure-index.csv', indexCSV(M)); break;
+    case 'dl-entries': download('entries.csv', entriesCSV(M)); break;
+    case 'accept': acceptSub(id); break;
+    case 'decline': declineSub(id); break;
+  }
+}
+function bind() {
+  document.addEventListener('click', ev => {
+    const nd = ev.target.closest('#map-svg .nd');
+    if (nd) { const c = nd.getAttribute('data-c'), m = nd.getAttribute('data-m'); S.mapPin = (S.mapPin && ((c && S.mapPin.c === c) || (m && S.mapPin.m === m))) ? null : (c ? {c: c} : {m: m}); highlight(S.mapPin); renderMapInfo(model()); return; }
+    const t = ev.target.closest('[data-act]');
+    if (!ev.target.closest('.search, .hsearch')) closeSearch();
+    if (!ev.target.closest('.more') && !$('#more-menu').hidden) toggleMore(false);
+    if (!t || t.tagName === 'A') return;
+    ev.preventDefault();
+    onAct(t);
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') {
+      if (!$('#modal').hidden) { $('#modal').hidden = true; return; }
+      if (!$('#more-menu').hidden) { toggleMore(false); $('#more-btn').focus(); return; }
+      if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) { closeSearch(); return; }
+      if (S.drawer) { closeDrawer(); return; }
+      if (S.mapPin) { S.mapPin = null; highlight(null); renderMapInfo(model()); }
+      return;
+    }
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[role="button"][data-act], tr[data-act], #map-svg .nd')) {
+      ev.preventDefault(); ev.target.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+    }
+  });
+  const q = $('#q');
+  q.addEventListener('input', () => runSearch(q));
+  q.addEventListener('focus', () => { if (q.value.trim()) runSearch(q); });
+  q.addEventListener('keydown', ev => { if (ev.key === 'Enter') { const b = $('#sres button'); if (b) { ev.preventDefault(); b.click(); } } });
+  document.addEventListener('input', ev => {
+    if (ev.target.id === 'mf-q') { S.mf.q = ev.target.value; V.measures.update($('#v-measures')); }
+    else if (ev.target.id === 'cv-q') { S.cq = ev.target.value; V.constructs.update($('#v-constructs')); }
+  });
+  document.addEventListener('change', ev => {
+    const t = ev.target;
+    if (t.id === 'cv-fam') { S.cFam = t.value; S.selC = null; render(); }
+    else if (t.id === 'mf-fam') { S.mf.family = t.value; render(); }
+    else if (t.id === 'mf-src') { S.mf.source = t.value; render(); }
+    else if (t.id === 'mf-sort') { S.mf.sort = t.value; render(); }
+    else if (t.id === 'pl-c') { S.plan.c = t.value; render(); }
+    else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
+    else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
+  });
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ROUTES.includes(h) && h !== S.route) go(h, false); });
+}
+
+/* ---------- capabilities ---------- */
+function subscribe(col) {
+  try {
+    S.db.collection(col).limit(1000).onSnapshot(snap => {
+      const map = new Map();
+      snap.docs.forEach(d => { if (d.exists) { const v = d.data(); if (v && typeof v === 'object') map.set(d.id, Object.assign({}, v, {id: d.id})); } });
+      S.raw[col] = map; S.loaded[col] = true;
+      if (S.loaded.measures && S.loaded.constructs && S.loaded.entries && S.loaded.sources) S.status = S.raw.measures.size ? 'ready' : 'empty';
+      invalidate(); scheduleUpdate();
+    }, err => {
+      console.warn('db ' + col, err);
+      if (col !== 'submissions' && col !== 'guidance') S.status = 'error';
+      scheduleUpdate();
+    });
+  } catch (e) { console.warn(e); S.status = 'error'; scheduleUpdate(); }
+}
+/* Standalone hosting (e.g. GitHub Pages): records come from a JSON file published beside the page. */
+async function connectStatic(cfg) {
+  S.static = cfg;
+  S.dl = {save: o => {
+    const url = URL.createObjectURL(new Blob([o.data], {type: 'text/csv;charset=utf-8'}));
+    const a = document.createElement('a'); a.href = url; a.download = o.filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return Promise.resolve();
+  }};
+  try {
+    const res = await fetch(cfg.data, {cache: 'no-cache'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const kb = await res.json();
+    COLS.forEach(col => {
+      const map = new Map();
+      arr(kb[col]).forEach(r => { if (r && r.id) map.set(r.id, Object.assign({}, r)); });
+      S.raw[col] = map; S.loaded[col] = true;
+    });
+    const metas = Array.isArray(kb.meta) ? kb.meta : (kb.meta ? [kb.meta] : []);
+    S.meta = metas.find(m => m && m.id === 'kb') || metas[0] || null;
+    S.status = S.raw.measures.size ? 'ready' : 'empty';
+  } catch (e) { console.warn('data file', e); S.status = 'error'; }
+  invalidate(); scheduleUpdate();
+}
+async function connect() {
+  if (window.KB_STATIC && window.KB_STATIC.data) return connectStatic(window.KB_STATIC);
+  const cl = window.claude;
+  if (!cl || typeof cl.use !== 'function') { S.status = 'unavailable'; scheduleUpdate(); return; }
+  cl.use('user').then(async u => {
+    if (!u) return;
+    S.user = u;
+    try { const me = await u.me(); S.me.id = me.id; S.me.isOwner = !!me.isOwner; S.me.canEdit = !!me.canEdit; S.me.canWrite = await u.can('data.write'); } catch (e) {}
+    scheduleUpdate();
+  }).catch(() => {});
+  cl.use('downloads').then(d => { S.dl = d || null; scheduleUpdate(); }).catch(() => {});
+  let db = null;
+  try { db = await cl.use('db'); } catch (e) { db = null; }
+  if (!db) { S.status = 'unavailable'; scheduleUpdate(); return; }
+  S.db = db;
+  COLS.forEach(subscribe);
+  try { db.doc('meta/kb').onSnapshot(s => { S.meta = s.exists ? s.data() : null; scheduleUpdate(); }, () => {}); } catch (e) {}
+}
+
+/* ---------- start ---------- */
+const v0 = store('eegkb.view'); if (v0 === 'table' || v0 === 'cards') S.mf.view = v0;
+bind();
+const h0 = (location.hash || '').slice(1);
+go(ROUTES.includes(h0) ? h0 : 'overview', false);
+connect();
+})();
+</script>
+
+</body>
+</html>
