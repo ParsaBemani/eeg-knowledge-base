@@ -8,11 +8,11 @@ A website that shows which EEG signals published papers link to which cognitive 
 
 | Part | Count |
 | --- | --- |
-| Source papers | 6 |
-| EEG signals | 31 (21 ERPs, 9 brain rhythms, 1 rhythm-coupling measure) |
-| Topics | 72, in 12 areas |
-| Links between a topic and a signal | 99 |
-| Design and reporting guidance items | 16 |
+| Source papers | 7 |
+| EEG signals | 34 (21 ERPs, 12 brain-rhythm and sleep-scoring measures, 1 rhythm-coupling measure) |
+| Topics | 75, in 12 areas |
+| Links between a topic and a signal | 105 |
+| Design and reporting guidance items | 18 |
 
 Every link names the paper and page it comes from. Claims are paraphrased, never quoted. Each link carries a strength label (causal test, stated by the paper, used to infer, hypothesis, debated) and, where it applies, an evidence label for findings that are not human scalp EEG.
 
@@ -34,6 +34,7 @@ Electrode sites worked out from a region name in a paper are marked "inferred". 
 - Herrmann, C. S., Strüber, D., Helfrich, R. F., & Engel, A. K. (2016). EEG oscillations: From correlation to causality. *International Journal of Psychophysiology, 103*, 12–21. https://doi.org/10.1016/j.ijpsycho.2015.02.003
 - Gupta, D. S., & Chen, L. (2016). Brain oscillations in perception, timing and action. *Current Opinion in Behavioral Sciences, 8*, 161–166. https://doi.org/10.1016/j.cobeha.2016.02.021
 - Buzsáki, G., & Draguhn, A. (2004). Neuronal oscillations in cortical networks. *Science, 304*(5679), 1926–1929. https://doi.org/10.1126/science.1099745
+- Torontali, Z. A., Fraigne, J. J., Sanghera, P., Horner, R., & Peever, J. (2019). The sublaterodorsal tegmental nucleus functions to couple brain state and motor activity during REM sleep and wakefulness. *Current Biology, 29*, 3803–3813.e5. https://doi.org/10.1016/j.cub.2019.09.026 A mouse study; its sleep-scoring criteria use skull-screw EEG and neck and jaw EMG.
 
 The papers themselves are not included in this repository.
 

@@ -679,7 +679,7 @@ function specMissing(m) {
   const miss = [], s = sigOf(m);
   if (s === 'time' && !winOf(m)) miss.push('time window');
   if (s !== 'time' && !bandsOf(m).length) miss.push('frequency band');
-  if (!sitesOf(m).length) miss.push('electrode sites');
+  if (!sitesOf(m).length) miss.push('standard (10–20) electrode sites');
   return miss;
 }
 function winText(m) {
@@ -1793,7 +1793,7 @@ function drawerHTML(m, M) {
       '<dl class="kv"><dt>' + (sigOf(m) === 'time' ? 'When' : 'Frequency') + '</dt><dd>' + (sigOf(m) === 'time'
           ? (winOf(m) ? esc(winText(m)) + (m.windowNote ? '<br><span class="note">' + esc(m.windowNote) + '</span>' : '') : esc(m.windowNote || 'Not given in the papers'))
           : (b.length ? esc(b.map(bandText).join(', ')) : 'Not given in the papers') + (m.bandsNote ? '<br><span class="note">' + esc(m.bandsNote) + '</span>' : '')) + '</dd>' +
-      '<dt>Where</dt><dd>' + (sitesOf(m).length ? esc(sitesOf(m).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : 'Not given in the papers') + '</dd></dl>' +
+      '<dt>Where</dt><dd>' + (sitesOf(m).length ? esc(sitesOf(m).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : esc(m.sitesNote && !/^not given/i.test(m.sitesNote) ? m.sitesNote : 'Not given in the papers')) + '</dd></dl>' +
       (miss.length ? '<div class="callout warn"><b>The papers do not give the ' + esc(miss.join(' or ')) + '</b><span>Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.</span></div>' : '') + '</div></div></div>' +
     '<div class="sec"><h3>Topics it is linked to<span class="count">' + n + '</span></h3><p class="small muted">' + esc(specLine) + '</p>' +
       (n ? '<ul class="clist">' + cs.map(c => { const ce = es.filter(e => e.constructId === c.id); return '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="sub">' + claimSummary(ce) + '</span></li>'; }).join('') + '</ul>' : '') + '</div>' +
