@@ -39,14 +39,20 @@ The papers themselves are not included in this repository.
 
 ## Suggesting a link
 
-Use the **Contribute** page on the site. It opens a pre-filled GitHub issue with the signal, topic, paper and page. A curator checks it against the paper and, if accepted, adds it to `data/kb.json`.
+Use the **Contribute** page on the site.
+
+- **With sign-in switched on** (see [SETUP.md](SETUP.md)): contributors sign in with an emailed code and send the suggestion. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Admins can also delete links (with undo), add other admins and step down from the Admin page.
+- **Without it:** the page opens a pre-filled GitHub issue, and a curator adds accepted links to `data/kb.json` by hand.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
 | `index.html` | The whole site: one page with its styles and script inline |
-| `data/kb.json` | All records: `meta`, `sources`, `guidance`, `measures`, `constructs`, `entries` |
+| `config.js` | Site settings, including the Supabase URL and public key once sign-in is set up |
+| `data/kb.json` | Starter records: `meta`, `sources`, `guidance`, `measures`, `constructs`, `entries` |
+| `supabase/setup.sql` | Database, sign-in roles and email approvals; run once in Supabase |
+| `SETUP.md` | Step-by-step setup for sign-in, admins and email approvals |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
 
-To update the site, edit `data/kb.json` and push. Each entry links one `measureId` to one `constructId` and cites a `sourceId` with `pages`. GitHub Pages republishes within a minute or two.
+Without sign-in, update the site by editing `data/kb.json`. Each entry links one `measureId` to one `constructId` and cites a `sourceId` with `pages`. With sign-in, the database holds the records and `data/kb.json` is only the starting point and a fallback if the database is unreachable.

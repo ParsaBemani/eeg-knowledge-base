@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Find which EEG signals research papers link to topics like memory, attention and hearing, with the page to cite.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%230A6A6A' stroke-width='3'/%3E%3Ccircle cx='16' cy='9' r='3' fill='%230A6A6A'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%230A6A6A'/%3E%3Ccircle cx='16' cy='23' r='3' fill='%230A6A6A'/%3E%3C/svg%3E">
+<script src="config.js"></script>
+<script>window.KB_STATIC = window.KB_STATIC || {data: "data/kb.json", repo: "https://github.com/ParsaBemani/eeg-knowledge-base"};</script>
 <title>EEG Construct–Measure Knowledge Base</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -511,6 +514,27 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .inline-list{font-size:13.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px;padding-left:18px}
 .cite{font-size:14.5px;line-height:1.55;padding:12px 14px;border-radius:8px;background:var(--panel-2);border:1px solid var(--rule)}
 
+.acct{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);white-space:nowrap;min-width:0}
+.acct .who{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.badge-admin{font:600 10.5px/1.4 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--accent);border:1px solid currentColor;border-radius:4px;padding:0 5px}
+@media (max-width:680px){.acct{order:2;margin-left:auto}.acct .who{max-width:130px}}
+.adm-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start}
+.adm-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+@media (max-width:960px){.adm-grid{grid-template-columns:1fr}}
+.adm-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.adm-list li{display:flex;justify-content:space-between;align-items:center;gap:6px 12px;padding:9px 0;border-top:1px solid var(--grid);font-size:14px;flex-wrap:wrap}
+.adm-list li:first-child{border-top:0}
+.adm-list .sub{font:12px var(--f-mono);color:var(--ink-3)}
+.adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.adm-row input{flex:1 1 220px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
+.btn.danger{color:var(--warn);border-color:var(--warn)}
+.btn.danger.armed{background:var(--warn);color:var(--panel)}
+.en-admin{display:flex;justify-content:flex-end}
+.rv-actions{display:flex;flex-direction:column;gap:12px}
+.rv-actions textarea{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);font:inherit;min-height:70px}
+.btn.pick{outline:3px solid var(--accent-soft)}
+.si-step{display:flex;flex-direction:column;gap:12px}
+
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .modal{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
 .modal .panel{width:min(640px,100%);max-height:calc(100% - 32px)}
@@ -520,7 +544,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 </style>
 </head>
 <body>
-<script>window.KB_STATIC = {data: "data/kb.json", repo: "https://github.com/ParsaBemani/eeg-knowledge-base"};</script>
+
 
 <header class="topbar">
   <div class="wrap">
@@ -544,6 +568,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
         <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search a topic or signal, e.g. memory, N400" aria-label="Search the knowledge base" aria-controls="sres">
         <div id="sres" class="sres" hidden></div>
       </div>
+      <div class="acct" id="acct" hidden></div>
     </div>
     <nav class="navrow" aria-label="Sections">
       <div class="tabs">
@@ -560,6 +585,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
           <button data-act="go" data-route="map"><b>Topic–signal map</b><span>Every link drawn as one diagram</span></button>
           <button data-act="go" data-route="contribute"><b>Contribute</b><span>Suggest a new link from a paper</span></button>
           <button data-act="go" data-route="data"><b>Data &amp; export</b><span>Download the data and see quality checks</span></button>
+          <button data-act="go" data-route="admin" id="nav-admin" hidden><b>Admin</b><span>Review suggestions, delete links, manage admins</span></button>
         </div>
       </div>
     </nav>
@@ -577,6 +603,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
   <section class="view" id="v-sources" aria-label="Sources" hidden></section>
   <section class="view" id="v-contribute" aria-label="Contribute" hidden></section>
   <section class="view" id="v-data" aria-label="Data and export" hidden></section>
+  <section class="view" id="v-admin" aria-label="Admin" hidden></section>
+  <section class="view" id="v-review" aria-label="Review a suggestion" hidden></section>
 </main>
 
 <div id="scrim" class="scrim" hidden data-act="close-drawer"></div>
@@ -591,6 +619,22 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
     <p class="muted small">Copying was blocked here. The text is selected below; press Ctrl+C (or ⌘C) to copy it.</p>
     <textarea id="modal-text" readonly aria-label="Text to copy"></textarea>
     <div class="btns"><button class="btn" data-act="close-modal">Done</button></div>
+  </div>
+</div>
+<div id="signin" class="modal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="signin-h">
+    <h3 id="signin-h">Sign in</h3>
+    <form id="si-form1" class="si-step" novalidate>
+      <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password.</p>
+      <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" maxlength="200"></div>
+      <div class="btns"><button class="btn primary" type="submit" id="si-send">Email me a code</button><button class="btn ghost" type="button" data-act="close-signin">Cancel</button></div>
+    </form>
+    <form id="si-form2" class="si-step" novalidate hidden>
+      <p class="muted small" id="si-sent"></p>
+      <div class="field"><label for="si-code">Code from the email</label><input id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10"></div>
+      <div class="btns"><button class="btn primary" type="submit" id="si-verify">Sign in</button><button class="btn ghost" type="button" data-act="si-back">Use a different email</button></div>
+    </form>
+    <p id="si-msg" class="fmsg" role="status"></p>
   </div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
@@ -731,10 +775,15 @@ const S = {
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
   plan: {c: '', pop: 'adults', para: 'either'},
-  drawer: null, prefill: null
+  drawer: null, prefill: null,
+  /* Supabase mode (sign-in, email approvals): see connectSupabase */
+  sb: null, sbMode: false, sbNote: '', session: null,
+  adm: {admins: [], invites: [], activity: [], loaded: false},
+  review: {token: '', decision: '', data: null, done: null, busy: false},
+  armed: null
 };
-const ROUTES = ['overview', 'constructs', 'measures', 'map', 'planner', 'learn', 'sources', 'contribute', 'data'];
-const MORE_ROUTES = {sources:'Source papers', map:'Topic–signal map', contribute:'Contribute', data:'Data & export'};
+const ROUTES = ['overview', 'constructs', 'measures', 'map', 'planner', 'learn', 'sources', 'contribute', 'data', 'admin', 'review'];
+const MORE_ROUTES = {sources:'Source papers', map:'Topic–signal map', contribute:'Contribute', data:'Data & export', admin:'Admin'};
 
 /* ---------- derived model ---------- */
 let MODEL = null;
@@ -909,8 +958,15 @@ function entryCard(e, M, opts) {
     (e.claim ? '<p class="en-claim">' + esc(e.claim) + '</p>' : '') +
     '<dl class="en-kv">' + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
     '<div class="en-src"><span class="eyebrow">Source</span>' + src + '</div>' +
-    (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') + '</article>';
+    (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') +
+    (isSbAdmin() ? '<div class="en-admin">' + delBtn('entries', e.id, 'Delete this link') + '</div>' : '') + '</article>';
 }
+/* Two-step delete button for admins: the first click arms it, the second deletes. */
+function delBtn(col, id, label) {
+  const key = col + '/' + id, armed = S.armed === key;
+  return '<button class="btn sm danger' + (armed ? ' armed' : '') + '" data-act="del-record" data-col="' + esc(col) + '" data-id="' + esc(id) + '">' + (armed ? 'Click again to delete' : esc(label)) + '</button>';
+}
+function isSbAdmin() { return !!(S.sbMode && S.me.canEdit); }
 function mcard(m, M) {
   const cs = consFor(M, m.id);
   const n = (M.byM.get(m.id) || []).length;
@@ -1472,7 +1528,7 @@ function sourceDetail(s, M) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (window.KB_STATIC ? 'Curators review each suggestion on GitHub and add accepted links in the next update of the site.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Curators review each suggestion on GitHub and add accepted links in the next update of the site.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
       '<div class="ct"><section class="panel"><h3>Suggest a link</h3><div id="ct-gate" class="gate"></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
@@ -1498,7 +1554,7 @@ V.contribute = {
           '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
       '</form></section>' +
-      '<section class="panel"><div class="sh"><h3>Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
+      '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
     $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; });
     $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
@@ -1524,6 +1580,23 @@ V.contribute = {
     $('#f-newm').hidden = $('#f-measure').value !== '__new';
     $('#f-newc').hidden = $('#f-construct').value !== '__new';
     $('#f-news').hidden = $('#f-source').value !== '__new';
+    if (S.sbMode) {
+      const signed = !!S.session, down = S.sbNote === 'down';
+      $('#ct-gate').innerHTML = down
+        ? '<div class="callout warn"><b>Suggestions are paused</b><span>The live database could not be reached, so the site is showing a saved copy of the data. Try again later.</span></div>'
+        : signed
+          ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.</span></div>'
+          : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
+      $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
+      $('#f-submit').textContent = 'Send suggestion';
+      const admin = isSbAdmin();
+      $('#ct-qh').textContent = admin ? 'Review queue' : 'Your suggestions';
+      $('#ct-role').textContent = admin ? 'You can accept or reject suggestions' : '';
+      const q = $('#ct-queue');
+      if (!signed) { q.innerHTML = '<div class="empty"><b>Sign in to see your suggestions.</b><span>Each one shows whether it is waiting, accepted or rejected.</span></div>'; return; }
+      q.innerHTML = subsListHTML(M, admin);
+      return;
+    }
     if (S.static) {
       const issues = S.static.repo ? String(S.static.repo).replace(/\/$/, '') + '/issues' : '';
       $('#ct-gate').innerHTML = '<div class="callout"><b>Suggestions are collected on GitHub</b><span>Fill in the form and press the button. It opens a pre-filled GitHub issue for you to check and post. You need a free GitHub account.</span></div>';
@@ -1552,11 +1625,16 @@ function subHTML(s, M) {
   const mName = m ? m.name : (s.newMeasure && s.newMeasure.name ? 'New measure: ' + s.newMeasure.name : 'Unknown measure');
   const cName = c ? c.name : (s.newConstruct && s.newConstruct.name ? 'New construct: ' + s.newConstruct.name : 'Unknown construct');
   const row = (k, v) => (v === 0 || v) ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
-  const st = ['pending', 'accepted', 'declined'].includes(s.status) ? s.status : 'pending';
+  const st = ['pending', 'accepted', 'declined', 'rejected'].includes(s.status) ? s.status : 'pending';
   let act = '';
   if (st === 'pending') {
-    act = S.me.canEdit ? '<div class="qact"><button class="btn sm primary" data-act="accept" data-id="' + esc(s.id) + '">Accept</button><input id="rn-' + esc(s.id) + '" placeholder="Reason, if declining" aria-label="Reason for declining" maxlength="300"><button class="btn sm" data-act="decline" data-id="' + esc(s.id) + '">Decline</button></div>'
-      : '<p class="note">Waiting for a curator.</p>';
+    act = S.me.canEdit ? '<div class="qact"><button class="btn sm primary" data-act="accept" data-id="' + esc(s.id) + '">Accept</button><input id="rn-' + esc(s.id) + '" placeholder="Reason, if ' + (S.sbMode ? 'rejecting' : 'declining') + '" aria-label="Reason" maxlength="300"><button class="btn sm" data-act="decline" data-id="' + esc(s.id) + '">' + (S.sbMode ? 'Reject' : 'Decline') + '</button></div>'
+      : '<p class="note">Waiting for ' + (S.sbMode ? 'an admin' : 'a curator') + '.</p>';
+  }
+  if (S.sbMode) {
+    return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
+      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' +
+      '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
     '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
@@ -1597,6 +1675,31 @@ async function submitEntry(ev) {
   if (!v('f-pages')) probs.push('add page numbers');
   if (!v('f-claim')) probs.push('describe what the source says');
   if (probs.length) return setMsg('To submit, ' + probs.join(', ') + '.', true);
+  if (S.sbMode) {
+    if (!S.session) return setMsg('Sign in first, then send your suggestion.', true);
+    const payload = {
+      measureId: mSel === '__new' ? null : mSel,
+      newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
+      constructId: cSel === '__new' ? null : cSel,
+      newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
+      sourceId: sSel === '__new' ? null : sSel,
+      reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
+      pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
+      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
+    };
+    const btn = $('#f-submit');
+    btn.disabled = true; setMsg('Sending…');
+    try {
+      const {error} = await S.sb.from('submissions').insert({payload: payload});
+      if (error) throw error;
+      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true;
+      setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
+      toast('Suggestion sent');
+      await loadSubs();
+    } catch (e) { setMsg(sbErr(e), true); }
+    finally { btn.disabled = false; scheduleUpdate(); }
+    return;
+  }
   if (S.static) {
     if (!S.static.repo) return setMsg('No repository is configured for suggestions.', true);
     const M = model();
@@ -1647,6 +1750,7 @@ async function submitEntry(ev) {
   } finally { btn.disabled = false; }
 }
 async function acceptSub(id) {
+  if (S.sbMode) return sbCall('accept_submission', {p_id: id}, 'Accepted. It is now on the site.', true);
   const s = S.raw.submissions.get(id);
   if (!s || !S.db || S.busy) return;
   S.busy = true;
@@ -1682,6 +1786,10 @@ async function acceptSub(id) {
   finally { S.busy = false; }
 }
 async function declineSub(id) {
+  if (S.sbMode) {
+    const inp = document.getElementById('rn-' + id);
+    return sbCall('reject_submission', {p_id: id, p_note: inp ? inp.value.trim().slice(0, 500) : ''}, 'Rejected. The contributor has been emailed.', true);
+  }
   if (!S.db || S.busy) return;
   S.busy = true;
   const inp = document.getElementById('rn-' + id);
@@ -1690,6 +1798,224 @@ async function declineSub(id) {
     toast('Submission declined');
   } catch (e) { toast(errText(e)); }
   finally { S.busy = false; }
+}
+
+/* ---------- Supabase mode: sign-in, Admin page, email review links ---------- */
+function sbConfigured() { const c = window.KB_STATIC; return !!(c && c.supabaseUrl && c.supabaseAnonKey); }
+function sbErr(e) {
+  const m = e && (e.message || e.error_description || e.msg);
+  return m ? String(m) : 'Something went wrong. Check your connection and try again.';
+}
+async function sbCall(fn, args, okMsg, reload) {
+  if (!S.sb || S.busy) return null;
+  S.busy = true;
+  try {
+    const res = await S.sb.rpc(fn, args || {});
+    if (res.error) throw res.error;
+    if (okMsg) toast(okMsg);
+    if (reload) await Promise.all([loadRecords(), loadSubs(), S.me.canEdit ? loadAdmin() : null]);
+    return res.data === null || res.data === undefined ? true : res.data;
+  } catch (e) { toast(sbErr(e)); return null; }
+  finally { S.busy = false; scheduleUpdate(); }
+}
+function subsListHTML(M, admin) {
+  const pend = M.subs.filter(s => s.status === 'pending'), done = M.subs.filter(s => s.status !== 'pending').slice(0, 15);
+  let h = pend.length ? pend.map(s => subHTML(s, M)).join('')
+    : '<div class="empty"><b>' + (admin ? 'No suggestions waiting.' : 'Nothing waiting for review.') + '</b><span>' + (admin ? 'New suggestions also arrive by email.' : 'Suggestions you send appear here.') + '</span></div>';
+  if (done.length) h += '<details><summary>Recently reviewed (' + done.length + ')</summary><div class="queue">' + done.map(s => subHTML(s, M)).join('') + '</div></details>';
+  return h;
+}
+/* Re-rendering replaces inputs; keep what people have typed. */
+function keepInputs(root, fn) {
+  const vals = {};
+  if (root) $$('input[id], textarea[id]', root).forEach(i => { if (i.value) vals[i.id] = i.value; });
+  const focused = document.activeElement && root && root.contains(document.activeElement) ? document.activeElement.id : null;
+  fn();
+  Object.keys(vals).forEach(id => { const i = document.getElementById(id); if (i && !i.value) i.value = vals[id]; });
+  if (focused) { const f = document.getElementById(focused); if (f) try { f.focus(); } catch (e) {} }
+}
+function renderAcct() {
+  const el = $('#acct'); if (!el) return;
+  const nav = $('#nav-admin'); if (nav) nav.hidden = !isSbAdmin();
+  if (!S.sbMode) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = S.session
+    ? '<span class="who" title="' + esc(S.me.email || '') + '">' + esc(S.me.email || 'Signed in') + '</span>' + (S.me.canEdit ? '<span class="badge-admin">Admin</span>' : '') + '<button class="btn sm ghost" data-act="signout">Sign out</button>'
+    : '<button class="btn sm" data-act="signin">Sign in</button>';
+}
+function openSignin() {
+  if (!S.sb) return toast('Sign-in is not available on this copy of the site.');
+  $('#signin').hidden = false; $('#si-form1').hidden = false; $('#si-form2').hidden = true;
+  $('#si-msg').textContent = ''; $('#si-code').value = '';
+  setTimeout(() => $('#si-email').focus(), 20);
+}
+function closeSignin() { $('#signin').hidden = true; }
+function siMsg(t, err) { const m = $('#si-msg'); m.textContent = t; m.className = 'fmsg' + (err ? ' err' : ''); }
+async function sendCode(ev) {
+  ev.preventDefault();
+  const email = $('#si-email').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return siMsg('Enter a valid email address.', true);
+  $('#si-send').disabled = true; siMsg('Sending…');
+  try {
+    const res = await S.sb.auth.signInWithOtp({email: email, options: {shouldCreateUser: true}});
+    if (res.error) throw res.error;
+    $('#si-form1').hidden = true; $('#si-form2').hidden = false;
+    $('#si-sent').textContent = 'We sent a code to ' + email + '. It can take a minute to arrive; check your spam folder too.';
+    siMsg(''); setTimeout(() => $('#si-code').focus(), 20);
+  } catch (e) { siMsg(sbErr(e), true); }
+  finally { $('#si-send').disabled = false; }
+}
+async function verifyCode(ev) {
+  ev.preventDefault();
+  const email = $('#si-email').value.trim(), code = $('#si-code').value.replace(/\s+/g, '');
+  if (!/^\d{4,10}$/.test(code)) return siMsg('Enter the code from the email.', true);
+  $('#si-verify').disabled = true; siMsg('Checking…');
+  try {
+    const res = await S.sb.auth.verifyOtp({email: email, token: code, type: 'email'});
+    if (res.error) throw res.error;
+    S.session = (res.data && res.data.session) || S.session;
+    closeSignin(); toast('Signed in');
+    await refreshStatus();
+  } catch (e) { siMsg(sbErr(e), true); }
+  finally { $('#si-verify').disabled = false; }
+}
+async function signOut() {
+  try { await S.sb.auth.signOut(); } catch (e) {}
+  S.session = null;
+  await refreshStatus();
+  toast('Signed out');
+  if (S.route === 'admin') go('overview');
+}
+function kindLabel(col) { return {entries: 'link', measures: 'signal', constructs: 'topic', sources: 'paper'}[col] || 'record'; }
+function actLabel(a) {
+  const d = a.detail || {}, who = esc(a.actor_email || 'Someone');
+  const pair = d.signal ? ' <b>' + esc(d.signal) + '</b> → <b>' + esc(d.topic) + '</b>' : '';
+  const label = d.label ? ' “' + esc(String(d.label).length > 70 ? String(d.label).slice(0, 68) + '…' : d.label) + '”' : '';
+  switch (a.action) {
+    case 'submitted': return who + ' suggested' + pair;
+    case 'accepted': return who + ' accepted' + pair;
+    case 'rejected': return who + ' rejected' + pair + (d.note ? ' (' + esc(d.note) + ')' : '');
+    case 'deleted': return who + ' deleted a ' + kindLabel(d.collection) + label;
+    case 'restored': return who + ' restored a ' + kindLabel(d.collection) + label;
+    case 'admin_added': return who + ' made ' + esc(d.email) + ' an admin';
+    case 'admin_invited': return who + ' invited ' + esc(d.email) + ' to be an admin';
+    case 'invite_cancelled': return who + ' cancelled the admin invite for ' + esc(d.email);
+    case 'admin_joined': return who + ' signed in and became an admin';
+    case 'admin_stepped_down': return who + ' stepped down as an admin';
+    case 'imported': return who + ' imported ' + esc(d.records) + ' records';
+    default: return who + ' ' + esc(a.action);
+  }
+}
+function backupJSON() {
+  const out = {meta: S.meta ? [S.meta] : []};
+  ['sources', 'guidance', 'measures', 'constructs', 'entries'].forEach(c => { out[c] = Array.from(S.raw[c].values()); });
+  return JSON.stringify(out, null, 1);
+}
+async function importStarter() {
+  if (!S.sb || !S.static) return;
+  try {
+    const res = await fetch(S.static.data, {cache: 'no-cache'});
+    if (!res.ok) throw new Error('Could not read ' + S.static.data + ' (HTTP ' + res.status + ').');
+    const data = await res.json();
+    const n = await sbCall('import_kb', {p_data: data}, null, true);
+    if (n) toast('Imported ' + n + ' records');
+  } catch (e) { toast(sbErr(e)); }
+}
+
+V.admin = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Admin</h2></div><p>Review suggestions, delete links, and choose who else can do this. Every action is recorded in the activity list.</p></div><div id="adm-body"></div>';
+  },
+  update(el) {
+    const body = $('#adm-body');
+    if (!S.sbMode) { body.innerHTML = '<div class="empty"><b>Admin tools need the live database.</b><span>See SETUP.md in the repository to switch on sign-in and email approvals.</span></div>'; return; }
+    if (!S.session) { body.innerHTML = '<div class="empty"><b>Sign in to use the admin tools.</b><div class="btns"><button class="btn primary sm" data-act="signin">Sign in</button></div></div>'; return; }
+    if (!S.me.canEdit) { body.innerHTML = '<div class="empty"><b>This account is not an admin.</b><span>Ask an existing admin to add ' + esc(S.me.email || 'your email') + ' on this page.</span></div>'; return; }
+    const M = model(), A = S.adm;
+    const pend = M.subs.filter(s => s.status === 'pending');
+    const unused = []
+      .concat(M.measures.filter(m => !(M.byM.get(m.id) || []).length).map(m => ['measures', m.id, m.name]))
+      .concat(M.constructs.filter(c => !(M.byC.get(c.id) || []).length).map(c => ['constructs', c.id, c.name]))
+      .concat(M.sources.filter(s => !(M.byS.get(s.id) || []).length).map(s => ['sources', s.id, s.short || s.cite]));
+    const only = A.admins.length <= 1, armed = S.armed === 'step-down';
+    let h = '';
+    if (S.sbNote === 'empty') h += '<div class="callout warn"><b>The live database is empty</b><span>The site is showing the starter data from ' + esc(S.static ? S.static.data : 'data/kb.json') + '. Import it so admins can review and delete links.</span><div class="btns"><button class="btn primary sm" data-act="import-kb">Import the starter data</button></div></div>';
+    if (S.sbNote === 'down') h += '<div class="callout warn"><b>The live database could not be reached</b><span>Changes are not possible until it is back. If the project was paused, restore it in the Supabase dashboard.</span></div>';
+    h += '<div class="adm-grid"><div class="adm-col">';
+    h += '<section class="panel"><h3>Suggestions waiting<span class="count">' + pend.length + '</span></h3><div class="queue">' + subsListHTML(M, true) + '</div></section>';
+    h += '<section class="panel"><h3>Delete a link</h3><p class="small muted">Open any topic or signal: as an admin you see a <b>Delete this link</b> button under each link. Deleted items can be restored from the activity list.</p></section>';
+    if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
+      unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
+    h += '</div><div class="adm-col">';
+    h += '<section class="panel"><h3>Admins<span class="count">' + A.admins.length + '</span></h3><ul class="adm-list">' +
+      A.admins.map(a => '<li><span>' + esc(a.email) + (a.user_id === S.me.id ? ' <span class="badge-admin">You</span>' : '') + '</span><span class="sub">since ' + esc(fmtDate(a.added_at)) + '</span></li>').join('') + '</ul>' +
+      (A.invites.length ? '<div class="eyebrow">Invited, not signed in yet</div><ul class="adm-list">' + A.invites.map(i => '<li><span>' + esc(i.email) + '</span><button class="btn sm ghost" data-act="cancel-invite" data-email="' + esc(i.email) + '">Cancel invite</button></li>').join('') + '</ul>' : '') +
+      '<form class="adm-row" id="adm-add" novalidate><input id="adm-email" type="email" placeholder="New admin\'s email" aria-label="New admin\'s email" maxlength="200"><button class="btn primary sm" type="submit">Add admin</button></form>' +
+      '<p class="small muted">They get an email. Someone who has never signed in becomes an admin the first time they do.</p>' +
+      '<div class="btns"><button class="btn sm danger' + (armed ? ' armed' : '') + '" data-act="step-down"' + (only ? ' disabled' : '') + '>' + (armed ? 'Click again to step down' : 'Step down as admin') + '</button></div>' +
+      (only ? '<p class="small muted">You are the only admin. Add another admin before you can step down.</p>' : '') + '</section>';
+    h += '<section class="panel"><h3>Activity</h3>' + (A.activity.length ? '<ul class="adm-list">' + A.activity.map(a => {
+        const d = a.detail || {};
+        const canUndo = a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id);
+        return '<li><span>' + actLabel(a) + '<br><span class="sub">' + esc(fmtDate(a.at)) + '</span></span>' + (canUndo ? '<button class="btn sm" data-act="restore" data-id="' + esc(a.id) + '">Undo</button>' : '') + '</li>';
+      }).join('') + '</ul>' : '<p class="small muted">Nothing yet.</p>') + '</section>';
+    h += '<section class="panel"><h3>Backup</h3><p class="small muted">Download every record as one file. Keep a copy somewhere safe now and then.</p><div class="btns"><button class="btn sm" data-act="backup">Download backup (.json)</button></div></section>';
+    h += '</div></div>';
+    keepInputs(body, () => { body.innerHTML = h; });
+  }
+};
+
+V.review = {
+  mount(el) {
+    el.innerHTML = '<div class="sh"><div><h2>Review a suggestion</h2></div><p>You opened this from an email sent to the lab\'s admins. Nothing changes until you press a button.</p></div><div id="rv-body" class="review-card"></div>';
+  },
+  update(el) {
+    const R = S.review, body = $('#rv-body');
+    let h;
+    if (!R.token) h = '<div class="empty"><b>No review link found.</b><span>Open the Accept or Reject button in the email again, or use the Admin page.</span></div>';
+    else if (!S.sbMode) h = '<div class="empty"><b>' + (S.status === 'connecting' ? 'Connecting…' : 'Reviewing needs the live database, which is not set up on this copy of the site.') + '</b></div>';
+    else if (R.done) h = '<div class="callout ok"><b>' + (R.done.status === 'accepted' ? 'Accepted. The link is now on the site.' : 'Rejected. The contributor has been emailed.') + '</b><span>You can close this tab.</span><div class="btns"><button class="btn primary sm" data-act="go" data-route="overview">Open the knowledge base</button></div></div>';
+    else if (!R.data) h = '<p class="skel">Loading the suggestion…</p>';
+    else if (!R.data.ok) h = '<div class="empty"><b>This link no longer works.</b><span>' + esc(R.data.reason || '') + '</span></div>';
+    else if (R.data.status !== 'pending') h = '<div class="empty"><b>This suggestion was already ' + esc(R.data.status) + '.</b><span>No further action is needed.</span></div>';
+    else {
+      const s = R.data.summary || {}, p = R.data.payload || {};
+      const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
+      h = '<div class="panel"><div class="eyebrow">Suggested by ' + esc(R.data.submitter_email || 'unknown') + ' · ' + esc(fmtDate(R.data.submitted_at)) + '</div>' +
+        '<h3>' + esc(s.signal) + ' → ' + esc(s.topic) + '</h3><dl class="en-kv">' +
+        row('Paper', s.paper) + row('Page(s)', s.pages) + row('What the paper says', s.claim) +
+        row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
+        row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
+        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>' +
+        '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
+        '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
+        '<div class="field"><label for="rv-note">Reason (emailed to the contributor if you reject)</label><textarea id="rv-note" maxlength="500"></textarea></div>' +
+        '<p class="small muted">This link was sent to ' + esc(R.data.admin_email) + ' and records you as the reviewer.</p></div></div>';
+    }
+    keepInputs(body, () => { body.innerHTML = h; });
+  },
+  async load() {
+    const R = S.review;
+    if (!R.token || !S.sb) return;
+    try {
+      const res = await S.sb.rpc('get_review', {p_token: R.token});
+      R.data = res.error ? {ok: false, reason: sbErr(res.error)} : res.data;
+    } catch (e) { R.data = {ok: false, reason: sbErr(e)}; }
+    scheduleUpdate();
+  }
+};
+async function reviewDecide(decision) {
+  const R = S.review;
+  if (R.busy || !S.sb) return;
+  R.busy = true; scheduleUpdate();
+  const note = ($('#rv-note') && $('#rv-note').value) || '';
+  try {
+    const res = await S.sb.rpc('review_by_token', {p_token: R.token, p_decision: decision, p_note: note});
+    if (res.error) throw res.error;
+    R.done = res.data || {status: decision === 'accept' ? 'accepted' : 'rejected'};
+    await loadRecords();
+  } catch (e) { toast(sbErr(e)); }
+  finally { R.busy = false; scheduleUpdate(); }
 }
 
 V.data = {
@@ -1710,7 +2036,8 @@ V.data = {
     const ready = S.status === 'ready' || S.status === 'empty';
     $('#dt-src').innerHTML = '<div class="eyebrow">About this dataset</div><h3>' + esc(mt && mt.name ? mt.name : 'EEG Construct–Measure Knowledge Base') + '</h3>' +
       (mt ? '<p class="small muted">Built ' + esc(fmtDate(mt.builtAt)) + ' from ' + plural(M.sources.length, 'source paper') + ': ' + plural(M.measures.length, 'measure') + ', ' + plural(M.constructs.length, 'construct') + ', ' + plural(M.entries.length, 'entry', 'entries') + ' and ' + plural(M.guidance.length, 'guidance item') + '. ' + esc(mt.note || '') + '</p>' +
-        (S.static ? '<p class="small muted">This copy of the site reads its records from <span class="mono">' + esc(S.static.data) + '</span>' + (S.static.repo ? ' in the <a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">GitHub repository ↗</a>' : '') + '. It changes when that file is updated.</p>' : '') : '<p class="skel">' + (ready ? 'No dataset record found.' : 'Loading…') + '</p>');
+        (S.sbMode && !S.sbNote ? '<p class="small muted">This site reads its records from a live database. Admins accept, reject and delete links on the Admin page, and changes appear straight away.</p>'
+          : S.static ? '<p class="small muted">This copy of the site reads its records from <span class="mono">' + esc(S.static.data) + '</span>' + (S.static.repo ? ' in the <a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">GitHub repository ↗</a>' : '') + '. It changes when that file is updated.</p>' : '') : '<p class="skel">' + (ready ? 'No dataset record found.' : 'Loading…') + '</p>');
     if (!ready) $('#dt-health').innerHTML = '<p class="skel">Checks run once the knowledge base loads.</p>';
     else {
       const single = M.measures.filter(m => srcIdsForM(M, m.id).length === 1);
@@ -1736,7 +2063,7 @@ V.data = {
         hrow('Submissions waiting for review', 'See Contribute.', M.pending.length, M.pending.length ? 'info' : 'ok');
     }
     $('#dt-btns').innerHTML = '<button class="btn primary" data-act="copy-index">Copy Measure Index CSV</button><button class="btn" data-act="copy-entries">Copy Entries CSV</button><button class="btn" data-act="copy-refs">Copy reference list</button><button class="btn" data-act="copy-guidance">Copy methods guidance</button>' +
-      (S.dl ? '<button class="btn" data-act="dl-index">Download Measure Index .csv</button><button class="btn" data-act="dl-entries">Download Entries .csv</button>' : '');
+      (S.dl ? '<button class="btn" data-act="dl-index">Download Measure Index .csv</button><button class="btn" data-act="dl-entries">Download Entries .csv</button><button class="btn" data-act="dl-json">Download all data (.json)</button>' : '');
     $('#dt-prev').textContent = ready ? indexCSV(M).split('\r\n').slice(0, 7).join('\n') + (M.measures.length > 5 ? '\n…' : '') : 'Loading…';
     $('#dt-gloss').innerHTML =
       '<div><dt>Construct</dt><dd>The psychological or physiological process a study claims to measure.</dd></div>' +
@@ -1903,6 +2230,13 @@ function toggleMore(open) {
 }
 let tmr = 0;
 function scheduleUpdate() { if (tmr) return; tmr = setTimeout(() => { tmr = 0; render(); }, 16); }
+/* Re-rendering rebuilds folded sections closed; reopen the ones that were open. */
+function keepDetails(root, fn) {
+  const key = d => { const s = d.querySelector('summary'); return s ? s.textContent.replace(/\d+/g, '#').trim() : ''; };
+  const open = root ? $$('details[open]', root).map(key) : [];
+  fn();
+  if (root && open.length) $$('details', root).forEach(d => { if (open.includes(key(d))) d.open = true; });
+}
 function render() {
   const st = S.status;
   const ban = $('#banner'), bt = $('#banner-t');
@@ -1914,10 +2248,17 @@ function render() {
   } else if (st === 'empty') {
     ban.hidden = false; ban.className = 'banner'; $('#banner-dot').className = 'dot';
     bt.innerHTML = '<b>The knowledge base is empty.</b> Records are loaded by the owner.';
+  } else if (S.sbMode && S.sbNote === 'down') {
+    ban.hidden = false; ban.className = 'banner warn'; $('#banner-dot').className = 'dot warn';
+    bt.innerHTML = '<b>Showing a saved copy of the data.</b> The live database could not be reached, so recent changes may be missing and suggestions are paused.';
+  } else if (S.sbMode && S.sbNote === 'empty' && S.me.canEdit) {
+    ban.hidden = false; ban.className = 'banner'; $('#banner-dot').className = 'dot';
+    bt.innerHTML = '<b>The live database is empty.</b> Import the starter data from the <button class="link" data-act="go" data-route="admin">Admin page</button>.';
   } else ban.hidden = true;
+  renderAcct();
   const el = $('#v-' + S.route);
-  if (S.mounted[S.route]) { try { V[S.route].update(el); } catch (e) { console.error(e); } }
-  if (S.drawer) renderDrawer();
+  if (S.mounted[S.route]) { try { keepDetails(el, () => V[S.route].update(el)); } catch (e) { console.error(e); } }
+  if (S.drawer) keepDetails($('#dr-body'), renderDrawer);
   if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) runSearch();
 }
 
@@ -1958,7 +2299,36 @@ function onAct(t) {
     case 'dl-entries': download('entries.csv', entriesCSV(M)); break;
     case 'accept': acceptSub(id); break;
     case 'decline': declineSub(id); break;
+    case 'dl-json': download('eeg-knowledge-base-' + today() + '.json', backupJSON()); break;
+    case 'signin': openSignin(); break;
+    case 'signout': signOut(); break;
+    case 'close-signin': closeSignin(); break;
+    case 'si-back': $('#si-form2').hidden = true; $('#si-form1').hidden = false; siMsg(''); $('#si-email').focus(); break;
+    case 'del-record': {
+      const col = t.getAttribute('data-col'), key = col + '/' + id;
+      if (S.armed !== key) { armKey(key); break; }
+      S.armed = null;
+      sbCall('delete_record', {p_collection: col, p_id: id}, 'Deleted. You can undo it from the Admin page.', true);
+      break;
+    }
+    case 'step-down':
+      if (S.armed !== 'step-down') { armKey('step-down'); break; }
+      S.armed = null;
+      sbCall('step_down', {}, 'You are no longer an admin.', false).then(ok => { if (ok) refreshStatus(); });
+      break;
+    case 'cancel-invite': sbCall('cancel_invite', {p_email: t.getAttribute('data-email')}, 'Invite cancelled', false).then(() => loadAdmin()); break;
+    case 'restore': sbCall('restore_record', {p_activity: Number(id)}, 'Restored', true); break;
+    case 'backup': download('eeg-kb-backup-' + today() + '.json', backupJSON()); break;
+    case 'import-kb': importStarter(); break;
+    case 'rv-accept': reviewDecide('accept'); break;
+    case 'rv-reject': reviewDecide('reject'); break;
   }
+}
+let armT = 0;
+function armKey(key) {
+  S.armed = key; render();
+  clearTimeout(armT);
+  armT = setTimeout(() => { if (S.armed === key) { S.armed = null; render(); } }, 5000);
 }
 function bind() {
   document.addEventListener('click', ev => {
@@ -1974,6 +2344,7 @@ function bind() {
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape') {
       if (!$('#modal').hidden) { $('#modal').hidden = true; return; }
+      if (!$('#signin').hidden) { closeSignin(); return; }
       if (!$('#more-menu').hidden) { toggleMore(false); $('#more-btn').focus(); return; }
       if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) { closeSearch(); return; }
       if (S.drawer) { closeDrawer(); return; }
@@ -2003,6 +2374,20 @@ function bind() {
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
   window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ROUTES.includes(h) && h !== S.route) go(h, false); });
+  $('#si-form1').addEventListener('submit', sendCode);
+  $('#si-form2').addEventListener('submit', verifyCode);
+  document.addEventListener('submit', ev => {
+    if (ev.target.id !== 'adm-add') return;
+    ev.preventDefault();
+    const email = ($('#adm-email').value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
+    sbCall('add_admin', {p_email: email}, null, false).then(r => {
+      if (!r) return;
+      const i = $('#adm-email'); if (i) i.value = '';
+      toast(r === 'added' ? email + ' is now an admin' : r === 'invited' ? 'Invite sent to ' + email : email + ' is already an admin');
+      loadAdmin();
+    });
+  });
 }
 
 /* ---------- capabilities ---------- */
@@ -2022,20 +2407,22 @@ function subscribe(col) {
   } catch (e) { console.warn(e); S.status = 'error'; scheduleUpdate(); }
 }
 /* Standalone hosting (e.g. GitHub Pages): records come from a JSON file published beside the page. */
-async function connectStatic(cfg) {
-  S.static = cfg;
-  S.dl = {save: o => {
-    const url = URL.createObjectURL(new Blob([o.data], {type: 'text/csv;charset=utf-8'}));
+function fileDownloader() {
+  return {save: o => {
+    const type = /\.json$/i.test(o.filename) ? 'application/json' : 'text/csv;charset=utf-8';
+    const url = URL.createObjectURL(new Blob([o.data], {type: type}));
     const a = document.createElement('a'); a.href = url; a.download = o.filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     return Promise.resolve();
   }};
+}
+async function loadStaticFile(cfg) {
   try {
     const res = await fetch(cfg.data, {cache: 'no-cache'});
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const kb = await res.json();
-    COLS.forEach(col => {
+    COLS.filter(col => col !== 'submissions').forEach(col => {
       const map = new Map();
       arr(kb[col]).forEach(r => { if (r && r.id) map.set(r.id, Object.assign({}, r)); });
       S.raw[col] = map; S.loaded[col] = true;
@@ -2045,6 +2432,113 @@ async function connectStatic(cfg) {
     S.status = S.raw.measures.size ? 'ready' : 'empty';
   } catch (e) { console.warn('data file', e); S.status = 'error'; }
   invalidate(); scheduleUpdate();
+}
+const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js';
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Could not load ' + src));
+    document.head.appendChild(s);
+    setTimeout(() => reject(new Error('Timed out loading ' + src)), 15000);
+  });
+}
+async function connectStatic(cfg) {
+  S.static = cfg;
+  S.dl = fileDownloader();
+  if (sbConfigured()) {
+    if (!(window.supabase && window.supabase.createClient)) {
+      try { await loadScript(cfg.supabaseJs || SUPABASE_JS); } catch (e) { console.warn('supabase-js', e); }
+    }
+    if (window.supabase && typeof window.supabase.createClient === 'function') return connectSupabase(cfg);
+  }
+  await loadStaticFile(cfg);
+}
+
+/* Supabase hosting: live database, email-code sign-in, admins, email review links. Set up with supabase/setup.sql. */
+async function connectSupabase(cfg) {
+  S.sbMode = true;
+  try {
+    S.sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: false}});
+  } catch (e) {
+    console.warn('supabase', e); S.sbMode = false; S.sb = null;
+    return loadStaticFile(cfg);
+  }
+  try { const r = await S.sb.auth.getSession(); S.session = (r && r.data && r.data.session) || null; } catch (e) { S.session = null; }
+  S.sb.auth.onAuthStateChange((event, session) => {
+    const was = S.session && S.session.user ? S.session.user.id : null, now = session && session.user ? session.user.id : null;
+    S.session = session || null;
+    if (was !== now) setTimeout(refreshStatus, 0);
+  });
+  renderAcct();
+  await loadRecords();
+  await refreshStatus();
+  if (S.review.token) V.review.load();
+}
+async function loadRecords() {
+  if (!S.sb) return;
+  const rows = [];
+  try {
+    for (let from = 0; ; from += 1000) {
+      const res = await S.sb.from('kb_records').select('collection,id,doc').order('collection').order('id').range(from, from + 999);
+      if (res.error) throw res.error;
+      rows.push.apply(rows, res.data || []);
+      if (!res.data || res.data.length < 1000) break;
+    }
+  } catch (e) { console.warn('database', e); S.sbNote = 'down'; return loadStaticFile(S.static); }
+  if (!rows.length) { S.sbNote = 'empty'; return loadStaticFile(S.static); }
+  S.sbNote = '';
+  const maps = {measures: new Map(), constructs: new Map(), entries: new Map(), sources: new Map(), guidance: new Map()};
+  let meta = null;
+  rows.forEach(r => {
+    const d = Object.assign({}, r.doc, {id: r.id});
+    if (r.collection === 'meta') { if (!meta || r.id === 'kb') meta = d; }
+    else if (maps[r.collection]) maps[r.collection].set(r.id, d);
+  });
+  Object.keys(maps).forEach(c => { S.raw[c] = maps[c]; S.loaded[c] = true; });
+  S.meta = meta;
+  S.status = S.raw.measures.size ? 'ready' : 'empty';
+  invalidate(); scheduleUpdate();
+}
+async function refreshStatus() {
+  if (!S.sb) return;
+  const s = S.session;
+  S.me = {id: s ? s.user.id : null, email: s ? (s.user.email || '') : '', canEdit: false, isOwner: false, canWrite: !!s};
+  if (s) {
+    try {
+      const res = await S.sb.rpc('my_status');
+      if (!res.error && res.data) { S.me.canEdit = !!res.data.is_admin; S.me.email = res.data.email || S.me.email; }
+    } catch (e) {}
+  }
+  await loadSubs();
+  if (S.me.canEdit) await loadAdmin(); else S.adm = {admins: [], invites: [], activity: [], loaded: false};
+  renderAcct(); scheduleUpdate();
+}
+function subRow(r) {
+  return Object.assign({}, r.payload || {}, {id: r.id, status: r.status, submittedAt: r.created_at, submitterEmail: r.submitter_email,
+    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id});
+}
+async function loadSubs() {
+  if (!S.sb || !S.session) { S.raw.submissions = new Map(); invalidate(); scheduleUpdate(); return; }
+  try {
+    const res = await S.sb.from('submissions').select('id,created_at,submitter_email,status,payload,review_note,reviewer_email,reviewed_at,entry_id')
+      .order('created_at', {ascending: false}).limit(200);
+    if (!res.error && res.data) { S.raw.submissions = new Map(res.data.map(r => [r.id, subRow(r)])); S.loaded.submissions = true; }
+  } catch (e) { console.warn('submissions', e); }
+  invalidate(); scheduleUpdate();
+}
+async function loadAdmin() {
+  if (!S.sb) return;
+  try {
+    const res = await Promise.all([
+      S.sb.from('admins').select('user_id,email,added_at').order('added_at'),
+      S.sb.from('admin_invites').select('email,invited_at').order('invited_at'),
+      S.sb.from('activity').select('id,at,actor_email,action,detail').order('at', {ascending: false}).limit(40)
+    ]);
+    S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], loaded: true};
+  } catch (e) { console.warn('admin', e); }
+  scheduleUpdate();
 }
 async function connect() {
   if (window.KB_STATIC && window.KB_STATIC.data) return connectStatic(window.KB_STATIC);
@@ -2068,8 +2562,16 @@ async function connect() {
 /* ---------- start ---------- */
 const v0 = store('eegkb.view'); if (v0 === 'table' || v0 === 'cards') S.mf.view = v0;
 bind();
+try {
+  const qs = new URLSearchParams(location.search || '');
+  if (qs.get('review')) {
+    S.review.token = qs.get('review');
+    S.review.decision = qs.get('decision') || '';
+    history.replaceState(null, '', location.pathname + '#review');
+  }
+} catch (e) {}
 const h0 = (location.hash || '').slice(1);
-go(ROUTES.includes(h0) ? h0 : 'overview', false);
+go(S.review.token ? 'review' : ROUTES.includes(h0) ? h0 : 'overview', false);
 connect();
 })();
 </script>
