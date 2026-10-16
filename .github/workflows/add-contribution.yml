@@ -1,0 +1,41 @@
+# Adds suggestions from the site's Contribute page to data/kb.json without anyone having to approve them.
+# Settings (who may add links, daily limit) are in .github/contributions.json.
+name: Add contributions
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Issue number to process
+        required: true
+      dry_run:
+        description: Only check it and show what would be added
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+
+# One suggestion at a time, so two never edit data/kb.json at once.
+concurrency:
+  group: add-contributions
+  cancel-in-progress: false
+
+jobs:
+  add:
+    if: github.event_name == 'workflow_dispatch' || github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        env:
+          ISSUE: ${{ github.event.inputs.issue }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        with:
+          script: |
+            const run = require('./.github/scripts/add-contribution.js');
+            await run({github, context, core, issueNumber: Number(process.env.ISSUE) || null, dryRun: process.env.DRY_RUN === 'true'});

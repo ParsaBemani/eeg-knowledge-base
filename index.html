@@ -1528,7 +1528,7 @@ function sourceDetail(s, M) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Curators review each suggestion on GitHub and add accepted links in the next update of the site.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
       '<div class="ct"><section class="panel"><h3>Suggest a link</h3><div id="ct-gate" class="gate"></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
@@ -1599,11 +1599,12 @@ V.contribute = {
     }
     if (S.static) {
       const issues = S.static.repo ? String(S.static.repo).replace(/\/$/, '') + '/issues' : '';
-      $('#ct-gate').innerHTML = '<div class="callout"><b>Suggestions are collected on GitHub</b><span>Fill in the form and press the button. It opens a pre-filled GitHub issue for you to check and post. You need a free GitHub account.</span></div>';
+      $('#ct-gate').innerHTML = '<div class="callout"><b>Suggestions are added automatically</b><span>Fill in the form and press the button. It opens a pre-filled GitHub issue; press <b>Create</b> there and your link is checked and added to the site within a few minutes. If something is missing, a reply on the issue says what to fix. You need a free GitHub account.</span></div>';
       $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !issues; });
       $('#f-submit').textContent = 'Open a GitHub issue';
       $('#ct-role').textContent = '';
-      $('#ct-queue').innerHTML = '<div class="empty"><b>Suggestions are reviewed on GitHub.</b><span>' + (issues ? 'Curators read each issue and add accepted links to the data file. <a href="' + esc(issues) + '" target="_blank" rel="noopener">See open suggestions ↗</a>' : 'No repository is configured for suggestions.') + '</span></div>';
+      $('#ct-queue').innerHTML = '<div class="empty"><b>How it works</b><span>' + (issues ? 'A script on GitHub checks each suggestion for a signal, a topic, a paper, page numbers and a paraphrase, then adds it to the site and closes the issue. <a href="' + esc(issues + '?q=is%3Aissue') + '" target="_blank" rel="noopener">See all suggestions ↗</a>' : 'No repository is configured for suggestions.') + '</span></div>';
+      $('#ct-qh').textContent = 'Suggestions';
       return;
     }
     let gate = '', block = false;
@@ -1720,10 +1721,22 @@ async function submitEntry(ev) {
       ln('Task', v('f-paradigm')), ln('Participants', v('f-pop')), ln('Behavioural outcome', v('f-beh')),
       ln('Original studies the paper cites', v('f-cites'))
     ].filter(Boolean).join('\n\n') + '\n\n_Sent from the Contribute form on the site._';
-    const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(body);
+    // An exact copy of the form for the script that adds suggestions automatically (hidden when the issue is shown).
+    const form = {
+      measureId: mSel === '__new' ? null : mSel,
+      newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
+      constructId: cSel === '__new' ? null : cSel,
+      newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
+      sourceId: sSel === '__new' ? null : sSel,
+      reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
+      pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
+      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
+    };
+    const fullBody = body + '\n\n<!-- contribution\n' + JSON.stringify(form).replace(/--/g, '\\u002d\\u002d') + '\n-->';
+    const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(fullBody);
     try { window.open(url, '_blank', 'noopener'); } catch (e) {}
     msg.className = 'fmsg';
-    msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press Submit there.';
+    msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press <b>Create</b> there. It is added to the site within a few minutes.';
     return;
   }
   const doc = {

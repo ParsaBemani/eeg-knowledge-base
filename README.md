@@ -42,7 +42,13 @@ The papers themselves are not included in this repository.
 Use the **Contribute** page on the site.
 
 - **With sign-in switched on** (see [SETUP.md](SETUP.md)): contributors sign in with an emailed code and send the suggestion. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Admins can also delete links (with undo), add other admins and step down from the Admin page.
-- **Without it:** the page opens a pre-filled GitHub issue, and a curator adds accepted links to `data/kb.json` by hand.
+- **Without it (current setup):** the page opens a pre-filled GitHub issue. When the contributor posts it, a GitHub Action ([`.github/workflows/add-contribution.yml`](.github/workflows/add-contribution.yml)) checks that it has a signal, a topic, a paper, page numbers and a paraphrase, adds it to `data/kb.json`, closes the issue with a thank-you, and the site rebuilds within a few minutes. Nobody has to approve it. If something is missing, the Action replies on the issue and checks again when the contributor edits it.
+
+### Automatic additions: settings and undo
+
+- [`.github/contributions.json`](.github/contributions.json) controls who is accepted without review: `"acceptFrom": "anyone"`, or a list of GitHub usernames such as `["ParsaBemani", "labmember"]`. Suggestions from anyone else are labelled `needs-review` and left open. `"maxPerDay"` limits how many links one person can add in 24 hours (default 10).
+- Each addition is its own commit, named "Add contributed link from #N". To remove one, open that commit on GitHub and click **Revert**, or delete its line from `data/kb.json`.
+- To re-check an existing issue by hand, open **Actions → Add contributions → Run workflow** and enter the issue number. Leave "Only check it" ticked to see what would be added without changing anything.
 
 ## Repository layout
 
