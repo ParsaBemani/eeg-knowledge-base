@@ -6,7 +6,7 @@
 -- step in SETUP.md, so nothing private is stored in this public file.
 
 create extension if not exists pgcrypto with schema extensions;
-create extension if not exists pg_net;
+create extension if not exists pg_net with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Tables
