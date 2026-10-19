@@ -82,7 +82,11 @@ function normalise(p) {
     pages: str(p.pages), claim: str(p.claim),
     claimType: CLAIMS.includes(p.claimType) ? p.claimType : 'attributed',
     evidence: EVIDENCE.includes(p.evidence) ? p.evidence : 'human-eeg',
-    paradigm: str(p.paradigm), population: str(p.population), behaviour: str(p.behaviour), cites: str(p.cites)
+    paradigm: str(p.paradigm), population: str(p.population), behaviour: str(p.behaviour), cites: str(p.cites),
+    sites: list(p.sites).map(str).filter(s => /^[A-Z][A-Za-z]{0,2}(z|\d{1,2})$/.test(s)).filter((s, i, a) => a.indexOf(s) === i).slice(0, 30),
+    sitesNote: str(p.sitesNote).slice(0, 200),
+    bands: list(p.bands).slice(0, 1).filter(b => b && isFinite(b.lo) && isFinite(b.hi) && Number(b.lo) >= 0 && Number(b.lo) < Number(b.hi) && Number(b.hi) <= 1000)
+      .map(b => ({lo: Number(b.lo), hi: Number(b.hi), label: str(b.label).slice(0, 30)}))
   };
   return {payload: out, problems: []};
 }
@@ -144,7 +148,7 @@ function buildRecords(p, kb, issue, today) {
       mid = 'm-' + slug(p.newMeasure.name) + tag;
       add.measures.push({id: mid, order: 500, provenance: 'contributed', name: p.newMeasure.name, short: '', aka: [],
         domain: DOMAINS[p.newMeasure.signal], signal: p.newMeasure.signal, spec: p.newMeasure.spec, specRefs: [{s: sid, p: p.pages}],
-        window: null, windowNote: '', bands: [], bandsNote: '', sites: [], sitesNote: '', inferred: [], lateralized: false,
+        window: null, windowNote: '', bands: p.bands || [], bandsNote: '', sites: p.sites || [], sitesNote: p.sitesNote || '', inferred: [], lateralized: false,
         caveats: [], methods: [], feasibility: {passive: null, infants: null, note: '', refs: []}, issue: issue, addedAt: today});
     }
   }

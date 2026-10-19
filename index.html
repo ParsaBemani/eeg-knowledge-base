@@ -534,6 +534,35 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .rv-actions textarea{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);font:inherit;min-height:70px}
 .btn.pick{outline:3px solid var(--accent-soft)}
 .si-step{display:flex;flex-direction:column;gap:12px}
+.subform.placer-wrap{display:flex;flex-direction:column;gap:14px}
+.placer-wrap > div{display:flex;flex-direction:column;gap:10px;min-width:0}
+.placer{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:700px){.placer{grid-template-columns:1fr}.placer-fig{max-width:320px}}
+.placer-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+#pl-head{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+#pl-head .hd,#pl-head .ear,#pl-head .nose{fill:var(--panel);stroke:var(--ink-3);stroke-width:2.5}
+#pl-head .orient{font:500 8px var(--f-mono);fill:var(--ink-3)}
+#pl-head .ps{cursor:pointer}
+#pl-head .ps circle{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:1.4}
+#pl-head .ps text{font:600 7px var(--f-mono);fill:var(--ink-2);text-anchor:middle;pointer-events:none}
+#pl-head .ps:hover circle{stroke:var(--accent);stroke-width:2.2}
+#pl-head .ps.on circle{fill:var(--accent);stroke:var(--accent);cursor:grab}
+#pl-head .ps.on text{fill:var(--accent-ink);font-weight:700}
+#pl-head .ps.hl circle{stroke:var(--hl);stroke-width:4}
+#pl-head .ps.target circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:4}
+#pl-head .ps:focus{outline:none}
+#pl-head .ps:focus-visible circle{stroke:var(--accent);stroke-width:3.5}
+.pl-token{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px dashed var(--accent);border-radius:999px;background:var(--accent-soft);color:var(--accent);font:700 13.5px var(--f-body);cursor:grab;touch-action:none;user-select:none}
+.pl-token i{width:14px;height:14px;border-radius:50%;background:var(--accent);flex:none}
+.pl-token[disabled]{opacity:.5;cursor:not-allowed}
+.pl-ghost{position:fixed;z-index:90;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--accent-soft);pointer-events:none}
+.pl-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.pl-list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel);font-size:13.5px}
+.pl-list li.hl{border-color:var(--hl);box-shadow:0 0 0 2px var(--hl-soft)}
+.pl-list li.pl-empty{display:block;border-style:dashed;color:var(--ink-3);background:transparent}
+.pl-list .nm{font:700 14px var(--f-mono);min-width:38px;padding-top:1px}
+.pl-list .rg{font-weight:700}
+.pl-list .ds{color:var(--ink-2);font-size:13px}
 
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .modal{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
@@ -1526,6 +1555,164 @@ function sourceDetail(s, M) {
   return h;
 }
 
+/* ---------- electrode placer and frequency range (Contribute form) ---------- */
+/* Standard 10–20 naming: letters give the area of the head, z is the centre line, odd numbers left, even numbers right. */
+const AREAS = [
+  ['Fp', 'Frontopolar', 'the forehead, just above the eyes', 'frontal lobe'],
+  ['AF', 'Anterior frontal', 'the upper forehead', 'frontal lobe'],
+  ['FC', 'Fronto-central', 'between the front and the top of the head', 'frontal and central regions'],
+  ['FT', 'Fronto-temporal', 'in front of and above the ear', 'frontal and temporal lobes'],
+  ['CP', 'Centro-parietal', 'between the top and the upper back of the head', 'central and parietal regions'],
+  ['TP', 'Temporo-parietal', 'behind and above the ear', 'temporal and parietal lobes'],
+  ['PO', 'Parieto-occipital', 'between the upper back and the back of the head', 'parietal and occipital lobes'],
+  ['F', 'Frontal', 'the front of the head', 'frontal lobe'],
+  ['C', 'Central', 'the top of the head', 'central region (the motor and sensory strips)'],
+  ['T', 'Temporal', 'the side of the head, above the ear', 'temporal lobe'],
+  ['P', 'Parietal', 'the upper back of the head', 'parietal lobe'],
+  ['O', 'Occipital', 'the back of the head', 'occipital lobe'],
+  ['M', 'Mastoid', 'the bony bump behind the ear', ''],
+  ['A', 'Earlobe', 'the earlobe', '']
+];
+function siteInfo(name) {
+  const a = AREAS.find(x => name.indexOf(x[0]) === 0 && /^(z|\d{1,2})$/.test(name.slice(x[0].length)));
+  if (!a) return {name: name, region: 'Other position', desc: 'A position outside the standard 10–20 names.'};
+  const suf = name.slice(a[0].length);
+  const n = suf === 'z' ? 0 : Number(suf);
+  const side = suf === 'z' ? 'midline' : (n % 2 ? 'left' : 'right');
+  if (a[0] === 'M' || a[0] === 'A') {
+    return {name: name, region: a[1] + ', ' + side, desc: (a[0] === 'M' ? 'The bony bump behind the ' + side + ' ear' : 'The ' + side + ' earlobe') + '. Usually a reference electrode, not over the brain.'};
+  }
+  const where = suf === 'z' ? 'on the centre line' : n <= 2 ? 'just ' + side + ' of the centre line' : n >= 7 ? 'far to the ' + side : 'on the ' + side + ' side';
+  const pos = a[2].charAt(0).toUpperCase() + a[2].slice(1);
+  return {name: name, region: a[1] + ', ' + (suf === 'z' ? 'midline' : side + ' side'), desc: pos + ', ' + where + '. Over the ' + a[3] + '.'};
+}
+const PL = {sites: [], hover: null, drag: null, moved: false, suppressClick: false, last: null};
+function placerSVG() {
+  let s = '<svg id="pl-head" viewBox="-128 -136 256 264" role="group" aria-label="Head seen from above, nose at the top. Click a position to add or remove an electrode.">' +
+    '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>' +
+    '<text class="orient" x="0" y="-122" text-anchor="middle">nose</text><text class="orient" x="-120" y="-30" text-anchor="middle">L</text><text class="orient" x="120" y="-30" text-anchor="middle">R</text>';
+  Object.keys(SITES).forEach(k => {
+    const p = SITES[k], info = siteInfo(k);
+    s += '<g class="ps" data-site="' + k + '" data-act="pl-toggle" role="button" tabindex="0" aria-pressed="false" aria-label="' + esc(k + ': ' + info.region) + '">' +
+      '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="10.5"/><text x="' + p[0] + '" y="' + (-p[1] + 2.6) + '">' + k + '</text></g>';
+  });
+  return s + '</svg>';
+}
+function renderPlacer() {
+  const svg = $('#pl-head'), list = $('#pl-list');
+  if (!svg || !list) return;
+  $$('.ps', svg).forEach(g => {
+    const on = PL.sites.includes(g.getAttribute('data-site'));
+    g.classList.toggle('on', on); g.setAttribute('aria-pressed', String(on));
+  });
+  list.innerHTML = PL.sites.length ? PL.sites.map(k => {
+    const i = siteInfo(k);
+    return '<li data-site="' + k + '"><b class="nm">' + k + '</b><span><span class="rg">' + esc(i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span>' +
+      '<button type="button" class="btn sm ghost" data-act="pl-remove" data-site="' + k + '" aria-label="Remove ' + k + '">Remove</button></li>';
+  }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
+  plHighlight(PL.hover);
+}
+function plHighlight(site) {
+  PL.hover = site;
+  $$('#f-place [data-site]').forEach(el => el.classList.toggle('hl', !!site && el.getAttribute('data-site') === site && (el.tagName !== 'BUTTON')));
+}
+function togglePl(site) {
+  if (!SITES[site]) return;
+  const i = PL.sites.indexOf(site);
+  if (i >= 0) PL.sites.splice(i, 1); else if (PL.sites.length < 30) PL.sites.push(site);
+  renderPlacer();
+}
+function plNearest(cx, cy) {
+  const svg = $('#pl-head'), m = svg && svg.getScreenCTM();
+  if (!m) return null;
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  const p = pt.matrixTransform(m.inverse());
+  PL.last = p;
+  let best = null, bd = 18;
+  Object.keys(SITES).forEach(k => { const d = Math.hypot(p.x - SITES[k][0], p.y + SITES[k][1]); if (d < bd) { bd = d; best = k; } });
+  return best;
+}
+function plPointerDown(ev) {
+  const tok = ev.target.closest && ev.target.closest('.pl-token');
+  const g = ev.target.closest && ev.target.closest('#pl-head .ps.on');
+  if ((!tok && !g) || (ev.button !== undefined && ev.button > 0) || ($('#f-claim') && $('#f-claim').disabled)) return;
+  ev.preventDefault();
+  PL.drag = {from: g ? g.getAttribute('data-site') : null, x0: ev.clientX, y0: ev.clientY, ghost: null, target: null};
+  PL.moved = false;
+}
+function plPointerMove(ev) {
+  const d = PL.drag;
+  if (!d) return;
+  if (!PL.moved && Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 5) return;
+  PL.moved = true;
+  ev.preventDefault();
+  if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 'pl-ghost'; document.body.appendChild(d.ghost); }
+  d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
+  const t = plNearest(ev.clientX, ev.clientY);
+  if (t !== d.target) { d.target = t; $$('#pl-head .ps').forEach(x => x.classList.toggle('target', x.getAttribute('data-site') === t)); }
+}
+function plPointerUp() {
+  const d = PL.drag;
+  if (!d) return;
+  PL.drag = null;
+  if (d.ghost) d.ghost.remove();
+  $$('#pl-head .ps.target').forEach(x => x.classList.remove('target'));
+  if (!PL.moved) return;
+  PL.suppressClick = true; setTimeout(() => { PL.suppressClick = false; }, 0);
+  if (d.target) {
+    if (d.from) {
+      const i = PL.sites.indexOf(d.from);
+      if (PL.sites.includes(d.target)) PL.sites.splice(i, 1); else PL.sites[i] = d.target;
+    } else if (!PL.sites.includes(d.target) && PL.sites.length < 30) PL.sites.push(d.target);
+  } else if (d.from && (!PL.last || Math.hypot(PL.last.x, PL.last.y) > 100)) {
+    PL.sites = PL.sites.filter(s => s !== d.from);
+  }
+  renderPlacer();
+}
+function plVisibility() {
+  const box = $('#f-place');
+  if (!box) return;
+  const sel = $('#f-measure').value, isNew = sel === '__new';
+  const m = sel && !isNew ? model().mById.get(sel) : null;
+  const needSites = isNew || !!(m && !sitesOf(m).length);
+  const needBand = isNew || !!(m && !bandsOf(m).length && sigOf(m) !== 'time');
+  box.hidden = !(needSites || needBand);
+  $('#pl-sites-part').hidden = !needSites;
+  $('#pl-band-part').hidden = !needBand;
+  const missing = [needSites && 'electrode sites', needBand && 'frequency range'].filter(Boolean).join(' or ');
+  $('#f-place-intro').textContent = isNew
+    ? 'Show where the paper records this signal and, if it gives one, the frequency range. Both are optional; leave the range blank for ERPs.'
+    : m ? 'This signal has no ' + missing + ' on the site yet. If the paper gives them, add them here; they are filled in when the suggestion is accepted.' : '';
+}
+function parseBand() {
+  const lo = ($('#f-band-lo') && $('#f-band-lo').value || '').trim(), hi = ($('#f-band-hi') && $('#f-band-hi').value || '').trim();
+  if (!lo && !hi) return null;
+  const a = Number(lo), b = Number(hi);
+  if (!lo || !hi || !isFinite(a) || !isFinite(b) || a < 0 || b > 1000 || a >= b) return {error: true};
+  return {lo: a, hi: b, label: ($('#f-band-label').value || '').trim().slice(0, 30)};
+}
+function renderBandPreview() {
+  const box = $('#f-band-prev');
+  if (!box) return;
+  const b = parseBand();
+  if (!b) box.innerHTML = '<p class="small muted">Enter both ends to see the range on the scale.</p>';
+  else if (b.error) box.innerHTML = '<p class="fmsg err">Use two numbers between 0 and 1000 Hz, with the first one lower.</p>';
+  else box.innerHTML = ruler({signal: 'freq', bands: [b]}, false) + '<p class="cap">' + esc(bandText(b)) + '</p>';
+}
+/* What the form adds about where and at what frequency the signal is measured. */
+function placePayload() {
+  const box = $('#f-place');
+  if (!box || box.hidden) return {sites: [], sitesNote: '', bands: []};
+  const sitesOn = !$('#pl-sites-part').hidden, bandOn = !$('#pl-band-part').hidden, b = bandOn ? parseBand() : null;
+  return {sites: sitesOn ? PL.sites.slice() : [], sitesNote: sitesOn ? ($('#f-sites-note').value || '').trim() : '', bands: b && !b.error ? [b] : []};
+}
+function resetPlacer() { PL.sites = []; PL.hover = null; renderPlacer(); renderBandPreview(); plVisibility(); }
+function placeText(s) {
+  const sites = arr(s.sites).join(', ') + (s.sitesNote ? (arr(s.sites).length ? ' (' : '') + s.sitesNote + (arr(s.sites).length ? ')' : '') : '');
+  const b = arr(s.bands)[0];
+  return {sites: sites, band: b && isFinite(b.lo) && isFinite(b.hi) ? bandText(b) : ''};
+}
+
 V.contribute = {
   mount(el) {
     el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
@@ -1540,6 +1727,21 @@ V.contribute = {
         '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
           '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div>' +
           '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
+        '<div class="subform placer-wrap" id="f-place" hidden>' +
+          '<p class="small muted" id="f-place-intro"></p>' +
+          '<div id="pl-sites-part"><span class="eyebrow">Where on the head</span>' +
+            '<div class="placer"><div class="placer-fig">' + placerSVG() + '</div>' +
+            '<div class="placer-side"><div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
+              '<p class="small muted">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
+              '<ul class="pl-list" id="pl-list" aria-live="polite"></ul>' +
+              '<div class="field"><label for="f-sites-note">Location in the paper\'s words (optional)</label><input id="f-sites-note" maxlength="200" placeholder="e.g. referenced to the left mastoid, or &quot;posterior sites&quot;"></div>' +
+            '</div></div></div>' +
+          '<div id="pl-band-part"><span class="eyebrow">Frequency range</span>' +
+            '<div class="frow"><div class="field"><label for="f-band-lo">From (Hz)</label><input id="f-band-lo" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="e.g. 4"></div>' +
+              '<div class="field"><label for="f-band-hi">To (Hz)</label><input id="f-band-hi" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="e.g. 8"></div>' +
+              '<div class="field"><label for="f-band-label">Band name (optional)</label><input id="f-band-label" maxlength="30" placeholder="e.g. theta"></div></div>' +
+            '<div id="f-band-prev"></div></div>' +
+        '</div>' +
         '<div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
           '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
         '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
@@ -1556,9 +1758,17 @@ V.contribute = {
       '</form></section>' +
       '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
-    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; });
+    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; plVisibility(); });
+    $('#f-m-signal').addEventListener('change', plVisibility);
     $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
     $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; });
+    ['f-band-lo', 'f-band-hi', 'f-band-label'].forEach(id => $('#' + id).addEventListener('input', renderBandPreview));
+    const place = $('#f-place');
+    const hover = ev => { const t = ev.target.closest && ev.target.closest('[data-site]'); plHighlight(t ? t.getAttribute('data-site') : null); };
+    place.addEventListener('mouseover', hover);
+    place.addEventListener('focusin', hover);
+    place.addEventListener('mouseleave', () => plHighlight(null));
+    renderPlacer(); renderBandPreview();
   },
   update(el) {
     const M = model();
@@ -1580,6 +1790,7 @@ V.contribute = {
     $('#f-newm').hidden = $('#f-measure').value !== '__new';
     $('#f-newc').hidden = $('#f-construct').value !== '__new';
     $('#f-news').hidden = $('#f-source').value !== '__new';
+    plVisibility();
     if (S.sbMode) {
       const signed = !!S.session, down = S.sbNote === 'down';
       $('#ct-gate').innerHTML = down
@@ -1634,11 +1845,11 @@ function subHTML(s, M) {
   }
   if (S.sbMode) {
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
-      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' +
+      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' +
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
-    '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
+    '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
     '<span class="qmeta">Submitted by <span data-uid="' + esc(s.submittedBy || '') + '">' + (s.submittedBy ? 'someone' : 'unknown') + '</span> · ' + esc(fmtDate(s.submittedAt)) + '</span>' + act + '</article>';
 }
 async function fillNames(root) {
@@ -1675,10 +1886,13 @@ async function submitEntry(ev) {
   if (sSel === '__new' && !v('f-cite')) probs.push('give the full citation');
   if (!v('f-pages')) probs.push('add page numbers');
   if (!v('f-claim')) probs.push('describe what the source says');
+  const band = $('#f-place') && !$('#f-place').hidden && !$('#pl-band-part').hidden ? parseBand() : null;
+  if (band && band.error) probs.push('fix the frequency range (two numbers from 0 to 1000 Hz, the first one lower)');
   if (probs.length) return setMsg('To submit, ' + probs.join(', ') + '.', true);
+  const place = placePayload();
   if (S.sbMode) {
     if (!S.session) return setMsg('Sign in first, then send your suggestion.', true);
-    const payload = {
+    const payload = Object.assign({
       measureId: mSel === '__new' ? null : mSel,
       newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
       constructId: cSel === '__new' ? null : cSel,
@@ -1687,13 +1901,13 @@ async function submitEntry(ev) {
       reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
       pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
       paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
-    };
+    }, place);
     const btn = $('#f-submit');
     btn.disabled = true; setMsg('Sending…');
     try {
       const {error} = await S.sb.from('submissions').insert({payload: payload});
       if (error) throw error;
-      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true;
+      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer();
       setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
       toast('Suggestion sent');
       await loadSubs();
@@ -1719,10 +1933,11 @@ async function submitEntry(ev) {
       ln('Link strength', (CLAIM[v('f-ctype')] || CLAIM.attributed).label),
       ln('Kind of evidence', (EVID[v('f-evid')] || EVID['human-eeg']).label),
       ln('Task', v('f-paradigm')), ln('Participants', v('f-pop')), ln('Behavioural outcome', v('f-beh')),
-      ln('Original studies the paper cites', v('f-cites'))
+      ln('Original studies the paper cites', v('f-cites')),
+      ln('Electrodes', placeText(place).sites), ln('Frequency range', placeText(place).band)
     ].filter(Boolean).join('\n\n') + '\n\n_Sent from the Contribute form on the site._';
     // An exact copy of the form for the script that adds suggestions automatically (hidden when the issue is shown).
-    const form = {
+    const form = Object.assign({
       measureId: mSel === '__new' ? null : mSel,
       newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
       constructId: cSel === '__new' ? null : cSel,
@@ -1731,7 +1946,7 @@ async function submitEntry(ev) {
       reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
       pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
       paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
-    };
+    }, place);
     const fullBody = body + '\n\n<!-- contribution\n' + JSON.stringify(form).replace(/--/g, '\\u002d\\u002d') + '\n-->';
     const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(fullBody);
     try { window.open(url, '_blank', 'noopener'); } catch (e) {}
@@ -1739,7 +1954,7 @@ async function submitEntry(ev) {
     msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press <b>Create</b> there. It is added to the site within a few minutes.';
     return;
   }
-  const doc = {
+  const doc = Object.assign({}, place, {
     status: 'pending', submittedAt: new Date().toISOString(), submittedBy: S.me.id || null,
     measureId: mSel === '__new' ? null : mSel,
     newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
@@ -1749,12 +1964,12 @@ async function submitEntry(ev) {
     reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
     pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
     paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
-  };
+  });
   const btn = $('#f-submit');
   btn.disabled = true; setMsg('Submitting…');
   try {
     await S.db.collection('submissions').add(doc);
-    $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true;
+    $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer();
     setMsg('Submitted. It is now in the review queue.');
     toast('Submitted for review');
   } catch (e) {
@@ -1774,7 +1989,7 @@ async function acceptSub(id) {
       const sig = SIG[s.newMeasure.signal] ? s.newMeasure.signal : 'time';
       mid = 'm-' + slug(s.newMeasure.name) + '-' + rid();
       await S.db.doc('measures/' + mid).set({name: String(s.newMeasure.name), short: '', aka: [], domain: SIG[sig].label, signal: sig, spec: String(s.newMeasure.spec || ''), specRefs: [],
-        window: null, windowNote: '', bands: [], bandsNote: '', sites: [], sitesNote: '', inferred: [], lateralized: false,
+        window: null, windowNote: '', bands: arr(s.bands).slice(0, 1), bandsNote: '', sites: arr(s.sites).filter(x => SITES[x]), sitesNote: String(s.sitesNote || ''), inferred: [], lateralized: false,
         caveats: [], methods: [], feasibility: {passive: null, infants: null, note: '', refs: []}, provenance: 'contributed', order: 500, addedAt: now, submissionId: id});
     }
     if (!cid && s.newConstruct && s.newConstruct.name) {
@@ -1999,6 +2214,7 @@ V.review = {
         row('Paper', s.paper) + row('Page(s)', s.pages) + row('What the paper says', s.claim) +
         row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
         row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
+        row('Electrodes', placeText(p).sites) + row('Frequency range', placeText(p).band) +
         row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>' +
         '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
         '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
@@ -2335,6 +2551,9 @@ function onAct(t) {
     case 'import-kb': importStarter(); break;
     case 'rv-accept': reviewDecide('accept'); break;
     case 'rv-reject': reviewDecide('reject'); break;
+    case 'pl-toggle': if (!PL.suppressClick && !($('#f-claim') && $('#f-claim').disabled)) togglePl(t.getAttribute('data-site')); break;
+    case 'pl-remove': PL.sites = PL.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(); break;
+    case 'pl-token': if (!PL.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
   }
 }
 let armT = 0;
@@ -2387,6 +2606,10 @@ function bind() {
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
   window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ROUTES.includes(h) && h !== S.route) go(h, false); });
+  document.addEventListener('pointerdown', plPointerDown);
+  document.addEventListener('pointermove', plPointerMove, {passive: false});
+  document.addEventListener('pointerup', plPointerUp);
+  document.addEventListener('pointercancel', plPointerUp);
   $('#si-form1').addEventListener('submit', sendCode);
   $('#si-form2').addEventListener('submit', verifyCode);
   document.addEventListener('submit', ev => {

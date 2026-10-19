@@ -168,6 +168,27 @@ returns text language sql immutable as $$
       || '<p style="color:#6F7D8A;font-size:12.5px;margin-top:24px">EEG Construct–Measure Knowledge Base</p></div>';
 $$;
 
+-- Electrode names a suggestion may use (10–20 style, e.g. Fz, C3, PO8, M1), without duplicates, at most 30.
+create or replace function public._sites(v jsonb) returns jsonb
+language sql immutable as $$
+  select coalesce(jsonb_agg(x.value order by x.ord), '[]'::jsonb) from (
+    select t.value, min(t.ord) as ord
+    from jsonb_array_elements_text(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) with ordinality as t(value, ord)
+    where t.value ~ '^[A-Z][A-Za-z]{0,2}(z|[0-9]{1,2})$'
+    group by t.value order by min(t.ord) limit 30) x;
+$$;
+
+-- The first frequency range of a suggestion, if it is two numbers with 0 <= from < to <= 1000 Hz.
+create or replace function public._band(v jsonb) returns jsonb
+language sql immutable as $$
+  select case
+    when jsonb_typeof(v) = 'array' and jsonb_typeof(v->0) = 'object'
+     and (v->0->>'lo') ~ '^[0-9]+(\.[0-9]+)?$' and (v->0->>'hi') ~ '^[0-9]+(\.[0-9]+)?$'
+     and (v->0->>'lo')::numeric < (v->0->>'hi')::numeric and (v->0->>'hi')::numeric <= 1000
+    then jsonb_build_array(jsonb_build_object('lo', (v->0->>'lo')::numeric, 'hi', (v->0->>'hi')::numeric, 'label', left(coalesce(v->0->>'label', ''), 30)))
+    else '[]'::jsonb end;
+$$;
+
 -- Readable names for a suggestion, whether it uses existing records or proposes new ones.
 create or replace function public._sub_summary(p jsonb) returns jsonb
 language sql stable security definer set search_path = public as $$
@@ -184,7 +205,12 @@ language sql stable security definer set search_path = public as $$
     'pages', coalesce(p->>'pages', ''),
     'claim', coalesce(p->>'claim', ''),
     'claimType', coalesce(p->>'claimType', ''),
-    'evidence', coalesce(p->>'evidence', ''));
+    'evidence', coalesce(p->>'evidence', ''),
+    'sites', concat_ws(' ',
+      (select string_agg(value, ', ') from jsonb_array_elements_text(public._sites(p->'sites'))),
+      case when coalesce(p->>'sitesNote', '') <> '' then '(' || left(p->>'sitesNote', 200) || ')' end),
+    'band', coalesce((select trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz')
+                      from jsonb_array_elements(public._band(p->'bands')) as t(b) limit 1), ''));
 $$;
 
 -- ---------------------------------------------------------------------------
@@ -227,7 +253,9 @@ begin
                       new.submitted_by, new.submitter_email);
   v_details :=
        '<p><b>EEG signal:</b> ' || public._esc(s->>'signal') || '<br><b>Topic:</b> ' || public._esc(s->>'topic')
-    || '<br><b>Paper:</b> ' || public._esc(s->>'paper') || '<br><b>Page(s):</b> ' || public._esc(s->>'pages') || '</p>'
+    || '<br><b>Paper:</b> ' || public._esc(s->>'paper') || '<br><b>Page(s):</b> ' || public._esc(s->>'pages')
+    || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
+    || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
     || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
     || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
     || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
@@ -265,11 +293,18 @@ declare
   v_name text; v_sig text; v_fam text; v_cite text; v_doi text; v_short text; v_surname text; v_year text;
   v_now text := to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   sm jsonb;
+  v_sites jsonb; v_band jsonb; v_snote text; v_spec text;
 begin
   select * into s from public.submissions where id = p_sub for update;
   if not found then raise exception 'This suggestion no longer exists.'; end if;
   if s.status <> 'pending' then raise exception 'This suggestion was already %.', s.status; end if;
   p := s.payload;
+  v_sites := public._sites(p->'sites');
+  v_band := public._band(p->'bands');
+  v_snote := left(trim(coalesce(p->>'sitesNote', '')), 200);
+  v_spec := concat_ws('; ',
+    case when jsonb_array_length(v_sites) > 0 then 'Electrodes: ' || (select string_agg(value, ', ') from jsonb_array_elements_text(v_sites)) end,
+    case when jsonb_array_length(v_band) > 0 then trim(coalesce(v_band->0->>'label', '') || ' ' || (v_band->0->>'lo') || '–' || (v_band->0->>'hi') || ' Hz') end);
 
   -- Paper: an existing one, a matching one (same DOI or citation), or a new record.
   sid := nullif(p->>'sourceId', '');
@@ -317,12 +352,23 @@ begin
         'domain', case v_sig when 'freq' then 'Frequency' when 'phase' then 'Frequency / phase' else 'Time (ERP)' end,
         'signal', v_sig, 'spec', coalesce(p->'newMeasure'->>'spec', ''),
         'specRefs', jsonb_build_array(jsonb_build_object('s', sid, 'p', coalesce(p->>'pages', ''))),
-        'window', null, 'windowNote', '', 'bands', '[]'::jsonb, 'bandsNote', '', 'sites', '[]'::jsonb, 'sitesNote', '',
+        'window', null, 'windowNote', '', 'bands', v_band, 'bandsNote', '', 'sites', v_sites, 'sitesNote', v_snote,
         'inferred', '[]'::jsonb, 'lateralized', false, 'caveats', '[]'::jsonb, 'methods', '[]'::jsonb,
         'feasibility', jsonb_build_object('passive', null, 'infants', null, 'note', '', 'refs', '[]'::jsonb),
         'provenance', 'contributed', 'order', 500, 'addedAt', v_now, 'submissionId', s.id));
     end if;
   end if;
+  -- Fill in electrode sites or a frequency range the signal does not have yet (never overwrites existing ones).
+  update public.kb_records set
+    doc = doc
+      || case when jsonb_array_length(v_sites) > 0
+               and (case when jsonb_typeof(doc->'sites') = 'array' then jsonb_array_length(doc->'sites') else 0 end) = 0
+              then jsonb_build_object('sites', v_sites, 'sitesNote', v_snote) else '{}'::jsonb end
+      || case when jsonb_array_length(v_band) > 0
+               and (case when jsonb_typeof(doc->'bands') = 'array' then jsonb_array_length(doc->'bands') else 0 end) = 0
+              then jsonb_build_object('bands', v_band, 'bandsNote', '') else '{}'::jsonb end,
+    updated_at = now()
+  where collection = 'measures' and id = mid;
 
   -- Topic.
   cid := nullif(p->>'constructId', '');
@@ -351,7 +397,7 @@ begin
     'claimType', case when p->>'claimType' in ('attributed', 'inferred', 'causal', 'hypothesis', 'debated') then p->>'claimType' else 'attributed' end,
     'evidence', case when p->>'evidence' in ('human-eeg', 'stimulation', 'intracranial', 'review') then p->>'evidence' else 'human-eeg' end,
     'paradigm', coalesce(p->>'paradigm', ''), 'population', coalesce(p->>'population', ''),
-    'behaviour', coalesce(p->>'behaviour', ''), 'cites', coalesce(p->>'cites', ''),
+    'behaviour', coalesce(p->>'behaviour', ''), 'cites', coalesce(p->>'cites', ''), 'specUsed', v_spec,
     'provenance', 'contributed', 'status', 'accepted', 'addedAt', to_char(now(), 'YYYY-MM-DD'), 'submissionId', s.id));
 
   update public.submissions
