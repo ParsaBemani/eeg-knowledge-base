@@ -7,6 +7,6 @@
 window.KB_STATIC = {
   data: 'data/kb.json',
   repo: 'https://github.com/ParsaBemani/eeg-knowledge-base',
-  supabaseUrl: '',
-  supabaseAnonKey: ''
+  supabaseUrl: 'https://bchfgqpdcpevedbothcf.supabase.co',
+  supabaseAnonKey: 'sb_publishable_7mOWb7_yZd0KQGOfwOyJvQ_x1-hcCLb'
 };
