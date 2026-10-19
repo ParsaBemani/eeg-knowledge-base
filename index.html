@@ -534,6 +534,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .rv-actions textarea{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);font:inherit;min-height:70px}
 .btn.pick{outline:3px solid var(--accent-soft)}
 .si-step{display:flex;flex-direction:column;gap:12px}
+.si-remember{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;cursor:pointer}
+.si-remember input{margin-top:3px;width:16px;height:16px;accent-color:var(--accent);flex:none}
 .subform.placer-wrap{display:flex;flex-direction:column;gap:14px}
 .placer-wrap > div{display:flex;flex-direction:column;gap:10px;min-width:0}
 .placer{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start}
@@ -653,6 +655,11 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 <div id="signin" class="modal" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="signin-h">
     <h3 id="signin-h">Sign in</h3>
+    <div id="si-quick" class="si-step" hidden>
+      <p class="muted small" id="si-quick-note"></p>
+      <div class="btns"><button class="btn primary" type="button" id="si-continue" data-act="si-continue">Continue</button><button class="btn ghost" type="button" data-act="si-other">Use a different email</button></div>
+      <p class="small"><button class="btn sm ghost" type="button" data-act="si-forget">Forget this device</button> <span class="muted">Next time you'll need a code.</span></p>
+    </div>
     <form id="si-form1" class="si-step" novalidate>
       <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password.</p>
       <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" maxlength="200"></div>
@@ -661,6 +668,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
     <form id="si-form2" class="si-step" novalidate hidden>
       <p class="muted small" id="si-sent"></p>
       <div class="field"><label for="si-code">Code from the email</label><input id="si-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10"></div>
+      <label class="si-remember"><input type="checkbox" id="si-remember"><span><b>Remember me for 7 days</b><br><span class="muted small">After you sign out, sign back in on this device with one click, no code. Don't tick this on a shared computer.</span></span></label>
       <div class="btns"><button class="btn primary" type="submit" id="si-verify">Sign in</button><button class="btn ghost" type="button" data-act="si-back">Use a different email</button></div>
     </form>
     <p id="si-msg" class="fmsg" role="status"></p>
@@ -2071,11 +2079,70 @@ function renderAcct() {
     ? '<span class="who" title="' + esc(S.me.email || '') + '">' + esc(S.me.email || 'Signed in') + '</span>' + (S.me.canEdit ? '<span class="badge-admin">Admin</span>' : '') + '<button class="btn sm ghost" data-act="signout">Sign out</button>'
     : '<button class="btn sm" data-act="signin">Sign in</button>';
 }
+/* "Remember me": for 7 days after entering a code, signing out sets the session aside on this device
+   so the person can come back with one click. After that, or after "Forget this device", a code is needed again. */
+const REMEMBER_KEY = 'kb-remember', REMEMBER_MS = 7 * 24 * 3600 * 1000;
+function setRemember(r) { try { if (r) localStorage.setItem(REMEMBER_KEY, JSON.stringify(r)); else localStorage.removeItem(REMEMBER_KEY); } catch (e) {} }
+function getRemember() {
+  let r = null;
+  try { r = JSON.parse(localStorage.getItem(REMEMBER_KEY) || 'null'); } catch (e) {}
+  if (r && !(r.until > Date.now() && r.email)) { if (r.rt) revokeRefresh(r.rt); setRemember(null); r = null; }
+  return r;
+}
+const fmtDay = t => new Date(t).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
+/* Ends a set-aside session on the server, so the saved token can never be used again. */
+async function revokeRefresh(rt) {
+  const cfg = S.static || {};
+  if (!rt || !cfg.supabaseUrl) return;
+  const base = cfg.supabaseUrl.replace(/\/+$/, '') + '/auth/v1', h = {apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json'};
+  try {
+    const r = await fetch(base + '/token?grant_type=refresh_token', {method: 'POST', headers: h, body: JSON.stringify({refresh_token: rt})});
+    const j = await r.json();
+    if (j && j.access_token) await fetch(base + '/logout?scope=local', {method: 'POST', headers: Object.assign({}, h, {Authorization: 'Bearer ' + j.access_token})});
+  } catch (e) {}
+}
+function siStep(step) {
+  $('#si-quick').hidden = step !== 'quick'; $('#si-form1').hidden = step !== 'email'; $('#si-form2').hidden = step !== 'code';
+  const r = getRemember();
+  if (step === 'quick' && r) {
+    $('#si-continue').textContent = 'Continue as ' + r.email;
+    $('#si-quick-note').textContent = 'This device is remembered, so you don\'t need a code until ' + fmtDay(r.until) + '.';
+    setTimeout(() => $('#si-continue').focus(), 20);
+  }
+  if (step === 'email') setTimeout(() => $('#si-email').focus(), 20);
+}
 function openSignin() {
   if (!S.sb) return toast('Sign-in is not available on this copy of the site.');
-  $('#signin').hidden = false; $('#si-form1').hidden = false; $('#si-form2').hidden = true;
+  const r = getRemember();
+  $('#signin').hidden = false;
   $('#si-msg').textContent = ''; $('#si-code').value = '';
-  setTimeout(() => $('#si-email').focus(), 20);
+  $('#si-remember').checked = !!r;
+  siStep(r && r.rt ? 'quick' : 'email');
+}
+async function quickSignIn() {
+  const r = getRemember();
+  if (!r || !r.rt) return siStep('email');
+  $('#si-continue').disabled = true; siMsg('Signing in…');
+  try {
+    const res = await S.sb.auth.refreshSession({refresh_token: r.rt});
+    if (res.error || !res.data || !res.data.session) throw res.error || new Error('No session');
+    setRemember({email: r.email, until: r.until});
+    try { S.sb.auth.startAutoRefresh(); } catch (e) {}
+    S.session = res.data.session;
+    siMsg(''); closeSignin(); toast('Signed in');
+    await refreshStatus();
+  } catch (e) {
+    setRemember(null);
+    siStep('email'); $('#si-email').value = r.email;
+    siMsg('The remembered sign-in on this device has ended. Get a new code to sign in.', true);
+  } finally { $('#si-continue').disabled = false; }
+}
+function forgetDevice() {
+  const r = getRemember();
+  if (r && r.rt) revokeRefresh(r.rt);
+  setRemember(null);
+  $('#si-remember').checked = false;
+  siStep('email'); siMsg('This device is forgotten. Next time you\'ll need a code.');
 }
 function closeSignin() { $('#signin').hidden = true; }
 function siMsg(t, err) { const m = $('#si-msg'); m.textContent = t; m.className = 'fmsg' + (err ? ' err' : ''); }
@@ -2102,16 +2169,35 @@ async function verifyCode(ev) {
     const res = await S.sb.auth.verifyOtp({email: email, token: code, type: 'email'});
     if (res.error) throw res.error;
     S.session = (res.data && res.data.session) || S.session;
-    closeSignin(); toast('Signed in');
+    try { S.sb.auth.startAutoRefresh(); } catch (e) {}
+    const old = getRemember();
+    if (old && old.rt) revokeRefresh(old.rt);
+    const until = Date.now() + REMEMBER_MS;
+    setRemember($('#si-remember').checked ? {email: email.toLowerCase(), until: until} : null);
+    closeSignin(); toast($('#si-remember').checked ? 'Signed in. This device is remembered until ' + fmtDay(until) + '.' : 'Signed in');
     await refreshStatus();
   } catch (e) { siMsg(sbErr(e), true); }
   finally { $('#si-verify').disabled = false; }
 }
 async function signOut() {
-  try { await S.sb.auth.signOut(); } catch (e) {}
+  const r = getRemember();
+  let kept = false;
+  if (r && S.session && r.email === String(S.me.email || '').toLowerCase()) {
+    // Set the session aside instead of ending it: keep its refresh token and clear it from the sign-in library's storage.
+    try {
+      S.sb.auth.stopAutoRefresh();
+      const res = await S.sb.auth.getSession(), sess = res && res.data && res.data.session;
+      if (sess && sess.refresh_token) {
+        setRemember({email: r.email, until: r.until, rt: sess.refresh_token});
+        [S.sbKey, S.sbKey + '-user', S.sbKey + '-code-verifier'].forEach(k => localStorage.removeItem(k));
+        kept = true;
+      }
+    } catch (e) { kept = false; }
+  }
+  if (!kept) { try { await S.sb.auth.signOut(); } catch (e) {} }
   S.session = null;
   await refreshStatus();
-  toast('Signed out');
+  toast(kept ? 'Signed out. You can sign back in without a code until ' + fmtDay(r.until) + '.' : 'Signed out');
   if (S.route === 'admin') go('overview');
 }
 function kindLabel(col) { return {entries: 'link', measures: 'signal', constructs: 'topic', sources: 'paper'}[col] || 'record'; }
@@ -2533,6 +2619,9 @@ function onAct(t) {
     case 'signout': signOut(); break;
     case 'close-signin': closeSignin(); break;
     case 'si-back': $('#si-form2').hidden = true; $('#si-form1').hidden = false; siMsg(''); $('#si-email').focus(); break;
+    case 'si-continue': quickSignIn(); break;
+    case 'si-other': siMsg(''); siStep('email'); break;
+    case 'si-forget': forgetDevice(); break;
     case 'del-record': {
       const col = t.getAttribute('data-col'), key = col + '/' + id;
       if (S.armed !== key) { armKey(key); break; }
@@ -2696,7 +2785,8 @@ async function connectStatic(cfg) {
 async function connectSupabase(cfg) {
   S.sbMode = true;
   try {
-    S.sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: false}});
+    S.sbKey = 'sb-' + new URL(cfg.supabaseUrl).hostname.split('.')[0] + '-auth-token';
+    S.sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: S.sbKey}});
   } catch (e) {
     console.warn('supabase', e); S.sbMode = false; S.sb = null;
     return loadStaticFile(cfg);
