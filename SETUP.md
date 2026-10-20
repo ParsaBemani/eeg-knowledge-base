@@ -36,7 +36,7 @@ Allow about 45 minutes. Everything below is free and done in a web browser.
 
 ## 4. Add your personal settings
 
-Back in Supabase **SQL Editor**, start a new query, paste the lines below, replace the three placeholder values, and click **Run**:
+Back in Supabase **SQL Editor**, start a new query, paste the lines below, replace the placeholder values, and click **Run**:
 
 ```sql
 -- 1. The verified sender address from Brevo
@@ -50,9 +50,14 @@ insert into public.admin_invites (email) values ('you@example.com') on conflict 
 insert into public.admins (user_id, email)
   select id, lower(email) from auth.users where lower(email) = 'you@example.com'
   on conflict do nothing;
+
+-- 4. Choose the owner: an admin who can also remove admins and block emails (lower case)
+insert into public.owners (email) values ('owner@example.com') on conflict do nothing;
+insert into public.admin_invites (email) values ('owner@example.com') on conflict do nothing;
 ```
 
 These values stay inside your Supabase project; they are never stored in this repository.
+The owner cannot be removed or blocked from the site, and cannot step down; to change the owner, edit the `owners` table here.
 
 ## 5. Configure sign-in emails
 

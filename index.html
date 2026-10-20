@@ -2199,6 +2199,8 @@ async function declineSub(id) {
 function sbConfigured() { const c = window.KB_STATIC; return !!(c && c.supabaseUrl && c.supabaseAnonKey); }
 function sbErr(e) {
   const m = e && (e.message || e.error_description || e.msg);
+  if (m && /database error saving new user|blocked from the EEG/i.test(m)) return 'This email can\'t be used to sign in to this site.';
+  if (m && /banned/i.test(m)) return 'This email has been blocked from signing in to this site.';
   return m ? String(m) : 'Something went wrong. Check your connection and try again.';
 }
 async function sbCall(fn, args, okMsg, reload) {
@@ -2235,7 +2237,7 @@ function renderAcct() {
   if (!S.sbMode) { el.hidden = true; return; }
   el.hidden = false;
   el.innerHTML = S.session
-    ? '<span class="who" title="' + esc(S.me.email || '') + '">' + esc(S.me.email || 'Signed in') + '</span>' + (S.me.canEdit ? '<span class="badge-admin">Admin</span>' : '') + '<button class="btn sm ghost" data-act="signout">Sign out</button>'
+    ? '<span class="who" title="' + esc(S.me.email || '') + '">' + esc(S.me.email || 'Signed in') + '</span>' + (S.me.canEdit ? '<span class="badge-admin">' + (S.me.isOwner ? 'Owner' : 'Admin') + '</span>' : '') + '<button class="btn sm ghost" data-act="signout">Sign out</button>'
     : '<button class="btn sm" data-act="signin">Sign in</button>';
 }
 /* "Remember me": for 7 days after entering a code, signing out sets the session aside on this device
@@ -2377,6 +2379,10 @@ function actLabel(a) {
     case 'invite_cancelled': return who + ' cancelled the admin invite for ' + esc(d.email);
     case 'admin_joined': return who + ' signed in and became an admin';
     case 'admin_stepped_down': return who + ' stepped down as an admin';
+    case 'admin_removed': return who + ' removed ' + esc(d.email) + ' from the admins';
+    case 'blocked': return who + ' blocked ' + esc(d.email);
+    case 'unblocked': return who + ' unblocked ' + esc(d.email);
+    case 'owner_set': return esc(d.email) + ' was made the owner of the site';
     case 'imported': return who + ' imported ' + esc(d.records) + ' records';
     default: return who + ' ' + esc(a.action);
   }
@@ -2412,7 +2418,9 @@ V.admin = {
       .concat(M.measures.filter(m => !(M.byM.get(m.id) || []).length).map(m => ['measures', m.id, m.name]))
       .concat(M.constructs.filter(c => !(M.byC.get(c.id) || []).length).map(c => ['constructs', c.id, c.name]))
       .concat(M.sources.filter(s => !(M.byS.get(s.id) || []).length).map(s => ['sources', s.id, s.short || s.cite]));
-    const only = A.admins.length <= 1, armed = S.armed === 'step-down';
+    const only = A.admins.length <= 1, armed = S.armed === 'step-down', owners = A.owners || [], B = A.blocked || [];
+    const isOwnerEmail = em => owners.includes(String(em || '').toLowerCase());
+    const armedBlock = String(S.armed || '').indexOf('block:') === 0;
     let h = '';
     if (S.sbNote === 'empty') h += '<div class="callout warn"><b>The live database is empty</b><span>The site is showing the starter data from ' + esc(S.static ? S.static.data : 'data/kb.json') + '. Import it so admins can review and delete links.</span><div class="btns"><button class="btn primary sm" data-act="import-kb">Import the starter data</button></div></div>';
     if (S.sbNote === 'down') h += '<div class="callout warn"><b>The live database could not be reached</b><span>Changes are not possible until it is back. If the project was paused, restore it in the Supabase dashboard.</span></div>';
@@ -2423,12 +2431,23 @@ V.admin = {
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
     h += '</div><div class="adm-col">';
     h += '<section class="panel"><h3>Admins<span class="count">' + A.admins.length + '</span></h3><ul class="adm-list">' +
-      A.admins.map(a => '<li><span>' + esc(a.email) + (a.user_id === S.me.id ? ' <span class="badge-admin">You</span>' : '') + '</span><span class="sub">since ' + esc(fmtDate(a.added_at)) + '</span></li>').join('') + '</ul>' +
-      (A.invites.length ? '<div class="eyebrow">Invited, not signed in yet</div><ul class="adm-list">' + A.invites.map(i => '<li><span>' + esc(i.email) + '</span><button class="btn sm ghost" data-act="cancel-invite" data-email="' + esc(i.email) + '">Cancel invite</button></li>').join('') + '</ul>' : '') +
+      A.admins.map(a => {
+        const own = isOwnerEmail(a.email), key = 'remove-admin/' + a.email, armedR = S.armed === key;
+        return '<li><span>' + esc(a.email) + (own ? ' <span class="badge-admin">Owner</span>' : '') + (a.user_id === S.me.id ? ' <span class="badge-admin">You</span>' : '') + '<br><span class="sub">since ' + esc(fmtDate(a.added_at)) + '</span></span>' +
+          (S.me.isOwner && !own ? '<button class="btn sm danger' + (armedR ? ' armed' : '') + '" data-act="remove-admin" data-email="' + esc(a.email) + '">' + (armedR ? 'Click again to remove' : 'Remove') + '</button>' : '') + '</li>';
+      }).join('') + '</ul>' +
+      (A.invites.length ? '<div class="eyebrow">Invited, not signed in yet</div><ul class="adm-list">' + A.invites.map(i => '<li><span>' + esc(i.email) + (isOwnerEmail(i.email) ? ' <span class="badge-admin">Owner</span>' : '') + '</span>' +
+        (isOwnerEmail(i.email) ? '<span class="sub">becomes an admin on first sign-in</span>' : '<button class="btn sm ghost" data-act="cancel-invite" data-email="' + esc(i.email) + '">Cancel invite</button>') + '</li>').join('') + '</ul>' : '') +
+      (S.me.isOwner ? '<p class="small muted">As the owner you can remove any admin, and block emails below.</p>' : '') +
       '<form class="adm-row" id="adm-add" novalidate><input id="adm-email" type="email" placeholder="New admin\'s email" aria-label="New admin\'s email" maxlength="200"><button class="btn primary sm" type="submit">Add admin</button></form>' +
       '<p class="small muted">They get an email. Someone who has never signed in becomes an admin the first time they do.</p>' +
-      '<div class="btns"><button class="btn sm danger' + (armed ? ' armed' : '') + '" data-act="step-down"' + (only ? ' disabled' : '') + '>' + (armed ? 'Click again to step down' : 'Step down as admin') + '</button></div>' +
-      (only ? '<p class="small muted">You are the only admin. Add another admin before you can step down.</p>' : '') + '</section>';
+      (S.me.isOwner ? '<p class="small muted">You are the owner, so you stay an admin. Ownership can only be changed in the database.</p>' :
+        '<div class="btns"><button class="btn sm danger' + (armed ? ' armed' : '') + '" data-act="step-down"' + (only ? ' disabled' : '') + '>' + (armed ? 'Click again to step down' : 'Step down as admin') + '</button></div>' +
+        (only ? '<p class="small muted">You are the only admin. Add another admin before you can step down.</p>' : '')) + '</section>';
+    if (S.me.isOwner) h += '<section class="panel"><h3>Blocked emails<span class="count">' + B.length + '</span></h3>' +
+      '<p class="small muted">A blocked email can\'t sign in, create an account, suggest links or review. Anyone signed in with it loses admin rights straight away and is signed out within the hour. The public pages stay readable by everyone, as for any visitor.</p>' +
+      '<form class="adm-row" id="adm-block" novalidate><input id="blk-email" type="email" placeholder="Email to block" aria-label="Email to block" maxlength="200"><button class="btn danger sm' + (armedBlock ? ' armed' : '') + '" type="submit">' + (armedBlock ? 'Click again to block' : 'Block') + '</button></form>' +
+      (B.length ? '<ul class="adm-list">' + B.map(b => '<li><span>' + esc(b.email) + (b.note ? '<br><span class="sub">' + esc(b.note) + '</span>' : '') + '<br><span class="sub">blocked ' + esc(fmtDate(b.blocked_at)) + '</span></span><button class="btn sm" data-act="unblock" data-email="' + esc(b.email) + '">Unblock</button></li>').join('') + '</ul>' : '<p class="small muted">No one is blocked.</p>') + '</section>';
     h += '<section class="panel"><h3>Activity</h3>' + (A.activity.length ? '<ul class="adm-list">' + A.activity.map(a => {
         const d = a.detail || {};
         const canUndo = (a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id)) ||
@@ -2816,6 +2835,14 @@ function onAct(t) {
       sbCall('step_down', {}, 'You are no longer an admin.', false).then(ok => { if (ok) refreshStatus(); });
       break;
     case 'cancel-invite': sbCall('cancel_invite', {p_email: t.getAttribute('data-email')}, 'Invite cancelled', false).then(() => loadAdmin()); break;
+    case 'remove-admin': {
+      const em = t.getAttribute('data-email'), key = 'remove-admin/' + em;
+      if (S.armed !== key) { armKey(key); break; }
+      S.armed = null;
+      sbCall('remove_admin', {p_email: em}, em + ' is no longer an admin', false).then(() => loadAdmin());
+      break;
+    }
+    case 'unblock': sbCall('unblock_email', {p_email: t.getAttribute('data-email')}, t.getAttribute('data-email') + ' is unblocked', false).then(() => loadAdmin()); break;
     case 'restore': sbCall('restore_record', {p_activity: Number(id)}, 'Restored', true); break;
     case 'backup': download('eeg-kb-backup-' + today() + '.json', backupJSON()); break;
     case 'import-kb': importStarter(); break;
@@ -2883,6 +2910,20 @@ function bind() {
   $('#si-form1').addEventListener('submit', sendCode);
   $('#si-form2').addEventListener('submit', verifyCode);
   document.addEventListener('submit', ev => {
+    if (ev.target.id === 'adm-block') {
+      ev.preventDefault();
+      const email = ($('#blk-email').value || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
+      if (S.armed !== 'block:' + email) { armKey('block:' + email); return; }
+      S.armed = null;
+      sbCall('block_email', {p_email: email, p_note: ''}, null, false).then(r => {
+        if (!r) return;
+        const i = $('#blk-email'); if (i) i.value = '';
+        toast(r === 'already' ? email + ' was already blocked' : email + ' is blocked');
+        loadAdmin();
+      });
+      return;
+    }
     if (ev.target.id !== 'adm-add') return;
     ev.preventDefault();
     const email = ($('#adm-email').value || '').trim();
@@ -3015,7 +3056,7 @@ async function refreshStatus() {
   if (s) {
     try {
       const res = await S.sb.rpc('my_status');
-      if (!res.error && res.data) { S.me.canEdit = !!res.data.is_admin; S.me.email = res.data.email || S.me.email; }
+      if (!res.error && res.data) { S.me.canEdit = !!res.data.is_admin; S.me.isOwner = !!res.data.is_owner; S.me.email = res.data.email || S.me.email; }
     } catch (e) {}
   }
   await loadSubs();
@@ -3041,9 +3082,11 @@ async function loadAdmin() {
     const res = await Promise.all([
       S.sb.from('admins').select('user_id,email,added_at').order('added_at'),
       S.sb.from('admin_invites').select('email,invited_at').order('invited_at'),
-      S.sb.from('activity').select('id,at,actor_email,action,detail').order('at', {ascending: false}).limit(40)
+      S.sb.from('activity').select('id,at,actor_email,action,detail').order('at', {ascending: false}).limit(40),
+      S.sb.from('owners').select('email'),
+      S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []})
     ]);
-    S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], loaded: true};
+    S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [], loaded: true};
   } catch (e) { console.warn('admin', e); }
   scheduleUpdate();
 }

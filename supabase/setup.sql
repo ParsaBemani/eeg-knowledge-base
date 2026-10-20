@@ -88,13 +88,35 @@ create table if not exists public.activity (
 );
 alter table public.activity enable row level security;
 
+-- The site's owner: an admin who can also remove admins and block emails. Set in SETUP.md, not here.
+create table if not exists public.owners (
+  email text primary key check (email = lower(email)),
+  added_at timestamptz not null default now()
+);
+alter table public.owners enable row level security;
+
+-- Emails that may not sign in, suggest links or review. Managed by the owner on the Admin page.
+create table if not exists public.blocked_emails (
+  email text primary key check (email = lower(email)),
+  note text not null default '',
+  blocked_by uuid,
+  blocked_at timestamptz not null default now()
+);
+alter table public.blocked_emails enable row level security;
+
 -- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
 
+create or replace function public.is_owner() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.owners o join auth.users u on lower(u.email) = o.email where u.id = auth.uid());
+$$;
+
+-- The owner is always an admin.
 create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.admins where user_id = auth.uid());
+  select exists (select 1 from public.admins where user_id = auth.uid()) or public.is_owner();
 $$;
 
 drop policy if exists "Admins can see admins" on public.admins;
@@ -103,6 +125,10 @@ drop policy if exists "Admins can see invites" on public.admin_invites;
 create policy "Admins can see invites" on public.admin_invites for select using (public.is_admin());
 drop policy if exists "Admins can read activity" on public.activity;
 create policy "Admins can read activity" on public.activity for select using (public.is_admin());
+drop policy if exists "Admins can see the owner" on public.owners;
+create policy "Admins can see the owner" on public.owners for select using (public.is_admin());
+drop policy if exists "The owner can see blocked emails" on public.blocked_emails;
+create policy "The owner can see blocked emails" on public.blocked_emails for select using (public.is_owner());
 drop policy if exists "Signed-in users can suggest links" on public.submissions;
 create policy "Signed-in users can suggest links" on public.submissions for insert to authenticated
   with check (submitted_by = auth.uid() and status = 'pending');
@@ -284,6 +310,9 @@ begin
   end if;
   new.submitted_by := auth.uid();
   new.submitter_email := public._user_email(auth.uid());
+  if exists (select 1 from public.blocked_emails where email = new.submitter_email) then
+    raise exception 'This account is blocked from the EEG Knowledge Base.';
+  end if;
   new.created_at := now();
   new.status := 'pending';
   new.review_note := null; new.reviewed_by := null; new.reviewer_email := null; new.reviewed_at := null; new.entry_id := null;
@@ -665,6 +694,7 @@ language sql stable security definer set search_path = public as $$
     'signed_in', auth.uid() is not null,
     'email', public._user_email(auth.uid()),
     'is_admin', public.is_admin(),
+    'is_owner', public.is_owner(),
     'admin_count', case when public.is_admin() then (select count(*) from public.admins) else null end);
 $$;
 
@@ -677,6 +707,9 @@ declare
 begin
   if not public.is_admin() then raise exception 'Only admins can add admins.'; end if;
   if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a valid email address.'; end if;
+  if exists (select 1 from public.blocked_emails where email = v_email) then
+    raise exception 'That email is blocked. The owner can unblock it on the Admin page.';
+  end if;
   select id into v_user from auth.users where lower(email) = v_email limit 1;
   if v_user is not null then
     if exists (select 1 from public.admins where user_id = v_user) then return 'already'; end if;
@@ -703,6 +736,9 @@ create or replace function public.cancel_invite(p_email text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
   if not public.is_admin() then raise exception 'Only admins can manage invites.'; end if;
+  if exists (select 1 from public.owners where email = lower(trim(coalesce(p_email, '')))) then
+    raise exception 'The owner''s invite cannot be cancelled.';
+  end if;
   delete from public.admin_invites where lower(email) = lower(trim(coalesce(p_email, '')));
   perform public._log('invite_cancelled', jsonb_build_object('email', lower(trim(coalesce(p_email, '')))));
 end $$;
@@ -711,6 +747,9 @@ create or replace function public.step_down() returns void
 language plpgsql security definer set search_path = public as $$
 begin
   if not public.is_admin() then raise exception 'You are not an admin.'; end if;
+  if public.is_owner() then
+    raise exception 'You are the owner, so you stay an admin. Ownership can only be changed in the database.';
+  end if;
   if (select count(*) from public.admins) <= 1 then
     raise exception 'You are the only admin. Add another admin before stepping down, so someone can still review suggestions.';
   end if;
@@ -719,14 +758,94 @@ begin
   delete from public.admins where user_id = auth.uid();
 end $$;
 
--- Someone invited before they had an account becomes an admin when they first sign in.
+-- ---------------------------------------------------------------------------
+-- Owner only: remove an admin, block and unblock emails
+-- ---------------------------------------------------------------------------
+
+create or replace function public.remove_admin(p_email text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := lower(trim(coalesce(p_email, '')));
+  v_user uuid;
+begin
+  if not public.is_owner() then raise exception 'Only the owner can remove admins.'; end if;
+  if exists (select 1 from public.owners where email = v_email) then raise exception 'The owner cannot be removed.'; end if;
+  select user_id into v_user from public.admins where lower(email) = v_email limit 1;
+  if v_user is null then
+    if exists (select 1 from public.admin_invites where lower(email) = v_email) then
+      delete from public.admin_invites where lower(email) = v_email;
+      perform public._log('invite_cancelled', jsonb_build_object('email', v_email));
+      return;
+    end if;
+    raise exception 'That email is not an admin.';
+  end if;
+  delete from public.review_tokens where admin_id = v_user;
+  delete from public.admins where user_id = v_user;
+  perform public._log('admin_removed', jsonb_build_object('email', v_email));
+  perform public._send_email(v_email, 'You are no longer an admin of the EEG Knowledge Base',
+    public._email_page('You are no longer an admin',
+      '<p>The owner of the EEG Construct–Measure Knowledge Base removed you from its admins. You can still sign in and suggest links.</p>'));
+end $$;
+
+-- A blocked email cannot sign in or create an account. Anyone signed in with it is signed out
+-- (within the hour, when their current access expires), loses admin rights and cannot suggest links.
+create or replace function public.block_email(p_email text, p_note text default '') returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := lower(trim(coalesce(p_email, '')));
+  v_user uuid;
+begin
+  if not public.is_owner() then raise exception 'Only the owner can block emails.'; end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a valid email address.'; end if;
+  if exists (select 1 from public.owners where email = v_email) then raise exception 'The owner cannot be blocked.'; end if;
+  if exists (select 1 from public.blocked_emails where email = v_email) then return 'already'; end if;
+  insert into public.blocked_emails (email, note, blocked_by) values (v_email, left(trim(coalesce(p_note, '')), 200), auth.uid());
+  delete from public.admin_invites where lower(email) = v_email;
+  select id into v_user from auth.users where lower(email) = v_email limit 1;
+  if v_user is not null then
+    delete from public.review_tokens where admin_id = v_user;
+    delete from public.admins where user_id = v_user;
+    update auth.users set banned_until = now() + interval '100 years' where id = v_user;
+    delete from auth.sessions where user_id = v_user;
+  end if;
+  perform public._log('blocked', jsonb_build_object('email', v_email));
+  return 'blocked';
+end $$;
+
+create or replace function public.unblock_email(p_email text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := lower(trim(coalesce(p_email, '')));
+begin
+  if not public.is_owner() then raise exception 'Only the owner can unblock emails.'; end if;
+  delete from public.blocked_emails where email = v_email;
+  if not found then raise exception 'That email is not blocked.'; end if;
+  update auth.users set banned_until = null where lower(email) = v_email;
+  perform public._log('unblocked', jsonb_build_object('email', v_email));
+end $$;
+
+-- Blocked emails cannot create an account, or change an account to that email.
+create or replace function public._block_signup() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.email is not null and exists (select 1 from public.blocked_emails where email = lower(new.email)) then
+    raise exception 'This email is blocked from the EEG Knowledge Base.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists on_auth_user_blocked on auth.users;
+create trigger on_auth_user_blocked before insert or update of email on auth.users
+  for each row execute function public._block_signup();
+
+-- Someone invited before they had an account, and the owner, become admins when they first sign in.
 create or replace function public._claim_invite() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
   v_by uuid;
 begin
   select invited_by into v_by from public.admin_invites where lower(email) = lower(new.email) limit 1;
-  if found then
+  if found or exists (select 1 from public.owners where email = lower(new.email)) then
     insert into public.admins (user_id, email, added_by) values (new.id, lower(new.email), v_by) on conflict (user_id) do nothing;
     delete from public.admin_invites where lower(email) = lower(new.email);
     insert into public.activity (actor, actor_email, action, detail) values (new.id, lower(new.email), 'admin_joined', '{}'::jsonb);
@@ -821,12 +940,15 @@ end $$;
 grant usage on schema public to anon, authenticated;
 grant select on public.kb_records to anon, authenticated;
 grant select, insert on public.submissions to authenticated;
-grant select on public.admins, public.admin_invites, public.activity to authenticated;
+grant select on public.admins, public.admin_invites, public.activity, public.owners, public.blocked_emails to authenticated;
 grant execute on function
   public.is_admin(), public.my_status(), public.get_review(text), public.review_by_token(text, text, text),
   public.accept_submission(uuid), public.reject_submission(uuid, text), public.add_admin(text), public.cancel_invite(text),
   public.step_down(), public.delete_record(text, text), public.restore_record(bigint), public.import_kb(jsonb)
   to anon, authenticated;
+-- Owner tools are only for signed-in users (each still checks that the caller is the owner).
+revoke execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text) from public, anon;
+grant execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Internal functions (names starting with _) cannot be called through the API.
