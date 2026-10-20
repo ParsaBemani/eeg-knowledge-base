@@ -391,6 +391,14 @@ table.mini{min-width:600px}
 .kv dt{color:var(--ink-3)}
 .kv dd{margin:0}
 .sec{display:flex;flex-direction:column;gap:10px}
+.dr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dr-top .btn{flex:none}
+.dr-editmenu{display:flex;flex-direction:column;gap:2px;border:1px solid var(--rule);border-radius:8px;padding:10px;background:var(--panel)}
+.dr-editmenu p{margin:0 4px 6px}
+.dr-editmenu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;background:none;border:0;border-radius:6px;padding:7px 8px;cursor:pointer;font:inherit;font-size:14px;color:var(--ink)}
+.dr-editmenu button:hover,.dr-editmenu button:focus-visible{background:var(--panel-2);outline:none}
+.dr-editmenu button:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.dr-editmenu .sub{font-size:12.5px;color:var(--ink-3)}
 .sec h3{display:flex;align-items:baseline}
 .clist{list-style:none;padding:0;display:flex;flex-direction:column}
 .clist li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-top:1px solid var(--grid);font-size:14px}
@@ -813,7 +821,7 @@ const S = {
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
   plan: {c: '', pop: 'adults', para: 'either'},
-  drawer: null, prefill: null, edit: null,
+  drawer: null, drEdit: null, prefill: null, edit: null,
   /* Supabase mode (sign-in, email approvals): see connectSupabase */
   sb: null, sbMode: false, sbNote: '', session: null,
   adm: {admins: [], invites: [], activity: [], loaded: false},
@@ -2581,7 +2589,16 @@ function drawerHTML(m, M) {
   if (f.passive === false) feas.push(['', 'Needs a task']);
   if (f.infants === true) feas.push(['ok', '✓ Used with infants']);
   const nCav = arr(m.caveats).length, nMet = arr(m.methods).length;
-  return '<div class="sec"><div class="chips">' + sigChip(m) + contribChip(m.provenance) + '</div><h2 id="dr-title">' + esc(m.name) + '</h2>' + (arr(m.aka).length ? '<p class="small muted">Also called: ' + esc(m.aka.join(', ')) + '</p>' : '') +
+  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>Suggest an edit</button>' : '';
+  const editMenu = canSuggestEdit() && S.drEdit === m.id && es.length > 1
+    ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head.</p>' +
+      es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
+        const c = M.cById.get(e.constructId), src = e.sourceId ? M.sById.get(e.sourceId) : null;
+        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', p. ' + e.pages : '')) + '</span></button>';
+      }).join('') +
+      '<button data-act="edit-measure" data-id="' + esc(m.id) + '"><span>Only the electrodes and frequency range</span><span class="sub">No link changes</span></button></div>'
+    : '';
+  return '<div class="sec"><div class="dr-top"><div class="chips">' + sigChip(m) + contribChip(m.provenance) + '</div>' + editTop + '</div>' + editMenu + '<h2 id="dr-title">' + esc(m.name) + '</h2>' + (arr(m.aka).length ? '<p class="small muted">Also called: ' + esc(m.aka.join(', ')) + '</p>' : '') +
       '<p class="spec-text">' + esc(m.spec) + ' ' + refHTML(m.specRefs) + '</p>' +
       (feas.length ? '<div class="feas">' + feas.map(t => '<span class="bdg ' + t[0] + '" title="' + esc(refText(f.refs)) + '">' + esc(t[1]) + '</span>').join('') + '</div>' : '') + '</div>' +
     '<div class="sec"><h3>When and where it is measured</h3><div class="dr-viz"><figure>' + scalp(m, 160, true) + '<figcaption>' + esc(m.sitesNote || sitesOf(m).join(', ') || 'Sites not specified') + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + (m.lateralized ? '<br>opposite side minus same side' : '') + '</figcaption></figure>' +
@@ -2603,7 +2620,7 @@ function drawerHTML(m, M) {
 let lastFocus = null;
 function openMeasure(id) {
   if (!S.raw.measures.has(id)) return;
-  S.drawer = id;
+  S.drawer = id; S.drEdit = null;
   lastFocus = document.activeElement;
   renderDrawer();
   $('#scrim').hidden = false;
@@ -2613,7 +2630,7 @@ function openMeasure(id) {
 }
 function closeDrawer() {
   if (!S.drawer) return;
-  S.drawer = null;
+  S.drawer = null; S.drEdit = null;
   $('#scrim').hidden = true;
   const d = $('#drawer'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true');
   if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
@@ -2758,6 +2775,12 @@ function onAct(t) {
     case 'plan-c': S.plan.c = id; closeDrawer(); go('planner'); break;
     case 'contribute-c': if (S.edit) cancelEdit(); S.prefill = {c: id}; closeDrawer(); go('contribute'); break;
     case 'contribute-m': if (S.edit) cancelEdit(); S.prefill = {m: id}; closeDrawer(); go('contribute'); break;
+    case 'dr-edit': {
+      const es = M.byM.get(id) || [];
+      if (es.length > 1) { S.drEdit = S.drEdit === id ? null : id; renderDrawer(); const b = $('#dr-body [data-act="dr-edit"]'); if (b) b.focus(); }
+      else startEdit(es.length ? es[0].id : null, id);
+      break;
+    }
     case 'edit-entry': startEdit(id, null); break;
     case 'edit-measure': startEdit(null, id); break;
     case 'cancel-edit': cancelEdit(); break;
