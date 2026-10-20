@@ -824,6 +824,22 @@ begin
   perform public._log('unblocked', jsonb_build_object('email', v_email));
 end $$;
 
+-- Owner only: every account on the site, newest first.
+create or replace function public.list_accounts()
+returns table (email text, created_at timestamptz, last_sign_in_at timestamptz, is_admin boolean, is_owner boolean, is_blocked boolean, suggestions bigint)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_owner() then raise exception 'Only the owner can see the list of accounts.'; end if;
+  return query
+    select lower(u.email)::text, u.created_at, u.last_sign_in_at,
+      exists (select 1 from public.admins a where a.user_id = u.id),
+      exists (select 1 from public.owners o where o.email = lower(u.email)),
+      exists (select 1 from public.blocked_emails b where b.email = lower(u.email)),
+      (select count(*) from public.submissions s where s.submitted_by = u.id)
+    from auth.users u
+    order by u.created_at desc;
+end $$;
+
 -- Blocked emails cannot create an account, or change an account to that email.
 create or replace function public._block_signup() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -947,8 +963,8 @@ grant execute on function
   public.step_down(), public.delete_record(text, text), public.restore_record(bigint), public.import_kb(jsonb)
   to anon, authenticated;
 -- Owner tools are only for signed-in users (each still checks that the caller is the owner).
-revoke execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text) from public, anon;
-grant execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text) to authenticated;
+revoke execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() from public, anon;
+grant execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Internal functions (names starting with _) cannot be called through the API.

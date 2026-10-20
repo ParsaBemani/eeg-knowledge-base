@@ -534,6 +534,9 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .adm-list li{display:flex;justify-content:space-between;align-items:center;gap:6px 12px;padding:9px 0;border-top:1px solid var(--grid);font-size:14px;flex-wrap:wrap}
 .adm-list li:first-child{border-top:0}
 .adm-list .sub{font:12px var(--f-mono);color:var(--ink-3)}
+.badge-admin.badge-blocked{color:var(--warn)}
+.acc-list{max-height:460px;overflow-y:auto}
+#acc-q{width:100%;margin-bottom:6px}
 .adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .adm-row input{flex:1 1 220px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
 .btn.danger{color:var(--warn);border-color:var(--warn)}
@@ -2448,6 +2451,16 @@ V.admin = {
       '<p class="small muted">A blocked email can\'t sign in, create an account, suggest links or review. Anyone signed in with it loses admin rights straight away and is signed out within the hour. The public pages stay readable by everyone, as for any visitor.</p>' +
       '<form class="adm-row" id="adm-block" novalidate><input id="blk-email" type="email" placeholder="Email to block" aria-label="Email to block" maxlength="200"><button class="btn danger sm' + (armedBlock ? ' armed' : '') + '" type="submit">' + (armedBlock ? 'Click again to block' : 'Block') + '</button></form>' +
       (B.length ? '<ul class="adm-list">' + B.map(b => '<li><span>' + esc(b.email) + (b.note ? '<br><span class="sub">' + esc(b.note) + '</span>' : '') + '<br><span class="sub">blocked ' + esc(fmtDate(b.blocked_at)) + '</span></span><button class="btn sm" data-act="unblock" data-email="' + esc(b.email) + '">Unblock</button></li>').join('') + '</ul>' : '<p class="small muted">No one is blocked.</p>') + '</section>';
+    if (S.me.isOwner) {
+      const AC = A.accounts || [], aq = String(S.accQ || '').trim().toLowerCase(), shown = aq ? AC.filter(u => String(u.email).includes(aq)) : AC;
+      h += '<section class="panel"><h3>Accounts<span class="count">' + AC.length + '</span></h3>' +
+        '<p class="small muted">Everyone who has created an account by signing in, newest first. Only you can see this list.</p>' +
+        (AC.length > 8 ? '<input id="acc-q" type="search" placeholder="Find an email" aria-label="Find an account by email" maxlength="200" value="' + esc(S.accQ || '') + '">' : '') +
+        (shown.length ? '<ul class="adm-list acc-list">' + shown.map(u => '<li><span>' + esc(u.email) +
+            (u.is_owner ? ' <span class="badge-admin">Owner</span>' : u.is_admin ? ' <span class="badge-admin">Admin</span>' : '') + (u.is_blocked ? ' <span class="badge-admin badge-blocked">Blocked</span>' : '') +
+            '<br><span class="sub">joined ' + esc(fmtDate(u.created_at)) + (u.last_sign_in_at ? ' · last signed in ' + esc(fmtDate(u.last_sign_in_at)) : '') + ' · ' + plural(Number(u.suggestions) || 0, 'suggestion') + '</span></span></li>').join('') + '</ul>'
+          : '<p class="small muted">' + (AC.length ? 'No account matches “' + esc(aq) + '”.' : 'No accounts yet.') + '</p>') + '</section>';
+    }
     h += '<section class="panel"><h3>Activity</h3>' + (A.activity.length ? '<ul class="adm-list">' + A.activity.map(a => {
         const d = a.detail || {};
         const canUndo = (a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id)) ||
@@ -2891,6 +2904,7 @@ function bind() {
   document.addEventListener('input', ev => {
     if (ev.target.id === 'mf-q') { S.mf.q = ev.target.value; V.measures.update($('#v-measures')); }
     else if (ev.target.id === 'cv-q') { S.cq = ev.target.value; V.constructs.update($('#v-constructs')); }
+    else if (ev.target.id === 'acc-q') { S.accQ = ev.target.value; V.admin.update($('#v-admin')); }
   });
   document.addEventListener('change', ev => {
     const t = ev.target;
@@ -3084,9 +3098,11 @@ async function loadAdmin() {
       S.sb.from('admin_invites').select('email,invited_at').order('invited_at'),
       S.sb.from('activity').select('id,at,actor_email,action,detail').order('at', {ascending: false}).limit(40),
       S.sb.from('owners').select('email'),
-      S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []})
+      S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []}),
+      S.me.isOwner ? S.sb.rpc('list_accounts') : Promise.resolve({data: []})
     ]);
-    S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [], loaded: true};
+    S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [],
+      accounts: res[5].data || [], loaded: true};
   } catch (e) { console.warn('admin', e); }
   scheduleUpdate();
 }
