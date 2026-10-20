@@ -189,19 +189,56 @@ language sql immutable as $$
     else '[]'::jsonb end;
 $$;
 
--- Readable names for a suggestion, whether it uses existing records or proposes new ones.
+-- Every valid frequency range in a list (at most 8), for edits that keep a signal's other ranges.
+create or replace function public._bands(v jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('lo', (x.b->>'lo')::numeric, 'hi', (x.b->>'hi')::numeric, 'label', left(coalesce(x.b->>'label', ''), 30)) order by x.ord), '[]'::jsonb)
+  from (
+    select t.b, t.ord
+    from jsonb_array_elements(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) with ordinality as t(b, ord)
+    where jsonb_typeof(t.b) = 'object'
+      and (t.b->>'lo') ~ '^[0-9]+(\.[0-9]+)?$' and (t.b->>'hi') ~ '^[0-9]+(\.[0-9]+)?$'
+      and (t.b->>'lo')::numeric < (t.b->>'hi')::numeric and (t.b->>'hi')::numeric <= 1000
+    order by t.ord limit 8) x;
+$$;
+
+-- One field of a suggested edit as readable text, for emails.
+create or replace function public._edit_val(k text, v jsonb) returns text
+language sql immutable set search_path = '' as $$
+  select coalesce(nullif(case
+    when k = 'sites' then (select string_agg(t.x, ', ') from jsonb_array_elements_text(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) as t(x))
+    when k = 'bands' then (select string_agg(trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz'), ', ')
+                           from jsonb_array_elements(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) as t(b))
+    when k = 'claimType' then case v #>> '{}' when 'attributed' then 'Stated by the paper' when 'inferred' then 'Used to infer'
+      when 'causal' then 'Causal test' when 'hypothesis' then 'Hypothesis' when 'debated' then 'Debated' else v #>> '{}' end
+    when k = 'evidence' then case v #>> '{}' when 'human-eeg' then 'Human EEG/ERP' when 'stimulation' then 'Brain or sensory stimulation'
+      when 'intracranial' then 'Animal or intracranial' when 'review' then 'Review-level summary' else v #>> '{}' end
+    else v #>> '{}' end, ''), '(none)');
+$$;
+
+-- Readable names for a suggestion, whether it uses existing records, proposes new ones, or edits a link.
 create or replace function public._sub_summary(p jsonb) returns jsonb
 language sql stable security definer set search_path = public as $$
+  with e as (
+    select doc from public.kb_records where collection = 'entries' and id = p->>'entryId' and p->>'kind' = 'edit'
+  ), ids as (
+    select case when p->>'kind' = 'edit' then coalesce((select doc->>'measureId' from e), p->>'measureId') else p->>'measureId' end as mid,
+           case when p->>'kind' = 'edit' then (select doc->>'constructId' from e) else p->>'constructId' end as cid,
+           case when p->>'kind' = 'edit' then (select doc->>'sourceId' from e) else p->>'sourceId' end as sid
+  )
   select jsonb_build_object(
+    'kind', coalesce(p->>'kind', 'link'),
     'signal', coalesce(
-      (select doc->>'name' from public.kb_records where collection = 'measures' and id = p->>'measureId'),
+      (select r.doc->>'name' from public.kb_records r, ids where r.collection = 'measures' and r.id = ids.mid),
       (p->'newMeasure'->>'name') || ' (new signal)', 'Unknown signal'),
     'topic', coalesce(
-      (select doc->>'name' from public.kb_records where collection = 'constructs' and id = p->>'constructId'),
-      (p->'newConstruct'->>'name') || ' (new topic)', 'Unknown topic'),
+      (select r.doc->>'name' from public.kb_records r, ids where r.collection = 'constructs' and r.id = ids.cid),
+      (p->'newConstruct'->>'name') || ' (new topic)',
+      case when p->>'kind' = 'edit' and coalesce(p->>'entryId', '') = '' then 'electrodes and frequency' end, 'Unknown topic'),
     'paper', coalesce(
-      (select doc->>'cite' from public.kb_records where collection = 'sources' and id = p->>'sourceId'),
-      p->'reference'->>'cite', 'Unknown paper'),
+      (select r.doc->>'cite' from public.kb_records r, ids where r.collection = 'sources' and r.id = ids.sid),
+      p->'reference'->>'cite', case when p->>'kind' = 'edit' then '' end, 'Unknown paper'),
+    'reason', left(coalesce(p->>'reason', ''), 500),
     'pages', coalesce(p->>'pages', ''),
     'claim', coalesce(p->>'claim', ''),
     'claimType', coalesce(p->>'claimType', ''),
@@ -212,6 +249,28 @@ language sql stable security definer set search_path = public as $$
     'band', coalesce((select trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz')
                       from jsonb_array_elements(public._band(p->'bands')) as t(b) limit 1), ''));
 $$;
+
+-- The changes in a suggested edit, one line each: what the site says now → what is suggested.
+create or replace function public._edit_html(p jsonb) returns text
+language plpgsql stable security definer set search_path = public as $$
+declare
+  ch jsonb := case when jsonb_typeof(p->'changes') = 'object' then p->'changes' else '{}'::jsonb end;
+  e jsonb; m jsonb; f record; v_out text := '';
+begin
+  select doc into e from public.kb_records where collection = 'entries' and id = p->>'entryId';
+  select doc into m from public.kb_records where collection = 'measures' and id = coalesce(e->>'measureId', p->>'measureId');
+  for f in select * from (values
+      (1, 'claim', 'What the paper says'), (2, 'pages', 'Page(s)'), (3, 'claimType', 'Link strength'), (4, 'evidence', 'Kind of evidence'),
+      (5, 'paradigm', 'Task'), (6, 'population', 'Population'), (7, 'behaviour', 'Behavioural outcome'), (8, 'cites', 'Original studies cited'),
+      (9, 'sites', 'Electrodes'), (10, 'sitesNote', 'Location in the paper''s words'), (11, 'bands', 'Frequency range')) as v(n, k, label) order by n
+  loop
+    if ch ? f.k then
+      v_out := v_out || '<br><b>' || f.label || ':</b> ' || public._esc(public._edit_val(f.k, case when f.n <= 8 then e->f.k else m->f.k end))
+        || ' → <b>' || public._esc(public._edit_val(f.k, case f.k when 'sites' then public._sites(ch->f.k) when 'bands' then public._bands(ch->f.k) else ch->f.k end)) || '</b>';
+    end if;
+  end loop;
+  return nullif(substr(v_out, 5), '');
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- New suggestions: fill in who sent it, limit volume, email every admin
@@ -232,6 +291,18 @@ begin
       where submitted_by = new.submitted_by and created_at > now() - interval '1 day') >= 20 then
     raise exception 'You have reached the limit of 20 suggestions a day. Try again tomorrow.';
   end if;
+  if new.payload->>'kind' = 'edit' then
+    if coalesce(jsonb_typeof(new.payload->'changes'), '') <> 'object' or new.payload->'changes' = '{}'::jsonb then
+      raise exception 'The edit has no changes.';
+    end if;
+    if coalesce(new.payload->>'entryId', '') <> '' then
+      if not exists (select 1 from public.kb_records where collection = 'entries' and id = new.payload->>'entryId') then
+        raise exception 'That link is no longer on the site.';
+      end if;
+    elsif not exists (select 1 from public.kb_records where collection = 'measures' and id = new.payload->>'measureId') then
+      raise exception 'That EEG signal is no longer on the site.';
+    end if;
+  end if;
   return new;
 end $$;
 
@@ -247,26 +318,36 @@ declare
   v_link text;
   v_site text := (select value from public.settings where key = 'site_url');
   s jsonb := public._sub_summary(new.payload);
+  v_edit boolean := coalesce(new.payload->>'kind', '') = 'edit';
   v_details text;
 begin
-  perform public._log('submitted', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic'),
+  perform public._log('submitted', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'kind', s->>'kind'),
                       new.submitted_by, new.submitter_email);
-  v_details :=
-       '<p><b>EEG signal:</b> ' || public._esc(s->>'signal') || '<br><b>Topic:</b> ' || public._esc(s->>'topic')
-    || '<br><b>Paper:</b> ' || public._esc(s->>'paper') || '<br><b>Page(s):</b> ' || public._esc(s->>'pages')
-    || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
-    || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
-    || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
-    || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
-    || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
+  if v_edit then
+    v_details :=
+         '<p><b>EEG signal:</b> ' || public._esc(s->>'signal')
+      || case when coalesce(new.payload->>'entryId', '') <> '' then '<br><b>Topic:</b> ' || public._esc(s->>'topic') || '<br><b>Paper:</b> ' || public._esc(s->>'paper') else '' end || '</p>'
+      || '<p><b>Changes</b> (on the site now → suggested):<br>' || coalesce(public._edit_html(new.payload), 'none') || '</p>'
+      || case when s->>'reason' <> '' then '<p><b>Why:</b> ' || public._esc(s->>'reason') || '</p>' else '' end
+      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown')) || '</p>';
+  else
+    v_details :=
+         '<p><b>EEG signal:</b> ' || public._esc(s->>'signal') || '<br><b>Topic:</b> ' || public._esc(s->>'topic')
+      || '<br><b>Paper:</b> ' || public._esc(s->>'paper') || '<br><b>Page(s):</b> ' || public._esc(s->>'pages')
+      || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
+      || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
+      || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
+      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
+      || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
+  end if;
   for a in select user_id, email from public.admins loop
     v_token := encode(gen_random_bytes(24), 'hex');
     insert into public.review_tokens (token_hash, submission_id, admin_id, admin_email)
     values (encode(digest(v_token, 'sha256'), 'hex'), new.id, a.user_id, a.email);
     v_link := v_site || '?review=' || v_token;
     perform public._send_email(a.email,
-      'New suggestion: ' || (s->>'signal') || ' → ' || (s->>'topic'),
-      public._email_page('A new link was suggested', v_details
+      case when v_edit then 'Suggested edit: ' else 'New suggestion: ' end || (s->>'signal') || ' → ' || (s->>'topic'),
+      public._email_page(case when v_edit then 'An edit was suggested' else 'A new link was suggested' end, v_details
         || '<p style="margin:20px 0">'
         || '<a href="' || v_link || '&decision=accept" style="background:#0A6A6A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Accept</a> &nbsp; '
         || '<a href="' || v_link || '&decision=reject" style="background:#fff;color:#AE3D0C;border:1px solid #AE3D0C;padding:9px 17px;border-radius:6px;text-decoration:none;font-weight:bold">Reject</a></p>'
@@ -299,6 +380,7 @@ begin
   if not found then raise exception 'This suggestion no longer exists.'; end if;
   if s.status <> 'pending' then raise exception 'This suggestion was already %.', s.status; end if;
   p := s.payload;
+  if p->>'kind' = 'edit' then return public._accept_edit(s.id, p_actor, p_email); end if;
   v_sites := public._sites(p->'sites');
   v_band := public._band(p->'bands');
   v_snote := left(trim(coalesce(p->>'sitesNote', '')), 200);
@@ -415,6 +497,86 @@ begin
   return eid;
 end $$;
 
+-- Applies an accepted edit to a link and its signal. An approved edit may replace what is there;
+-- the previous versions are kept in the activity list so the edit can be undone.
+create or replace function public._accept_edit(p_sub uuid, p_actor uuid, p_email text) returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  s public.submissions%rowtype;
+  p jsonb; ch jsonb;
+  eid text; mid text; k text;
+  e_old jsonb; e_new jsonb; m_old jsonb; m_new jsonb;
+  sm jsonb;
+  v_today text := to_char(now(), 'YYYY-MM-DD');
+begin
+  select * into s from public.submissions where id = p_sub;
+  p := s.payload;
+  ch := case when jsonb_typeof(p->'changes') = 'object' then p->'changes' else '{}'::jsonb end;
+  eid := nullif(p->>'entryId', '');
+  if eid is not null then
+    select doc into e_old from public.kb_records where collection = 'entries' and id = eid;
+    if not found then raise exception 'The link this edit changes is no longer on the site.'; end if;
+    mid := e_old->>'measureId';
+  else
+    mid := nullif(p->>'measureId', '');
+  end if;
+  select doc into m_old from public.kb_records where collection = 'measures' and id = mid;
+  if not found then raise exception 'The EEG signal this edit changes is no longer on the site.'; end if;
+
+  -- The link: only these fields, cleaned the same way as new suggestions.
+  e_new := e_old;
+  if eid is not null then
+    foreach k in array array['claim', 'pages', 'paradigm', 'population', 'behaviour', 'cites'] loop
+      if ch ? k then
+        e_new := e_new || jsonb_build_object(k, left(trim(coalesce(ch->>k, '')), case k when 'claim' then 700 when 'pages' then 40 when 'cites' then 300 else 200 end));
+      end if;
+    end loop;
+    if ch->>'claimType' in ('attributed', 'inferred', 'causal', 'hypothesis', 'debated') then e_new := e_new || jsonb_build_object('claimType', ch->>'claimType'); end if;
+    if ch->>'evidence' in ('human-eeg', 'stimulation', 'intracranial', 'review') then e_new := e_new || jsonb_build_object('evidence', ch->>'evidence'); end if;
+    if coalesce(e_new->>'claim', '') = '' or coalesce(e_new->>'pages', '') = '' then
+      raise exception 'A link needs page numbers and a description of what the paper says.';
+    end if;
+  end if;
+
+  -- The signal: electrodes, the paper's wording for them, and frequency ranges. Edited values are no longer marked as inferred.
+  m_new := m_old;
+  if ch ? 'sites' then
+    m_new := m_new || jsonb_build_object('sites', public._sites(ch->'sites'),
+      'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
+  end if;
+  if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
+  if ch ? 'bands' then
+    m_new := m_new || jsonb_build_object('bands', public._bands(ch->'bands'),
+      'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'bands' else '[]'::jsonb end);
+  end if;
+
+  if e_new is not distinct from e_old and m_new is not distinct from m_old then
+    raise exception 'This edit no longer changes anything on the site. Reject it instead.';
+  end if;
+  if e_new is distinct from e_old then
+    update public.kb_records set doc = e_new || jsonb_build_object('editedAt', v_today), updated_at = now() where collection = 'entries' and id = eid;
+  end if;
+  if m_new is distinct from m_old then
+    update public.kb_records set doc = m_new || jsonb_build_object('editedAt', v_today), updated_at = now() where collection = 'measures' and id = mid;
+  end if;
+
+  update public.submissions
+    set status = 'accepted', reviewed_by = p_actor, reviewer_email = p_email, reviewed_at = now(), entry_id = eid
+    where id = s.id;
+  delete from public.review_tokens where submission_id = s.id;
+
+  sm := public._sub_summary(p);
+  perform public._log('edited', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'entry', eid, 'measure', mid,
+    'before', jsonb_build_object('entries', case when e_new is distinct from e_old then e_old end, 'measures', case when m_new is distinct from m_old then m_old end)),
+    p_actor, p_email);
+  perform public._send_email(s.submitter_email, 'Your suggested edit was accepted',
+    public._email_page('Your suggested edit was accepted',
+      '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic')
+      || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
+      || '">Open the knowledge base</a></p>'));
+  return coalesce(eid, mid);
+end $$;
+
 create or replace function public._reject(p_sub uuid, p_actor uuid, p_email text, p_note text) returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -430,11 +592,13 @@ begin
     where id = s.id;
   delete from public.review_tokens where submission_id = s.id;
   sm := public._sub_summary(s.payload);
-  perform public._log('rejected', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'note', v_note), p_actor, p_email);
-  perform public._send_email(s.submitter_email, 'Your suggestion was not accepted',
-    public._email_page('Your suggestion was not accepted',
-      '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic')
-      || '</b> was reviewed and not added.</p>'
+  perform public._log('rejected', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'note', v_note, 'kind', sm->>'kind'), p_actor, p_email);
+  perform public._send_email(s.submitter_email,
+    case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
+    public._email_page(case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
+      case when sm->>'kind' = 'edit'
+        then '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not made.</p>'
+        else '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not added.</p>' end
       || case when v_note <> '' then '<p><b>Reviewer''s note:</b> ' || public._esc(v_note) || '</p>' else '' end));
 end $$;
 
@@ -606,8 +770,22 @@ declare
   a public.activity%rowtype;
 begin
   if not public.is_admin() then raise exception 'Only admins can restore records.'; end if;
-  select * into a from public.activity where id = p_activity and action = 'deleted';
+  select * into a from public.activity where id = p_activity and action in ('deleted', 'edited');
   if not found then raise exception 'Nothing to restore.'; end if;
+  -- Undo an accepted edit: put back the versions from before it.
+  if a.action = 'edited' then
+    if exists (select 1 from public.activity where action = 'edit_undone' and detail->>'activity' = p_activity::text) then
+      raise exception 'That edit was already undone.';
+    end if;
+    if jsonb_typeof(a.detail->'before'->'entries') = 'object' then
+      update public.kb_records set doc = a.detail->'before'->'entries', updated_at = now() where collection = 'entries' and id = a.detail->>'entry';
+    end if;
+    if jsonb_typeof(a.detail->'before'->'measures') = 'object' then
+      update public.kb_records set doc = a.detail->'before'->'measures', updated_at = now() where collection = 'measures' and id = a.detail->>'measure';
+    end if;
+    perform public._log('edit_undone', jsonb_build_object('activity', p_activity, 'signal', a.detail->>'signal', 'topic', a.detail->>'topic'));
+    return;
+  end if;
   if exists (select 1 from public.kb_records where collection = a.detail->>'collection' and id = a.detail->>'id') then
     raise exception 'That record is already back.';
   end if;

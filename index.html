@@ -372,6 +372,7 @@ table.mini{min-width:600px}
 .en-kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 14px;margin:0;font-size:13.5px}
 .en-kv dt{color:var(--ink-3)}
 .en-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.en-kv dd .was{color:var(--ink-3)}
 .en-src{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;font-size:13px;color:var(--ink-2);border-top:1px solid var(--grid);padding-top:8px}
 .en-cites{font-size:12.5px;color:var(--ink-3)}
 
@@ -529,7 +530,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .adm-row input{flex:1 1 220px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
 .btn.danger{color:var(--warn);border-color:var(--warn)}
 .btn.danger.armed{background:var(--warn);color:var(--panel)}
-.en-admin{display:flex;justify-content:flex-end}
+.en-admin{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
 .rv-actions{display:flex;flex-direction:column;gap:12px}
 .rv-actions textarea{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);font:inherit;min-height:70px}
 .btn.pick{outline:3px solid var(--accent-soft)}
@@ -812,7 +813,7 @@ const S = {
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
   plan: {c: '', pop: 'adults', para: 'either'},
-  drawer: null, prefill: null,
+  drawer: null, prefill: null, edit: null,
   /* Supabase mode (sign-in, email approvals): see connectSupabase */
   sb: null, sbMode: false, sbNote: '', session: null,
   adm: {admins: [], invites: [], activity: [], loaded: false},
@@ -996,7 +997,7 @@ function entryCard(e, M, opts) {
     '<dl class="en-kv">' + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
     '<div class="en-src"><span class="eyebrow">Source</span>' + src + '</div>' +
     (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') +
-    (isSbAdmin() ? '<div class="en-admin">' + delBtn('entries', e.id, 'Delete this link') + '</div>' : '') + '</article>';
+    (canSuggestEdit() || isSbAdmin() ? '<div class="en-admin">' + (canSuggestEdit() ? '<button class="btn sm ghost" data-act="edit-entry" data-id="' + esc(e.id) + '">Suggest an edit</button>' : '') + (isSbAdmin() ? delBtn('entries', e.id, 'Delete this link') : '') + '</div>' : '') + '</article>';
 }
 /* Two-step delete button for admins: the first click arms it, the second deletes. */
 function delBtn(col, id, label) {
@@ -1004,6 +1005,7 @@ function delBtn(col, id, label) {
   return '<button class="btn sm danger' + (armed ? ' armed' : '') + '" data-act="del-record" data-col="' + esc(col) + '" data-id="' + esc(id) + '">' + (armed ? 'Click again to delete' : esc(label)) + '</button>';
 }
 function isSbAdmin() { return !!(S.sbMode && S.me.canEdit); }
+function canSuggestEdit() { return !!(S.sbMode && S.sbNote !== 'down'); }
 function mcard(m, M) {
   const cs = consFor(M, m.id);
   const n = (M.byM.get(m.id) || []).length;
@@ -1680,6 +1682,17 @@ function plPointerUp() {
 function plVisibility() {
   const box = $('#f-place');
   if (!box) return;
+  if (S.edit) {
+    const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
+    box.hidden = false;
+    $('#pl-sites-part').hidden = false;
+    $('#pl-band-part').hidden = !(em && (sigOf(em) !== 'time' || nb));
+    $('#f-place-intro').textContent = (em && sitesOf(em).length
+      ? 'These are the electrodes on the site now. Drag, add or remove them to match the paper.'
+      : 'This signal has no electrodes on the site yet. Add them here if the paper gives them.') +
+      (nb > 1 ? ' The signal has ' + nb + ' frequency ranges; this form changes the first one and keeps the others.' : '');
+    return;
+  }
   const sel = $('#f-measure').value, isNew = sel === '__new';
   const m = sel && !isNew ? model().mById.get(sel) : null;
   const needSites = isNew || !!(m && !sitesOf(m).length);
@@ -1721,10 +1734,126 @@ function placeText(s) {
   return {sites: sites, band: b && isFinite(b.lo) && isFinite(b.hi) ? bandText(b) : ''};
 }
 
+/* ---------- suggesting an edit: the Contribute form in edit mode ---------- */
+/* What an edit may change: [key, label, form field]. The first eight belong to the link, the rest to its signal. */
+const EDIT_FIELDS = [
+  ['claim', 'What the paper says', 'f-claim'], ['pages', 'Page(s)', 'f-pages'], ['claimType', 'Link strength', 'f-ctype'], ['evidence', 'Kind of evidence', 'f-evid'],
+  ['paradigm', 'Task', 'f-paradigm'], ['population', 'Population', 'f-pop'], ['behaviour', 'Behavioural outcome', 'f-beh'], ['cites', 'Original studies cited', 'f-cites'],
+  ['sites', 'Electrodes'], ['sitesNote', 'Location in the paper\'s words', 'f-sites-note'], ['bands', 'Frequency range']
+];
+const ENTRY_KEYS = EDIT_FIELDS.slice(0, 8).map(f => f[0]);
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+function editVal(k, v) {
+  if (k === 'sites') return arr(v).join(', ') || '(none)';
+  if (k === 'bands') return arr(v).map(bandText).join(', ') || '(none)';
+  if (k === 'claimType') return (CLAIM[v] || CLAIM.attributed).label;
+  if (k === 'evidence') return (EVID[v] || EVID['human-eeg']).label;
+  return v === 0 || v ? String(v) : '(none)';
+}
+/* The values an edit starts from, as they are on the site now. */
+function editSnapshot(entryId, measureId) {
+  const e = entryId ? S.raw.entries.get(entryId) : null, m = S.raw.measures.get(measureId) || {};
+  const o = {sites: sitesOf(m).slice(), sitesNote: String(m.sitesNote || ''),
+    bands: bandsOf(m).map(b => ({lo: Number(b.lo), hi: Number(b.hi), label: String(b.label || '').trim().slice(0, 30)}))};
+  if (e) {
+    ENTRY_KEYS.forEach(k => { o[k] = String(e[k] == null ? '' : e[k]); });
+    o.claimType = CLAIM[e.claimType] ? e.claimType : 'attributed';
+    o.evidence = EVID[e.evidence] ? e.evidence : 'human-eeg';
+  }
+  return o;
+}
+function editTitle(p) {
+  const m = S.raw.measures.get(p.measureId), e = p.entryId ? S.raw.entries.get(p.entryId) : null, c = e ? S.raw.constructs.get(e.constructId) : null;
+  return (m ? m.name : 'Unknown signal') + (p.entryId ? ' → ' + (c ? c.name : 'Unknown topic') : ': electrodes and frequency');
+}
+/* Before → after rows for an edit. Waiting edits compare with the site as it is now. */
+function editRowsHTML(p, live) {
+  const ch = p.changes || {}, before = live ? editSnapshot(p.entryId, p.measureId) : (p.before || {});
+  return EDIT_FIELDS.filter(f => Object.prototype.hasOwnProperty.call(ch, f[0])).map(f => {
+    const k = f[0];
+    let extra = '';
+    if (k === 'sites') {
+      const was = arr(before.sites), now = arr(ch.sites);
+      const add = now.filter(x => !was.includes(x)), rem = was.filter(x => !now.includes(x));
+      extra = [add.length ? 'Added ' + add.map(x => x + ' (' + siteInfo(x).region.toLowerCase() + ')').join(', ') : '', rem.length ? 'Removed ' + rem.join(', ') : ''].filter(Boolean).join('. ');
+    }
+    return '<dt>' + esc(f[1]) + '</dt><dd><span class="was">' + esc(editVal(k, before[k])) + '</span> → <b>' + esc(editVal(k, ch[k])) + '</b>' + (extra ? '<br><span class="note">' + esc(extra) + '</span>' : '') + '</dd>';
+  }).join('');
+}
+function startEdit(entryId, measureId) {
+  const e = entryId ? S.raw.entries.get(entryId) : null, mid = e ? e.measureId : measureId;
+  if (!S.raw.measures.has(mid)) return toast('That signal is no longer on the site.');
+  closeDrawer();
+  S.edit = {entryId: e ? entryId : null, measureId: mid, base: editSnapshot(e ? entryId : null, mid)};
+  go('contribute');
+  const E = S.edit, b = E.base;
+  $('#ct-form').reset();
+  $('#f-measure').value = mid;
+  if (e) { $('#f-construct').value = e.constructId; $('#f-source').value = e.sourceId || ''; }
+  EDIT_FIELDS.forEach(f => { if (f[2] && b[f[0]] !== undefined) $('#' + f[2]).value = b[f[0]]; });
+  const b0 = b.bands[0];
+  $('#f-band-lo').value = b0 ? b0.lo : ''; $('#f-band-hi').value = b0 ? b0.hi : ''; $('#f-band-label').value = b0 ? b0.label : '';
+  PL.sites = b.sites.slice(); PL.hover = null;
+  renderPlacer(); renderBandPreview();
+  $('#f-msg').textContent = '';
+  render();
+  try { $('#ct-form').closest('.panel').scrollIntoView({block: 'start'}); } catch (err) {}
+}
+function cancelEdit() {
+  S.edit = null;
+  $('#ct-form').reset(); resetPlacer();
+  $('#f-msg').textContent = '';
+  render();
+}
+/* Only the fields that differ from the site go into the edit. */
+function editPayload() {
+  const E = S.edit, b = E.base, v = id => ($('#' + id).value || '').trim(), ch = {};
+  if (E.entryId) EDIT_FIELDS.slice(0, 8).forEach(f => {
+    let val = v(f[2]);
+    if (f[0] === 'claimType' && !CLAIM[val]) val = 'attributed';
+    if (f[0] === 'evidence' && !EVID[val]) val = 'human-eeg';
+    if (val !== b[f[0]]) ch[f[0]] = val;
+  });
+  if (!same(PL.sites, b.sites)) ch.sites = PL.sites.slice();
+  if (v('f-sites-note') !== b.sitesNote) ch.sitesNote = v('f-sites-note');
+  // Adding the first electrodes replaces a "Not given in the papers" note that was left as it was.
+  else if (ch.sites && ch.sites.length && !b.sites.length && /^not (given|specified)/i.test(b.sitesNote)) ch.sitesNote = '';
+  if (!$('#pl-band-part').hidden) {
+    const band = parseBand(), bands = (band && !band.error ? [band] : []).concat(b.bands.slice(1));
+    if (!same(bands, b.bands)) ch.bands = bands;
+  }
+  const before = {};
+  Object.keys(ch).forEach(k => { before[k] = b[k]; });
+  const e = E.entryId ? S.raw.entries.get(E.entryId) : null;
+  return {kind: 'edit', entryId: E.entryId, measureId: E.measureId, constructId: e ? e.constructId : null, sourceId: e ? e.sourceId || null : null,
+    changes: ch, before: before, reason: v('f-reason')};
+}
+async function submitEdit(setMsg) {
+  if (!S.sbMode || !S.sb) return setMsg('Edits need the live database.', true);
+  if (!S.session) return setMsg('Sign in first, then send your edit.', true);
+  const band = $('#pl-band-part').hidden ? null : parseBand();
+  if (band && band.error) return setMsg('Fix the frequency range: two numbers from 0 to 1000 Hz, the first one lower.', true);
+  const payload = editPayload();
+  if (!Object.keys(payload.changes).length) return setMsg('Nothing has changed yet. Change a field or the electrodes on the head, then send.', true);
+  if (payload.changes.claim === '' || payload.changes.pages === '') return setMsg('A link needs page numbers and a description of what the paper says.', true);
+  const btn = $('#f-submit');
+  btn.disabled = true; setMsg('Sending…');
+  try {
+    const {error} = await S.sb.from('submissions').insert({payload: payload});
+    if (error) throw error;
+    S.edit = null;
+    $('#ct-form').reset(); resetPlacer();
+    setMsg('Sent. The admins have been emailed, and you\'ll get an email when they have reviewed your edit.');
+    toast('Edit sent');
+    await loadSubs();
+  } catch (e) { setMsg(sbErr(e), true); }
+  finally { btn.disabled = false; scheduleUpdate(); }
+}
+
 V.contribute = {
   mount(el) {
     el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
-      '<div class="ct"><section class="panel"><h3>Suggest a link</h3><div id="ct-gate" class="gate"></div>' +
+      '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest a link</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
         '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
@@ -1750,7 +1879,7 @@ V.contribute = {
               '<div class="field"><label for="f-band-label">Band name (optional)</label><input id="f-band-label" maxlength="30" placeholder="e.g. theta"></div></div>' +
             '<div id="f-band-prev"></div></div>' +
         '</div>' +
-        '<div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
+        '<div id="f-entry-part"><div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
           '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
         '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
           '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
@@ -1761,8 +1890,9 @@ V.contribute = {
         '<div class="frow"><div class="field"><label for="f-paradigm">Paradigm or task</label><input id="f-paradigm" maxlength="200"></div>' +
           '<div class="field"><label for="f-pop">Population</label><input id="f-pop" maxlength="200"></div></div>' +
         '<div class="frow"><div class="field"><label for="f-beh">Behavioural outcome</label><input id="f-beh" maxlength="200"></div>' +
-          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div>' +
-        '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
+          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div></div>' +
+        '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
+        '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
       '</form></section>' +
       '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
@@ -1790,6 +1920,20 @@ V.contribute = {
     FAMILIES.forEach(f => { const cs = M.constructs.filter(c => famOf(c) === f.id); if (cs.length) cOpts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>'; });
     fill($('#f-construct'), cOpts, 'New topic', 'Choose a topic…');
     fill($('#f-source'), M.sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.short) + '</option>').join(''), 'Other paper', 'Choose a paper…');
+    if (S.edit && !(M.mById.has(S.edit.measureId) && (!S.edit.entryId || S.raw.entries.has(S.edit.entryId)))) { S.edit = null; toast('The record you were editing is no longer on the site.'); }
+    const E = S.edit, ee = E && E.entryId ? S.raw.entries.get(E.entryId) : null;
+    if (E) {
+      $('#f-measure').value = E.measureId;
+      if (ee) { $('#f-construct').value = ee.constructId; $('#f-source').value = ee.sourceId || ''; }
+      const es = ee && ee.sourceId ? M.sById.get(ee.sourceId) : null;
+      $('#ct-edit').innerHTML = '<div class="callout"><b>Editing: ' + esc(editTitle(E)) + '</b><span>' +
+        (ee ? 'Correct what is wrong or missing' + (es ? ' in this link to ' + esc(es.short) : '') + ', including the electrodes on the head. ' : 'Add or correct the electrodes on the head and the frequency range for this signal. ') +
+        'An admin reviews the edit before it goes live. To link a different signal, topic or paper, cancel and suggest a new link.</span></div>';
+    }
+    $('#ct-h').textContent = E ? 'Suggest an edit' : 'Suggest a link';
+    $('#ct-edit').hidden = !E; $('#f-reason-wrap').hidden = !E; $('#f-cancel').hidden = !E;
+    $('#f-entry-part').hidden = !!(E && !E.entryId);
+    $('#f-construct').closest('.field').hidden = !!(E && !E.entryId);
     if (S.prefill) {
       if (S.prefill.m && M.mById.has(S.prefill.m)) $('#f-measure').value = S.prefill.m;
       if (S.prefill.c && M.cById.has(S.prefill.c)) $('#f-construct').value = S.prefill.c;
@@ -1807,7 +1951,8 @@ V.contribute = {
           ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
-      $('#f-submit').textContent = 'Send suggestion';
+      if (E) { ['f-measure', 'f-construct', 'f-source'].forEach(id => { $('#' + id).disabled = true; }); $('#f-cancel').disabled = false; }
+      $('#f-submit').textContent = E ? 'Send edit for review' : 'Send suggestion';
       const admin = isSbAdmin();
       $('#ct-qh').textContent = admin ? 'Review queue' : 'Your suggestions';
       $('#ct-role').textContent = admin ? 'You can accept or reject suggestions' : '';
@@ -1851,6 +1996,11 @@ function subHTML(s, M) {
     act = S.me.canEdit ? '<div class="qact"><button class="btn sm primary" data-act="accept" data-id="' + esc(s.id) + '">Accept</button><input id="rn-' + esc(s.id) + '" placeholder="Reason, if ' + (S.sbMode ? 'rejecting' : 'declining') + '" aria-label="Reason" maxlength="300"><button class="btn sm" data-act="decline" data-id="' + esc(s.id) + '">' + (S.sbMode ? 'Reject' : 'Decline') + '</button></div>'
       : '<p class="note">Waiting for ' + (S.sbMode ? 'an admin' : 'a curator') + '.</p>';
   }
+  if (S.sbMode && s.kind === 'edit') {
+    return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><span class="chip">Edit</span><b>' + esc(editTitle(s)) + '</b></div>' +
+      '<dl class="en-kv">' + editRowsHTML(s, st === 'pending') + row('Why', s.reason) + row('Reason', s.reviewNote) + '</dl>' +
+      '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
+  }
   if (S.sbMode) {
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
       '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' +
@@ -1883,6 +2033,7 @@ async function submitEntry(ev) {
   const msg = $('#f-msg');
   const v = id => ($('#' + id) && $('#' + id).value || '').trim();
   const setMsg = (t, err) => { msg.textContent = t; msg.className = 'fmsg' + (err ? ' err' : ''); };
+  if (S.edit) return submitEdit(setMsg);
   if (!S.db && !S.static) return setMsg('The knowledge base is not connected.', true);
   const mSel = v('f-measure'), cSel = v('f-construct'), sSel = v('f-source');
   const probs = [];
@@ -2206,9 +2357,11 @@ function actLabel(a) {
   const pair = d.signal ? ' <b>' + esc(d.signal) + '</b> → <b>' + esc(d.topic) + '</b>' : '';
   const label = d.label ? ' “' + esc(String(d.label).length > 70 ? String(d.label).slice(0, 68) + '…' : d.label) + '”' : '';
   switch (a.action) {
-    case 'submitted': return who + ' suggested' + pair;
+    case 'submitted': return who + (d.kind === 'edit' ? ' suggested an edit to' : ' suggested') + pair;
     case 'accepted': return who + ' accepted' + pair;
-    case 'rejected': return who + ' rejected' + pair + (d.note ? ' (' + esc(d.note) + ')' : '');
+    case 'rejected': return who + (d.kind === 'edit' ? ' rejected an edit to' : ' rejected') + pair + (d.note ? ' (' + esc(d.note) + ')' : '');
+    case 'edited': return who + ' accepted an edit to' + pair;
+    case 'edit_undone': return who + ' undid an edit to' + pair;
     case 'deleted': return who + ' deleted a ' + kindLabel(d.collection) + label;
     case 'restored': return who + ' restored a ' + kindLabel(d.collection) + label;
     case 'admin_added': return who + ' made ' + esc(d.email) + ' an admin';
@@ -2257,7 +2410,7 @@ V.admin = {
     if (S.sbNote === 'down') h += '<div class="callout warn"><b>The live database could not be reached</b><span>Changes are not possible until it is back. If the project was paused, restore it in the Supabase dashboard.</span></div>';
     h += '<div class="adm-grid"><div class="adm-col">';
     h += '<section class="panel"><h3>Suggestions waiting<span class="count">' + pend.length + '</span></h3><div class="queue">' + subsListHTML(M, true) + '</div></section>';
-    h += '<section class="panel"><h3>Delete a link</h3><p class="small muted">Open any topic or signal: as an admin you see a <b>Delete this link</b> button under each link. Deleted items can be restored from the activity list.</p></section>';
+    h += '<section class="panel"><h3>Delete a link</h3><p class="small muted">Open any topic or signal: as an admin you see a <b>Delete this link</b> button under each link. Deleted items, and accepted edits, can be undone from the activity list.</p></section>';
     if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
     h += '</div><div class="adm-col">';
@@ -2270,7 +2423,8 @@ V.admin = {
       (only ? '<p class="small muted">You are the only admin. Add another admin before you can step down.</p>' : '') + '</section>';
     h += '<section class="panel"><h3>Activity</h3>' + (A.activity.length ? '<ul class="adm-list">' + A.activity.map(a => {
         const d = a.detail || {};
-        const canUndo = a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id);
+        const canUndo = (a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id)) ||
+          (a.action === 'edited' && !A.activity.some(x => x.action === 'edit_undone' && String((x.detail || {}).activity) === String(a.id)));
         return '<li><span>' + actLabel(a) + '<br><span class="sub">' + esc(fmtDate(a.at)) + '</span></span>' + (canUndo ? '<button class="btn sm" data-act="restore" data-id="' + esc(a.id) + '">Undo</button>' : '') + '</li>';
       }).join('') + '</ul>' : '<p class="small muted">Nothing yet.</p>') + '</section>';
     h += '<section class="panel"><h3>Backup</h3><p class="small muted">Download every record as one file. Keep a copy somewhere safe now and then.</p><div class="btns"><button class="btn sm" data-act="backup">Download backup (.json)</button></div></section>';
@@ -2288,7 +2442,7 @@ V.review = {
     let h;
     if (!R.token) h = '<div class="empty"><b>No review link found.</b><span>Open the Accept or Reject button in the email again, or use the Admin page.</span></div>';
     else if (!S.sbMode) h = '<div class="empty"><b>' + (S.status === 'connecting' ? 'Connecting…' : 'Reviewing needs the live database, which is not set up on this copy of the site.') + '</b></div>';
-    else if (R.done) h = '<div class="callout ok"><b>' + (R.done.status === 'accepted' ? 'Accepted. The link is now on the site.' : 'Rejected. The contributor has been emailed.') + '</b><span>You can close this tab.</span><div class="btns"><button class="btn primary sm" data-act="go" data-route="overview">Open the knowledge base</button></div></div>';
+    else if (R.done) h = '<div class="callout ok"><b>' + (R.done.status === 'accepted' ? (R.data && R.data.payload && R.data.payload.kind === 'edit' ? 'Accepted. The change is now on the site.' : 'Accepted. The link is now on the site.') : 'Rejected. The contributor has been emailed.') + '</b><span>You can close this tab.</span><div class="btns"><button class="btn primary sm" data-act="go" data-route="overview">Open the knowledge base</button></div></div>';
     else if (!R.data) h = '<p class="skel">Loading the suggestion…</p>';
     else if (!R.data.ok) h = '<div class="empty"><b>This link no longer works.</b><span>' + esc(R.data.reason || '') + '</span></div>';
     else if (R.data.status !== 'pending') h = '<div class="empty"><b>This suggestion was already ' + esc(R.data.status) + '.</b><span>No further action is needed.</span></div>';
@@ -2296,12 +2450,12 @@ V.review = {
       const s = R.data.summary || {}, p = R.data.payload || {};
       const row = (k, v) => v ? '<dt>' + k + '</dt><dd>' + esc(v) + '</dd>' : '';
       h = '<div class="panel"><div class="eyebrow">Suggested by ' + esc(R.data.submitter_email || 'unknown') + ' · ' + esc(fmtDate(R.data.submitted_at)) + '</div>' +
-        '<h3>' + esc(s.signal) + ' → ' + esc(s.topic) + '</h3><dl class="en-kv">' +
+        (p.kind === 'edit' ? '<h3>Suggested edit: ' + esc(editTitle(p)) + '</h3><dl class="en-kv">' + editRowsHTML(p, true) + row('Why', p.reason) + '</dl>' : '<h3>' + esc(s.signal) + ' → ' + esc(s.topic) + '</h3><dl class="en-kv">' +
         row('Paper', s.paper) + row('Page(s)', s.pages) + row('What the paper says', s.claim) +
         row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
         row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
         row('Electrodes', placeText(p).sites) + row('Frequency range', placeText(p).band) +
-        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>' +
+        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>') +
         '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
         '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
         '<div class="field"><label for="rv-note">Reason (emailed to the contributor if you reject)</label><textarea id="rv-note" maxlength="500"></textarea></div>' +
@@ -2436,7 +2590,8 @@ function drawerHTML(m, M) {
           ? (winOf(m) ? esc(winText(m)) + (m.windowNote ? '<br><span class="note">' + esc(m.windowNote) + '</span>' : '') : esc(m.windowNote || 'Not given in the papers'))
           : (b.length ? esc(b.map(bandText).join(', ')) : 'Not given in the papers') + (m.bandsNote ? '<br><span class="note">' + esc(m.bandsNote) + '</span>' : '')) + '</dd>' +
       '<dt>Where</dt><dd>' + (sitesOf(m).length ? esc(sitesOf(m).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : esc(m.sitesNote && !/^not given/i.test(m.sitesNote) ? m.sitesNote : 'Not given in the papers')) + '</dd></dl>' +
-      (miss.length ? '<div class="callout warn"><b>The papers do not give the ' + esc(miss.join(' or ')) + '</b><span>Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.</span></div>' : '') + '</div></div></div>' +
+      (miss.length ? '<div class="callout warn"><b>The papers do not give the ' + esc(miss.join(' or ')) + '</b><span>Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.</span></div>' : '') +
+      (canSuggestEdit() ? '<div class="btns"><button class="btn sm ghost" data-act="edit-measure" data-id="' + esc(m.id) + '">' + (sitesOf(m).length ? 'Suggest a change to the electrodes' : 'Add the electrode sites') + '</button></div>' : '') + '</div></div></div>' +
     '<div class="sec"><h3>Topics it is linked to<span class="count">' + n + '</span></h3><p class="small muted">' + esc(specLine) + '</p>' +
       (n ? '<ul class="clist">' + cs.map(c => { const ce = es.filter(e => e.constructId === c.id); return '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="sub">' + claimSummary(ce) + '</span></li>'; }).join('') + '</ul>' : '') + '</div>' +
     (nCav ? '<details class="more-d"><summary>Cautions from the papers<span class="hint">' + nCav + '</span></summary><ul class="srcd warnl">' + m.caveats.map(t => '<li>' + esc(t.t) + ' ' + refHTML(t.refs) + '</li>').join('') + '</ul></details>' : '') +
@@ -2601,8 +2756,11 @@ function onAct(t) {
     case 'pin': S.mapPin = t.getAttribute('data-c') ? {c: t.getAttribute('data-c')} : {m: t.getAttribute('data-m')}; render(); break;
     case 'unpin': S.mapPin = null; render(); break;
     case 'plan-c': S.plan.c = id; closeDrawer(); go('planner'); break;
-    case 'contribute-c': S.prefill = {c: id}; closeDrawer(); go('contribute'); break;
-    case 'contribute-m': S.prefill = {m: id}; closeDrawer(); go('contribute'); break;
+    case 'contribute-c': if (S.edit) cancelEdit(); S.prefill = {c: id}; closeDrawer(); go('contribute'); break;
+    case 'contribute-m': if (S.edit) cancelEdit(); S.prefill = {m: id}; closeDrawer(); go('contribute'); break;
+    case 'edit-entry': startEdit(id, null); break;
+    case 'edit-measure': startEdit(null, id); break;
+    case 'cancel-edit': cancelEdit(); break;
     case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); break; }
     case 'copy-cite': { const s = M.sById.get(id); if (s) copyText(s.cite + (s.doi ? ' https://doi.org/' + s.doi : ''), 'Citation'); break; }
     case 'copy-plan': copyText(planText(M), 'Study plan'); break;
@@ -2843,7 +3001,7 @@ async function refreshStatus() {
 }
 function subRow(r) {
   return Object.assign({}, r.payload || {}, {id: r.id, status: r.status, submittedAt: r.created_at, submitterEmail: r.submitter_email,
-    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id});
+    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id || (r.payload || {}).entryId || null});
 }
 async function loadSubs() {
   if (!S.sb || !S.session) { S.raw.submissions = new Map(); invalidate(); scheduleUpdate(); return; }
