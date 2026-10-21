@@ -104,6 +104,18 @@ create table if not exists public.blocked_emails (
 );
 alter table public.blocked_emails enable row level security;
 
+-- The site is invite-only: a new account needs an invitation from an admin. Only a hash of each
+-- invitation link's token is stored; the link itself exists only in the email.
+create table if not exists public.account_invites (
+  email text primary key check (email = lower(email)),
+  token_hash text not null unique,
+  invited_by uuid,
+  invited_by_email text,
+  invited_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '30 days'
+);
+alter table public.account_invites enable row level security;
+
 -- ---------------------------------------------------------------------------
 -- Helpers
 -- ---------------------------------------------------------------------------
@@ -129,6 +141,8 @@ drop policy if exists "Admins can see the owner" on public.owners;
 create policy "Admins can see the owner" on public.owners for select using (public.is_admin());
 drop policy if exists "The owner can see blocked emails" on public.blocked_emails;
 create policy "The owner can see blocked emails" on public.blocked_emails for select using (public.is_owner());
+drop policy if exists "Admins can see account invitations" on public.account_invites;
+create policy "Admins can see account invitations" on public.account_invites for select using (public.is_admin());
 drop policy if exists "Signed-in users can suggest links" on public.submissions;
 create policy "Signed-in users can suggest links" on public.submissions for insert to authenticated
   with check (submitted_by = auth.uid() and status = 'pending');
@@ -840,12 +854,77 @@ begin
     order by u.created_at desc;
 end $$;
 
+-- ---------------------------------------------------------------------------
+-- Invitations: the only way for someone new to create an account
+-- ---------------------------------------------------------------------------
+
+-- Emails an invitation link that lets this address create an account (for 30 days).
+-- Sending it again replaces the old link and restarts the 30 days.
+create or replace function public.invite_user(p_email text) returns text
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_email text := lower(trim(coalesce(p_email, '')));
+  v_token text := encode(gen_random_bytes(24), 'hex');
+  v_site text := (select value from public.settings where key = 'site_url');
+  v_me text := public._user_email(auth.uid());
+  v_again boolean;
+begin
+  if not public.is_admin() then raise exception 'Only admins can invite people.'; end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a valid email address.'; end if;
+  if exists (select 1 from public.blocked_emails where email = v_email) then
+    raise exception 'That email is blocked. The owner can unblock it on the Admin page.';
+  end if;
+  if exists (select 1 from auth.users where lower(email) = v_email) then return 'exists'; end if;
+  v_again := exists (select 1 from public.account_invites where email = v_email);
+  insert into public.account_invites (email, token_hash, invited_by, invited_by_email, invited_at, expires_at)
+    values (v_email, encode(digest(v_token, 'sha256'), 'hex'), auth.uid(), v_me, now(), now() + interval '30 days')
+    on conflict (email) do update set token_hash = excluded.token_hash, invited_by = excluded.invited_by,
+      invited_by_email = excluded.invited_by_email, invited_at = excluded.invited_at, expires_at = excluded.expires_at;
+  perform public._log(case when v_again then 'invite_resent' else 'invited' end, jsonb_build_object('email', v_email));
+  perform public._send_email(v_email, 'You are invited to the EEG Construct–Measure Knowledge Base',
+    public._email_page('You are invited',
+      '<p>' || public._esc(v_me) || ' invited you to join the EEG Construct–Measure Knowledge Base, where the lab records which EEG signals research papers link to which topics, with the page to cite.</p>'
+      || '<p style="margin:20px 0"><a href="' || v_site || '?invite=' || v_token || '" style="background:#0A6A6A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Accept the invitation</a></p>'
+      || '<p style="color:#475665;font-size:13.5px">The button opens the site with your email address (' || public._esc(v_email) || ') filled in. '
+      || 'We then email you a code to finish creating your account; there is no password. This invitation works for 30 days.</p>'));
+  return case when v_again then 'resent' else 'invited' end;
+end $$;
+
+create or replace function public.cancel_account_invite(p_email text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := lower(trim(coalesce(p_email, '')));
+begin
+  if not public.is_admin() then raise exception 'Only admins can withdraw invitations.'; end if;
+  delete from public.account_invites where email = v_email;
+  if not found then raise exception 'There is no invitation for that email.'; end if;
+  perform public._log('invite_withdrawn', jsonb_build_object('email', v_email));
+end $$;
+
+-- Called by the page an invitation link opens: which email the invitation is for, if it still works.
+create or replace function public.invite_info(p_token text) returns jsonb
+language sql stable security definer set search_path = public, extensions as $$
+  select coalesce(
+    (select jsonb_build_object('ok', true, 'email', email) from public.account_invites
+      where token_hash = encode(digest(coalesce(p_token, ''), 'sha256'), 'hex') and expires_at > now()),
+    jsonb_build_object('ok', false));
+$$;
+
+-- No new account without an invitation (an admin invite, or being the owner, also counts).
 -- Blocked emails cannot create an account, or change an account to that email.
 create or replace function public._block_signup() returns trigger
 language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := lower(new.email);
 begin
-  if new.email is not null and exists (select 1 from public.blocked_emails where email = lower(new.email)) then
+  if v_email is not null and exists (select 1 from public.blocked_emails where email = v_email) then
     raise exception 'This email is blocked from the EEG Knowledge Base.';
+  end if;
+  if tg_op = 'INSERT' and not (
+       exists (select 1 from public.account_invites where email = v_email and expires_at > now())
+    or exists (select 1 from public.admin_invites where lower(email) = v_email)
+    or exists (select 1 from public.owners where email = v_email)) then
+    raise exception 'The EEG Knowledge Base is invite-only. Ask an admin for an invitation.';
   end if;
   return new;
 end $$;
@@ -854,12 +933,17 @@ drop trigger if exists on_auth_user_blocked on auth.users;
 create trigger on_auth_user_blocked before insert or update of email on auth.users
   for each row execute function public._block_signup();
 
--- Someone invited before they had an account, and the owner, become admins when they first sign in.
+-- A new account uses up its invitation. Someone invited to be an admin before they had an account,
+-- and the owner, become admins when they first sign in.
 create or replace function public._claim_invite() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
   v_by uuid;
+  v_inviter text;
 begin
+  select invited_by_email into v_inviter from public.account_invites where email = lower(new.email);
+  delete from public.account_invites where email = lower(new.email);
+  insert into public.activity (actor, actor_email, action, detail) values (new.id, lower(new.email), 'joined', jsonb_build_object('invited_by', v_inviter));
   select invited_by into v_by from public.admin_invites where lower(email) = lower(new.email) limit 1;
   if found or exists (select 1 from public.owners where email = lower(new.email)) then
     insert into public.admins (user_id, email, added_by) values (new.id, lower(new.email), v_by) on conflict (user_id) do nothing;
@@ -965,6 +1049,12 @@ grant execute on function
 -- Owner tools are only for signed-in users (each still checks that the caller is the owner).
 revoke execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() from public, anon;
 grant execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() to authenticated;
+-- Invitations: admins send and withdraw them; anyone holding a link can check it.
+revoke execute on function public.invite_user(text), public.cancel_account_invite(text) from public, anon;
+grant execute on function public.invite_user(text), public.cancel_account_invite(text) to authenticated;
+grant execute on function public.invite_info(text) to anon, authenticated;
+revoke all on public.account_invites from anon, authenticated;
+grant select (email, invited_by_email, invited_at, expires_at) on public.account_invites to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Internal functions (names starting with _) cannot be called through the API.

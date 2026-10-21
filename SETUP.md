@@ -59,6 +59,8 @@ insert into public.admin_invites (email) values ('owner@example.com') on conflic
 These values stay inside your Supabase project; they are never stored in this repository.
 The owner cannot be removed or blocked from the site, and cannot step down; to change the owner, edit the `owners` table here.
 
+The site is invite-only: no one can create an account without an invitation. The lines above already invite the first admin and the owner; everyone else is invited from the Admin page (**Invite people**), which emails them a link that works for 30 days.
+
 ## 5. Configure sign-in emails
 
 In Supabase, open **Authentication**:

@@ -536,6 +536,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .adm-list .sub{font:12px var(--f-mono);color:var(--ink-3)}
 .badge-admin.badge-blocked{color:var(--warn)}
 .acc-list{max-height:460px;overflow-y:auto}
+.adm-btns{display:flex;gap:6px;flex-wrap:wrap}
+#si-invite{margin:0}
 #acc-q{width:100%;margin-bottom:6px}
 .adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .adm-row input{flex:1 1 220px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
@@ -673,7 +675,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
       <p class="small"><button class="btn sm ghost" type="button" data-act="si-forget">Forget this device</button> <span class="muted">Next time you'll need a code.</span></p>
     </div>
     <form id="si-form1" class="si-step" novalidate>
-      <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password.</p>
+      <div id="si-invite" class="callout" hidden></div>
+      <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password. New here? The site is invite-only, so you need an invitation email from an admin first.</p>
       <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" maxlength="200"></div>
       <div class="btns"><button class="btn primary" type="submit" id="si-send">Email me a code</button><button class="btn ghost" type="button" data-act="close-signin">Cancel</button></div>
     </form>
@@ -1960,7 +1963,7 @@ V.contribute = {
         ? '<div class="callout warn"><b>Suggestions are paused</b><span>The live database could not be reached, so the site is showing a saved copy of the data. Try again later.</span></div>'
         : signed
           ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.</span></div>'
-          : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
+          : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. The site is invite-only: new people need an invitation from an admin first.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
       if (E) { ['f-measure', 'f-construct', 'f-source'].forEach(id => { $('#' + id).disabled = true; }); $('#f-cancel').disabled = false; }
       $('#f-submit').textContent = E ? 'Send edit for review' : 'Send suggestion';
@@ -2202,7 +2205,7 @@ async function declineSub(id) {
 function sbConfigured() { const c = window.KB_STATIC; return !!(c && c.supabaseUrl && c.supabaseAnonKey); }
 function sbErr(e) {
   const m = e && (e.message || e.error_description || e.msg);
-  if (m && /database error saving new user|blocked from the EEG/i.test(m)) return 'This email can\'t be used to sign in to this site.';
+  if (m && /database error saving new user|blocked from the EEG|invite-only/i.test(m)) return 'This email can\'t sign in here yet. The site is invite-only: ask an admin to invite you, then use the link in your invitation email.';
   if (m && /banned/i.test(m)) return 'This email has been blocked from signing in to this site.';
   return m ? String(m) : 'Something went wrong. Check your connection and try again.';
 }
@@ -2279,9 +2282,30 @@ function openSignin() {
   if (!S.sb) return toast('Sign-in is not available on this copy of the site.');
   const r = getRemember();
   $('#signin').hidden = false;
-  $('#si-msg').textContent = ''; $('#si-code').value = '';
+  $('#si-msg').textContent = ''; $('#si-code').value = ''; $('#si-invite').hidden = true;
   $('#si-remember').checked = !!r;
   siStep(r && r.rt ? 'quick' : 'email');
+}
+/* An invitation link (?invite=...) opens the sign-in window with the invited email filled in. */
+async function handleInvite() {
+  const tok = S.inviteToken;
+  S.inviteToken = '';
+  if (!tok || !S.sb) return;
+  if (S.session) return toast('You already have an account and are signed in.');
+  let info = null;
+  try { const res = await S.sb.rpc('invite_info', {p_token: tok}); info = res.error ? null : res.data; } catch (e) {}
+  openSignin();
+  siStep('email');
+  const box = $('#si-invite');
+  if (info && info.ok) {
+    $('#si-email').value = info.email;
+    box.className = 'callout';
+    box.innerHTML = '<b>Welcome! You were invited to join.</b><span>Press <b>Email me a code</b>, then enter the code to finish creating your account.</span>';
+  } else {
+    box.className = 'callout warn';
+    box.innerHTML = '<b>This invitation link no longer works.</b><span>It may have expired or already been used. If you already have an account, sign in below; otherwise ask an admin for a new invitation.</span>';
+  }
+  box.hidden = false;
 }
 async function quickSignIn() {
   const r = getRemember();
@@ -2386,6 +2410,10 @@ function actLabel(a) {
     case 'blocked': return who + ' blocked ' + esc(d.email);
     case 'unblocked': return who + ' unblocked ' + esc(d.email);
     case 'owner_set': return esc(d.email) + ' was made the owner of the site';
+    case 'invited': return who + ' invited ' + esc(d.email) + ' to create an account';
+    case 'invite_resent': return who + ' sent ' + esc(d.email) + ' a new invitation';
+    case 'invite_withdrawn': return who + ' withdrew the invitation for ' + esc(d.email);
+    case 'joined': return who + ' created an account' + (d.invited_by ? ' (invited by ' + esc(d.invited_by) + ')' : '');
     case 'imported': return who + ' imported ' + esc(d.records) + ' records';
     default: return who + ' ' + esc(a.action);
   }
@@ -2429,6 +2457,15 @@ V.admin = {
     if (S.sbNote === 'down') h += '<div class="callout warn"><b>The live database could not be reached</b><span>Changes are not possible until it is back. If the project was paused, restore it in the Supabase dashboard.</span></div>';
     h += '<div class="adm-grid"><div class="adm-col">';
     h += '<section class="panel"><h3>Suggestions waiting<span class="count">' + pend.length + '</span></h3><div class="queue">' + subsListHTML(M, true) + '</div></section>';
+    const INV = A.accountInvites || [];
+    h += '<section class="panel"><h3>Invite people<span class="count">' + INV.length + '</span></h3>' +
+      '<p class="small muted">The site is invite-only: someone new can create an account only after an admin invites their email. They get an email with a link, which works for 30 days.</p>' +
+      '<form class="adm-row" id="adm-invite" novalidate><input id="inv-email" type="email" placeholder="Their email" aria-label="Email to invite" maxlength="200"><button class="btn primary sm" type="submit">Send invitation</button></form>' +
+      (INV.length ? '<div class="eyebrow">Waiting for them to sign up</div><ul class="adm-list">' + INV.map(i => {
+        const gone = new Date(i.expires_at) < new Date();
+        return '<li><span>' + esc(i.email) + '<br><span class="sub">' + (i.invited_by_email ? 'by ' + esc(i.invited_by_email) + ' · ' : '') + (gone ? 'expired ' : 'expires ') + esc(fmtDate(i.expires_at)) + '</span></span>' +
+          '<span class="adm-btns"><button class="btn sm" data-act="resend-invite" data-email="' + esc(i.email) + '">Send again</button><button class="btn sm ghost" data-act="withdraw-invite" data-email="' + esc(i.email) + '">Withdraw</button></span></li>';
+      }).join('') + '</ul>' : '') + '</section>';
     h += '<section class="panel"><h3>Delete a link</h3><p class="small muted">Open any topic or signal: as an admin you see a <b>Delete this link</b> button under each link. Deleted items, and accepted edits, can be undone from the activity list.</p></section>';
     if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
@@ -2855,6 +2892,8 @@ function onAct(t) {
       sbCall('remove_admin', {p_email: em}, em + ' is no longer an admin', false).then(() => loadAdmin());
       break;
     }
+    case 'resend-invite': { const em = t.getAttribute('data-email'); sbCall('invite_user', {p_email: em}, 'Invitation sent again to ' + em, false).then(() => loadAdmin()); break; }
+    case 'withdraw-invite': sbCall('cancel_account_invite', {p_email: t.getAttribute('data-email')}, 'Invitation withdrawn', false).then(() => loadAdmin()); break;
     case 'unblock': sbCall('unblock_email', {p_email: t.getAttribute('data-email')}, t.getAttribute('data-email') + ' is unblocked', false).then(() => loadAdmin()); break;
     case 'restore': sbCall('restore_record', {p_activity: Number(id)}, 'Restored', true); break;
     case 'backup': download('eeg-kb-backup-' + today() + '.json', backupJSON()); break;
@@ -2924,6 +2963,18 @@ function bind() {
   $('#si-form1').addEventListener('submit', sendCode);
   $('#si-form2').addEventListener('submit', verifyCode);
   document.addEventListener('submit', ev => {
+    if (ev.target.id === 'adm-invite') {
+      ev.preventDefault();
+      const email = ($('#inv-email').value || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Enter a valid email address.');
+      sbCall('invite_user', {p_email: email}, null, false).then(r => {
+        if (!r) return;
+        const i = $('#inv-email'); if (i) i.value = '';
+        toast(r === 'exists' ? email + ' already has an account' : r === 'resent' ? 'Invitation sent again to ' + email : 'Invitation sent to ' + email);
+        loadAdmin();
+      });
+      return;
+    }
     if (ev.target.id === 'adm-block') {
       ev.preventDefault();
       const email = ($('#blk-email').value || '').trim().toLowerCase();
@@ -3037,6 +3088,7 @@ async function connectSupabase(cfg) {
   await loadRecords();
   await refreshStatus();
   if (S.review.token) V.review.load();
+  if (S.inviteToken) handleInvite();
 }
 async function loadRecords() {
   if (!S.sb) return;
@@ -3099,10 +3151,11 @@ async function loadAdmin() {
       S.sb.from('activity').select('id,at,actor_email,action,detail').order('at', {ascending: false}).limit(40),
       S.sb.from('owners').select('email'),
       S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []}),
-      S.me.isOwner ? S.sb.rpc('list_accounts') : Promise.resolve({data: []})
+      S.me.isOwner ? S.sb.rpc('list_accounts') : Promise.resolve({data: []}),
+      S.sb.from('account_invites').select('email,invited_by_email,invited_at,expires_at').order('invited_at', {ascending: false})
     ]);
     S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [],
-      accounts: res[5].data || [], loaded: true};
+      accounts: res[5].data || [], accountInvites: res[6].data || [], loaded: true};
   } catch (e) { console.warn('admin', e); }
   scheduleUpdate();
 }
@@ -3130,6 +3183,10 @@ const v0 = store('eegkb.view'); if (v0 === 'table' || v0 === 'cards') S.mf.view 
 bind();
 try {
   const qs = new URLSearchParams(location.search || '');
+  if (qs.get('invite')) {
+    S.inviteToken = qs.get('invite');
+    history.replaceState(null, '', location.pathname + location.hash);
+  }
   if (qs.get('review')) {
     S.review.token = qs.get('review');
     S.review.decision = qs.get('decision') || '';
