@@ -705,8 +705,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .tour-lh{font-size:13px;font-weight:700;opacity:.85}
 .tour-list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:3px;font-size:14px}
 .tour-list li::marker{color:var(--tour-em);font-weight:700}
-/* Axel the axolotl: pixel art that sits on the bubble (or hangs under it), bobs, blinks, hops when a step is done and naps when idle. */
-.ax{position:absolute;left:var(--ax-x,22px);bottom:calc(100% - 2px);width:36px;height:24px;padding:0;margin:0;border:0;background:none;cursor:pointer;line-height:0;z-index:1}
+/* Axel the axolotl: decorative pixel art that sits on the bubble (or hangs under it), bobs, blinks and wanders along the edge. */
+.ax{position:absolute;left:var(--ax-x,22px);bottom:calc(100% - 2px);width:36px;height:24px;line-height:0;z-index:1;pointer-events:none}
 .ax.hang{bottom:auto;top:calc(100% - 2px)}
 .ax svg{display:block;width:36px;height:24px;overflow:visible}
 .ax-w,.ax-f,.ax-b{display:block}
@@ -715,22 +715,11 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .ax-b{animation:axbob 1.1s steps(1) infinite}
 @keyframes axwalk{0%,30%{transform:translateX(0)}45%,75%{transform:translateX(44px)}90%,100%{transform:translateX(0)}}
 @keyframes axbob{50%{transform:translateY(-2px)}}
-.ax.hop .ax-b{animation:axhop .45s steps(3) 2}
-.ax.party .ax-b{animation:axhop .5s steps(3) infinite}
-@keyframes axhop{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.ax.zz .ax-b{animation-duration:2.6s}
-.ax.zz .ax-eye{animation:none;fill:#B33C6E}
-.ax.zz::after{content:"z";position:absolute;right:-6px;top:-10px;font:700 12px var(--f-mono);color:var(--tour-em);animation:axz 2.4s ease-out infinite}
-.ax.hang.zz::after{top:auto;bottom:-12px}
-@keyframes axz{0%{transform:translate(0,4px);opacity:0}30%{opacity:1}100%{transform:translate(8px,-10px);opacity:0}}
 .ax-tip{animation:axtip 1.4s steps(1) infinite}
 @keyframes axtip{50%{transform:translateY(1px)}}
 .ax-eye{animation:axblink 4.2s infinite}
 @keyframes axblink{0%,91%,97%,100%{fill:#26142B}93%,95%{fill:#B33C6E}}
-.ax-say{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#FFFFFF;color:#26142B;font:700 11px/1.2 var(--f-mono);padding:3px 6px;border:2px solid #26142B;box-shadow:2px 2px 0 rgba(0,0,0,.25);pointer-events:none}
-.ax.hang .ax-say{bottom:auto;top:calc(100% + 6px)}
-.ax:focus-visible{outline:2px solid var(--tour-em);outline-offset:2px}
-.ax-static{left:auto;right:44px;cursor:default}
+.ax-static{left:auto;right:44px}
 .ax-static .ax-w{animation:none}
 body.no-pet .ax{display:none}
 .tour-beacon{position:fixed;z-index:29;left:0;top:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--panel);background:var(--hl);color:#14202A;font:700 13px/18px var(--f-body);text-align:center;padding:0;cursor:pointer;animation:beacon 2s ease-out infinite}
@@ -863,7 +852,7 @@ body.no-pet .ax{display:none}
   <div class="tour-ring" id="tour-ring" hidden></div>
   <div class="tour-bub" id="tour-bub" role="dialog" aria-label="Tutorial">
     <i class="tour-arrow" id="tour-arrow" aria-hidden="true"></i>
-    <button class="ax" id="ax" type="button" data-act="pet" aria-label="Axel the axolotl, your tutorial buddy"><span class="ax-say" id="ax-say" hidden></span><span class="ax-w"><span class="ax-f"><span class="ax-b ax-sprite"></span></span></span></button>
+    <span class="ax" id="ax" aria-hidden="true"><span class="ax-w"><span class="ax-f"><span class="ax-b ax-sprite"></span></span></span></span>
     <div class="tour-top"><span class="tour-n" id="tour-n"></span><span class="tour-bar" aria-hidden="true"><i id="tour-prog"></i></span><button class="tour-x" type="button" data-act="tour-exit" aria-label="End the tutorial">×</button></div>
     <div class="tour-body" id="tour-body" aria-live="polite"></div>
     <div class="tour-btns" id="tour-btns"></div>
@@ -874,7 +863,7 @@ body.no-pet .ax{display:none}
   <span class="ax ax-static" aria-hidden="true"><span class="ax-w"><span class="ax-f"><span class="ax-b ax-sprite"></span></span></span></span>
   <button class="tour-x" type="button" data-act="tour-invite-x" aria-label="Close">×</button>
   <b id="ti-h">New here?</b>
-  <p>Axel the axolotl will show you around in 2 minutes. You learn by doing, one step at a time.</p>
+  <p>A 2-minute tutorial shows you around. You learn by doing, one step at a time.</p>
   <div class="btns"><button class="btn primary sm" type="button" data-act="tour-start" data-track="measure">Start the tutorial</button><button class="btn sm ghost" type="button" data-act="hints-on">Just show page hints</button></div>
 </div>
 
@@ -1275,7 +1264,7 @@ V.overview = {
           '<div id="hres" class="sres" hidden></div></div>' +
         '<div class="tries" id="ov-tries"><span>Try:</span></div>' +
         '<p class="home-links">Not sure what to search? <button class="link" data-act="go" data-route="constructs">Browse topics</button> · <button class="link" data-act="go" data-route="measures">Browse EEG signals</button> · <button class="link" data-act="go" data-route="learn">New to EEG? Learn the basics</button></p>' +
-        '<p class="home-links">First time here? <button class="link" data-act="tour-start" data-track="measure">Take the 2-minute tutorial</button>. Axel the axolotl shows you around, one step at a time.</p>' +
+        '<p class="home-links">First time here? <button class="link" data-act="tour-start" data-track="measure">Take the 2-minute tutorial</button>. It shows you around, one step at a time.</p>' +
       '</div>' +
       '<div class="footline" id="ov-foot"></div>';
     const hq = $('#hq');
@@ -3322,11 +3311,11 @@ function render() {
 
 /* ---------- tutorial ---------- */
 /* Hands-on tutorials, like a strategy game's training missions: a ring and a small bubble point at one thing
-   at a time, and most steps wait until the reader has done it. Axel, a pixel axolotl, keeps the reader company.
+   at a time, and most steps wait until the reader has done it. Axel, a small animated pixel axolotl, sits on the bubble.
    Optional; started from the Tutorial button. */
 const TOUR = {on: false, track: '', steps: [], i: 0, n: 0, total: 0, final: null, problem: '', flags: {}, practice: false, typedAt: 0,
   okAt: 0, fresh: true, key: '', scrollAt: 0, autoScrolled: '', reached: false, hint: null, raf: 0, seen: null,
-  enteredAt: 0, lastAct: Date.now(), petStep: '', greeted: false};
+  enteredAt: 0, lastAct: Date.now(), petStep: ''};
 const SIDE = ['right', 'left', 'top', 'bottom'];
 const ROUTE_NAME = {overview: 'Home', constructs: 'Topics', measures: 'EEG signals', learn: 'EEG basics', planner: 'Plan a study', contribute: 'Contribute'};
 const tval = v => typeof v === 'function' ? v() : v;
@@ -3391,8 +3380,8 @@ const TRACKS = {
   measure: {title: 'Find out how to measure something', blurb: 'Type what you want to study and follow its guide', len: '2 min',
     start: () => { TOUR.problem = ''; if (S.route !== 'overview') go('overview'); },
     steps: () => [
-      {brief: true, title: 'Hi, I’m Axel!', next: 'Let’s go',
-        text: 'I’ll show you how this site works. You tell it what you want to study, and it shows you how to record it with EEG.',
+      {brief: true, title: 'Welcome!', next: 'Let’s go',
+        text: 'This tutorial shows how the site works. You tell it what you want to study, and it shows you how to record it with EEG.',
         list: ['Type what you want to study', 'Open its step-by-step guide', 'See where the sensors go on the head', 'Copy the guide for your study plan']},
       {route: 'overview', target: '#hq', also: () => $('#hres'), place: ['top', 'right', 'bottom'], task: 'Type what you want to study',
         text: () => { const ex = tourExamples(2); return 'Use everyday words' + (ex.length ? ', like “' + ex.join('” or “') + '”.' : '.'); }, wait: noMatch,
@@ -3574,7 +3563,7 @@ function tourTick() {
   }
   const st = TOUR.steps[TOUR.i];
   if (!st) return;
-  // A finished step stays put for a moment with its box ticked (and Axel hopping), then the next one appears.
+  // A finished step stays put for a moment with its box ticked, then the next one appears.
   if (TOUR.okAt) { if (Date.now() - TOUR.okAt > 800) tourNext(); return; }
   let done = false;
   try { done = !!(st.done && st.done()); } catch (e) {}
@@ -3582,7 +3571,6 @@ function tourTick() {
     if (TOUR.fresh) { TOUR.n--; TOUR.total--; return tourNext(); } // already done when the step came up: skip it, uncounted
     TOUR.okAt = Date.now();
     $('#tour-bub').classList.add('ok'); $('#tour-bub').classList.remove('bob'); $('#tour-btns').hidden = true; $('#tour-ring').hidden = true;
-    petHop(); petSay(PET_CHEER[Math.floor(Math.random() * PET_CHEER.length)]);
     return;
   }
   TOUR.fresh = false;
@@ -3611,7 +3599,7 @@ function tourStep(st) {
   if (el && !st.scrollTo && TOUR.autoScrolled !== S.route && !wellInView(el.getBoundingClientRect(), top)) { TOUR.autoScrolled = S.route; tourScroll(el); }
   const locked = !!el && isLocked(el);
   const now = Date.now();
-  // Never stuck: after 20 seconds on a step that waits for the reader, a Skip link appears. Axel dozes off after 30 idle seconds.
+  // Never stuck: after 20 seconds on a step that waits for the reader, a Skip link appears; after 30 idle seconds, a gentle nudge.
   const stuck = !!st.done && !st.skip && now - TOUR.enteredAt > 20000;
   const sleepy = !!st.done && now - TOUR.lastAct > 30000;
   const text = (tval(st.text) || '') + (locked ? ' The form is locked until you sign in, so just have a look.' : '');
@@ -3623,7 +3611,7 @@ function tourStep(st) {
   if (off) btns.push(['tour-show', 'Show me', 'alt']);
   if (st.extra) st.extra.forEach(b => btns.push(b));
   if (next || locked) btns.push(['tour-next', next || 'Next', 'go']);
-  return tourPaint(Object.assign(vm, {key: [TOUR.i, text, task, wait, off, btns.map(b => b[1]).join()].join('|'), sleepy: sleepy,
+  return tourPaint(Object.assign(vm, {key: [TOUR.i, text, task, wait, off, btns.map(b => b[1]).join()].join('|'),
     text: text, task: task, wait: wait, rect: off ? null : r, dir: off ? (r.bottom < top + 24 ? 'up' : 'down') : '', dirText: off ? 'It is ' + (r.bottom < top + 24 ? 'above' : 'below') : '', buttons: btns}));
 }
 function tourPaint(vm) {
@@ -3649,7 +3637,6 @@ function tourPaint(vm) {
     if (go && (!a || a === document.body || $('#tour').contains(a))) try { go.focus({preventScroll: true}); } catch (e) {}
     petScene(vm, bub.offsetWidth);
   }
-  $('#ax').classList.toggle('zz', !!vm.sleepy);
   const r = vm.rect || (vm.el ? vm.el.getBoundingClientRect() : null);
   const modal = !$('#modal').hidden || !$('#signin').hidden;
   if (r && !modal) {
@@ -3725,38 +3712,20 @@ function axSVG() {
   });
   return s + '</svg>';
 }
-const PET_CHEER = ['Nice!', 'Yay!', 'Great!', 'Bloop!', 'Woo!'];
-const PET_POKE = ['Hi there!', 'Bloop!', 'You’ve got this!', '♥', 'Keep going!'];
 const petOn = () => store('eegkb.pet') !== '0';
 function setPet(on) {
   store('eegkb.pet', on ? '1' : '0');
   document.body.classList.toggle('no-pet', !on);
   TOUR.key = '';
   const cb = $('#tm-pet'); if (cb) cb.checked = on;
-  toast(on ? 'Axel is back!' : 'Axel is taking a break. Bring Axel back from the Tutorial button.');
+  toast(on ? 'Axel shown on the tutorial boxes' : 'Axel hidden. Turn Axel back on from the Tutorial button.');
 }
-/* A new step moves Axel to a new spot on the bubble; the finish card makes Axel dance. */
+/* A new step moves Axel to a new spot on the bubble. */
 function petScene(vm, bw) {
   const ax = $('#ax'), id = vm.final ? 'final' : vm.hint ? vm.key : TOUR.track + TOUR.i;
-  if (id !== TOUR.petStep) {
-    TOUR.petStep = id;
-    ax.style.setProperty('--ax-x', (14 + Math.round(Math.random() * Math.max(0, bw - 36 - 28 - 44))) + 'px');
-    ax.classList.remove('hop');
-    if (vm.brief && !TOUR.greeted) { TOUR.greeted = true; petSay('Hi!'); }
-    if (vm.final) petSay('Woohoo!', 2400);
-  }
-  ax.classList.toggle('party', !!vm.final);
-}
-let hopT = 0, sayT = 0;
-function petHop() {
-  const ax = $('#ax');
-  ax.classList.remove('hop'); void ax.offsetWidth; ax.classList.add('hop');
-  clearTimeout(hopT); hopT = setTimeout(() => ax.classList.remove('hop'), 1000);
-}
-function petSay(t, ms) {
-  const s = $('#ax-say');
-  s.textContent = t; s.hidden = false;
-  clearTimeout(sayT); sayT = setTimeout(() => { s.hidden = true; }, ms || 1500);
+  if (id === TOUR.petStep) return;
+  TOUR.petStep = id;
+  ax.style.setProperty('--ax-x', (14 + Math.round(Math.random() * Math.max(0, bw - 36 - 28 - 44))) + 'px');
 }
 
 /* Page hints: yellow ? marks on the parts of each page worth explaining; each shows a one-line tip once. */
@@ -3836,13 +3805,13 @@ function toggleTourMenu(open) {
   if (open === undefined) open = menu.hidden;
   if (open) {
     const d = tourDone();
-    menu.innerHTML = '<div class="tm-h"><b>Tutorials</b><span>Learn by doing: Axel shows you one step at a time. Leave any time with ×.</span></div>' +
+    menu.innerHTML = '<div class="tm-h"><b>Tutorials</b><span>Learn by doing, one step at a time. Leave any time with ×.</span></div>' +
       MENU_TRACKS.map((k, i) => {
         const T = TRACKS[k];
         return '<button type="button" data-act="tour-start" data-track="' + k + '"><span class="tm-ic" aria-hidden="true">' + (i + 1) + '</span><span class="tm-t"><b>' + esc(T.title) + '</b><span>' + esc(T.blurb) + ' · ' + esc(T.len) + '</span></span><span class="tm-ok">' + (d[k] ? '✓ Done' : '') + '</span></button>';
       }).join('') +
       '<label class="tm-hints"><input type="checkbox" id="tm-hints"' + (hintsOn() ? ' checked' : '') + '><span class="tm-t"><b>Page hints</b><span>Yellow ? marks that explain each page.</span></span></label>' +
-      '<label class="tm-hints tm-pet"><input type="checkbox" id="tm-pet"' + (petOn() ? ' checked' : '') + '><span class="tm-t"><b>Axel the axolotl</b><span>Your tiny tutorial buddy.</span></span></label>';
+      '<label class="tm-hints tm-pet"><input type="checkbox" id="tm-pet"' + (petOn() ? ' checked' : '') + '><span class="tm-t"><b>Axel the axolotl</b><span>A tiny animated axolotl on the tutorial boxes.</span></span></label>';
     toggleMore(false);
   }
   menu.hidden = !open;
@@ -3961,7 +3930,6 @@ function onAct(t) {
     case 'hint-open': hintOpen(id); break;
     case 'hint-ok': hintClose(true); break;
     case 'hint-off': hintClose(true); setHints(false); break;
-    case 'pet': petHop(); petSay(PET_POKE[Math.floor(Math.random() * PET_POKE.length)]); break;
   }
 }
 let armT = 0;
