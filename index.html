@@ -98,6 +98,7 @@ ul{margin:0;padding-left:18px}
 .sres button:hover,.sres button:focus-visible{background:var(--panel-2)}
 .sres .sub{color:var(--ink-3);font-size:12.5px}
 .sres .none{padding:10px 8px;color:var(--ink-2);font-size:14px}
+.sres .none button{display:inline;width:auto;padding:0;border-radius:0;background:none}
 .live{display:inline-flex;align-items:center;gap:6px;font:500 11.5px var(--f-mono);color:var(--ink-3);white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3);flex:none}
 .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
@@ -698,6 +699,40 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .tour-medal{width:44px;height:44px;border-radius:50%;background:var(--hl);color:#14202A;display:grid;place-items:center;font:700 24px/1 var(--f-body)}
 .tour-bub.hint .tour-n{opacity:1;color:var(--tour-em)}
 .tour-bub.hint .tour-bar{visibility:hidden}
+#tour.dim::before{content:"";position:fixed;inset:0;z-index:49;background:var(--tour-dim);pointer-events:none}
+.tour-bub.brief{width:min(400px,calc(100vw - 24px));padding:16px 18px;gap:10px}
+.tour-bub.brief .tour-n,.tour-bub.brief .tour-bar{visibility:hidden}
+.tour-lh{font-size:13px;font-weight:700;opacity:.85}
+.tour-list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.tour-list li::marker{color:var(--tour-em);font-weight:700}
+/* Axel the axolotl: pixel art that sits on the bubble (or hangs under it), bobs, blinks, hops when a step is done and naps when idle. */
+.ax{position:absolute;left:var(--ax-x,22px);bottom:calc(100% - 2px);width:36px;height:24px;padding:0;margin:0;border:0;background:none;cursor:pointer;line-height:0;z-index:1}
+.ax.hang{bottom:auto;top:calc(100% - 2px)}
+.ax svg{display:block;width:36px;height:24px;overflow:visible}
+.ax-w,.ax-f,.ax-b{display:block}
+.ax-w{animation:axwalk 18s steps(54) infinite}
+.ax.hang .ax-f{transform:scaleY(-1)}
+.ax-b{animation:axbob 1.1s steps(1) infinite}
+@keyframes axwalk{0%,30%{transform:translateX(0)}45%,75%{transform:translateX(44px)}90%,100%{transform:translateX(0)}}
+@keyframes axbob{50%{transform:translateY(-2px)}}
+.ax.hop .ax-b{animation:axhop .45s steps(3) 2}
+.ax.party .ax-b{animation:axhop .5s steps(3) infinite}
+@keyframes axhop{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.ax.zz .ax-b{animation-duration:2.6s}
+.ax.zz .ax-eye{animation:none;fill:#B33C6E}
+.ax.zz::after{content:"z";position:absolute;right:-6px;top:-10px;font:700 12px var(--f-mono);color:var(--tour-em);animation:axz 2.4s ease-out infinite}
+.ax.hang.zz::after{top:auto;bottom:-12px}
+@keyframes axz{0%{transform:translate(0,4px);opacity:0}30%{opacity:1}100%{transform:translate(8px,-10px);opacity:0}}
+.ax-tip{animation:axtip 1.4s steps(1) infinite}
+@keyframes axtip{50%{transform:translateY(1px)}}
+.ax-eye{animation:axblink 4.2s infinite}
+@keyframes axblink{0%,91%,97%,100%{fill:#26142B}93%,95%{fill:#B33C6E}}
+.ax-say{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#FFFFFF;color:#26142B;font:700 11px/1.2 var(--f-mono);padding:3px 6px;border:2px solid #26142B;box-shadow:2px 2px 0 rgba(0,0,0,.25);pointer-events:none}
+.ax.hang .ax-say{bottom:auto;top:calc(100% + 6px)}
+.ax:focus-visible{outline:2px solid var(--tour-em);outline-offset:2px}
+.ax-static{left:auto;right:44px;cursor:default}
+.ax-static .ax-w{animation:none}
+body.no-pet .ax{display:none}
 .tour-beacon{position:fixed;z-index:29;left:0;top:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--panel);background:var(--hl);color:#14202A;font:700 13px/18px var(--f-body);text-align:center;padding:0;cursor:pointer;animation:beacon 2s ease-out infinite}
 @keyframes beacon{0%{box-shadow:0 0 0 0 var(--hl)}70%,100%{box-shadow:0 0 0 10px rgba(0,0,0,0)}}
 .tour-invite{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;width:min(350px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--rule);border-top:4px solid var(--hl);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
@@ -736,7 +771,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
       </button>
       <div class="search" role="search">
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="What do you want to measure? e.g. REM sleep duration" aria-label="Search for what you want to measure" aria-controls="sres">
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="What do you want to measure?" aria-label="Search for what you want to measure" aria-controls="sres">
         <div id="sres" class="sres" hidden></div>
       </div>
       <div class="tourw">
@@ -759,7 +794,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
         <button class="tab" id="more-btn" data-act="more" aria-expanded="false" aria-controls="more-menu">More</button>
         <div class="more-menu" id="more-menu" hidden>
           <button data-act="go" data-route="planner"><b>Plan a study</b><span>Compare signals for a topic and draft a plan</span></button>
-          <button data-act="go" data-route="sources"><b>Source papers</b><span>The six papers every link comes from</span></button>
+          <button data-act="go" data-route="sources"><b>Source papers</b><span>The papers every link comes from</span></button>
           <button data-act="go" data-route="map"><b>Topic–signal map</b><span>Every link drawn as one diagram</span></button>
           <button data-act="go" data-route="contribute"><b>Contribute</b><span>Suggest a new link from a paper</span></button>
           <button data-act="go" data-route="data"><b>Data &amp; export</b><span>Download the data and see quality checks</span></button>
@@ -828,6 +863,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
   <div class="tour-ring" id="tour-ring" hidden></div>
   <div class="tour-bub" id="tour-bub" role="dialog" aria-label="Tutorial">
     <i class="tour-arrow" id="tour-arrow" aria-hidden="true"></i>
+    <button class="ax" id="ax" type="button" data-act="pet" aria-label="Axel the axolotl, your tutorial buddy"><span class="ax-say" id="ax-say" hidden></span><span class="ax-w"><span class="ax-f"><span class="ax-b ax-sprite"></span></span></span></button>
     <div class="tour-top"><span class="tour-n" id="tour-n"></span><span class="tour-bar" aria-hidden="true"><i id="tour-prog"></i></span><button class="tour-x" type="button" data-act="tour-exit" aria-label="End the tutorial">×</button></div>
     <div class="tour-body" id="tour-body" aria-live="polite"></div>
     <div class="tour-btns" id="tour-btns"></div>
@@ -835,9 +871,10 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 </div>
 <div id="tour-beacons"></div>
 <div id="tour-invite" class="tour-invite" role="dialog" aria-labelledby="ti-h" hidden>
+  <span class="ax ax-static" aria-hidden="true"><span class="ax-w"><span class="ax-f"><span class="ax-b ax-sprite"></span></span></span></span>
   <button class="tour-x" type="button" data-act="tour-invite-x" aria-label="Close">×</button>
   <b id="ti-h">New here?</b>
-  <p>A 2-minute hands-on tutorial walks you through finding how to measure your own research question.</p>
+  <p>Axel the axolotl will show you around in 2 minutes. You learn by doing, one step at a time.</p>
   <div class="btns"><button class="btn primary sm" type="button" data-act="tour-start" data-track="measure">Start the tutorial</button><button class="btn sm ghost" type="button" data-act="hints-on">Just show page hints</button></div>
 </div>
 
@@ -1215,6 +1252,16 @@ function claimSummary(es) {
 
 /* ---------- views ---------- */
 const V = {};
+/* The topics with the most signals linked (shorter names first among equals) and the signals with the most links:
+   used for example searches, so the examples always exist on the site. */
+function popularTopics(M, n) {
+  return M.constructs.map(c => ({c: c, k: (M.measOfC.get(c.id) || []).length})).filter(x => x.k)
+    .sort((a, b) => b.k - a.k || a.c.name.length - b.c.name.length).slice(0, n).map(x => x.c);
+}
+function popularMeasures(M, n) {
+  return M.measures.map(m => ({m: m, k: (M.byM.get(m.id) || []).length})).filter(x => x.k)
+    .sort((a, b) => b.k - a.k || a.m.name.length - b.m.name.length).slice(0, n).map(x => x.m);
+}
 
 V.overview = {
   mount(el) {
@@ -1223,12 +1270,12 @@ V.overview = {
         '<h1 id="home-q">What do you want to measure?</h1>' +
         '<p class="lede">Search for a brain process or an EEG signal. You get a step-by-step guide: where to put the electrodes, what to look for in the recording, what number to report, and the paper and page behind each step.</p>' +
         '<div class="hsearch" role="search">' +
-          '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. REM sleep duration, working memory, P300" aria-labelledby="home-q" aria-controls="hres">' +
+          '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. attention or memory" aria-labelledby="home-q" aria-controls="hres">' +
           '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' +
           '<div id="hres" class="sres" hidden></div></div>' +
         '<div class="tries" id="ov-tries"><span>Try:</span></div>' +
         '<p class="home-links">Not sure what to search? <button class="link" data-act="go" data-route="constructs">Browse topics</button> · <button class="link" data-act="go" data-route="measures">Browse EEG signals</button> · <button class="link" data-act="go" data-route="learn">New to EEG? Learn the basics</button></p>' +
-        '<p class="home-links">First time here? <button class="link" data-act="tour-start" data-track="measure">Take the 2-minute tutorial</button>: it walks you through your own research question, one step at a time.</p>' +
+        '<p class="home-links">First time here? <button class="link" data-act="tour-start" data-track="measure">Take the 2-minute tutorial</button>. Axel the axolotl shows you around, one step at a time.</p>' +
       '</div>' +
       '<div class="footline" id="ov-foot"></div>';
     const hq = $('#hq');
@@ -1239,12 +1286,13 @@ V.overview = {
   update(el) {
     const M = model();
     const ready = S.status === 'ready' || S.status === 'empty';
-    const tries = [['m', 'm-rem-sleep-scoring-56c09', 'REM sleep duration'], ['c', 'c-working-memory'], ['c', 'c-selective-attention'], ['m', 'm-n400'], ['m', 'm-alpha', 'Alpha power']];
-    $('#ov-tries').innerHTML = '<span>Try:</span>' + tries.map(t => {
-      if (t[0] === 'c' && M.cById.has(t[1])) return '<button data-act="open-construct" data-id="' + t[1] + '">' + esc(t[2] || M.cById.get(t[1]).name) + '</button>';
-      if (t[0] === 'm' && M.mById.has(t[1])) return '<button data-act="open-measure" data-id="' + t[1] + '">' + esc(t[2] || short(M.mById.get(t[1]))) + '</button>';
-      return '';
-    }).join('');
+    // Examples come from whatever is on the site: the busiest topics, then the signals with the most links.
+    const ct = popularTopics(M, 3), mt = popularMeasures(M, 2);
+    const ex = popularTopics(M, 12).map(c => c.name.toLowerCase()).filter(t => t.split(' ').length <= 3).slice(0, 2);
+    if (ex.length) $('#hq').placeholder = 'e.g. ' + ex.join(' or ');
+    $('#ov-tries').innerHTML = ct.length || mt.length ? '<span>Try:</span>' +
+      ct.map(c => '<button data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>').join('') +
+      mt.map(m => '<button data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(short(m)) + '</button>').join('') : '';
     $('#ov-foot').innerHTML = ready
       ? '<span>Built from ' + plural(M.sources.length, 'research paper') + ': ' + plural(M.entries.length, 'link') + ' between ' + plural(M.constructs.length, 'topic') + ' and ' + plural(M.measures.length, 'EEG signal') + '.</span><button class="link" data-act="go" data-route="sources">See the papers</button>' +
         (S.static && S.static.repo ? '<a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">Source on GitHub ↗</a>' : '')
@@ -1671,7 +1719,7 @@ V.learn = {
   mount(el) {
     const demo = {signal: 'time', sites: ['Fz', 'Cz', 'Pz', 'Oz', 'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'T7', 'T8']};
     el.innerHTML = '<div class="learn">' +
-      '<div class="sh"><div><h2>EEG basics</h2></div><p>What you need to know to use this site, in about five minutes. <span class="bg-note">This page is general background written for the site. Everything else on the site comes from the six source papers.</span></p></div>' +
+      '<div class="sh"><div><h2>EEG basics</h2></div><p>What you need to know to use this site, in about five minutes. <span class="bg-note">This page is general background written for the site. Everything else on the site comes from the papers added to it.</span></p></div>' +
       '<div class="panel"><h2>Two kinds of EEG signal</h2><p>EEG records tiny voltage changes through electrodes on the scalp. Researchers turn that recording into specific numbers. This site calls those numbers <b>EEG signals</b>; papers often call them <i>EEG measures</i>. Most fall into one of two kinds.</p>' +
         '<div class="lgrid"><div class="lcard"><div class="chips"><span class="chip t">ERP</span></div><h3>Event-related potentials</h3><p>Average the EEG over many repeats of the same event, such as a tone or a picture, and a series of bumps appears. Each bump is a component. Its name gives its direction (P for positive, N for negative) and either its order or its rough timing: the P3 is the third positive peak, also called the P300, and the N400 is a negative peak near 400 ms. ERPs are measured in milliseconds after the event.</p></div>' +
         '<div class="lcard"><div class="chips"><span class="chip f">Brain rhythm</span></div><h3>Oscillations</h3><p>The EEG also contains rhythmic activity at different speeds. Researchers measure how strong a rhythm is within a frequency band. From slowest to fastest the common bands are delta, theta, alpha, beta and gamma. Rhythms are measured in hertz (cycles per second). Band edges differ a little between papers, so each signal page shows the bands its papers use.</p></div></div>' +
@@ -1694,11 +1742,13 @@ V.learn = {
   },
   update(el) {
     const M = model();
-    const c = M.cById.get('c-sound-change'), m = M.mById.get('m-mmn');
-    const cB = c ? '<button class="link" data-act="open-construct" data-id="' + c.id + '">' + esc(c.name) + '</button>' : 'a topic';
-    const mB = m ? '<button class="link" data-act="open-measure" data-id="' + m.id + '">' + esc(short(m)) + '</button>' : 'one of its signals';
+    // The example uses the busiest topic on the site and its best-supported signal (one that needs no task if there is one).
+    const c = popularTopics(M, 1)[0] || null;
+    const ms = c ? measFor(M, c.id) : [], m = ms.find(x => x.feasibility && x.feasibility.passive === true) || ms[0] || null;
+    const cB = c ? '<button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>' : 'a topic';
+    const mB = m ? '<button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(short(m)) + '</button>' : 'one of its signals';
     $('#ln-walk').innerHTML =
-      '<li><span>Open <b>Topics</b> and pick ' + cB + ', which sits under Hearing.</span></li>' +
+      '<li><span>Open <b>Topics</b> and pick ' + cB + (c ? ', which sits under ' + esc(FAM[famOf(c)].label) : '') + '.</span></li>' +
       '<li><span>Click the ' + mB + ' signal. Its measurement guide shows where to put the electrodes, what to look for and what number to report.</span></li>' +
       (m && m.feasibility && m.feasibility.passive === true
         ? '<li><span>Check the green badges near the top. A paper notes that this signal can be recorded without a task, which matters if you study infants or patients.</span></li>'
@@ -3089,7 +3139,7 @@ function guideHTML(m, M) {
   h += '<details class="more-d"><summary>Evidence from the papers<span class="hint">' + plural(es.length, 'link') + ' with page numbers</span></summary><div class="entries">' +
     (es.length ? es.map(e => entryCard(e, M, {showConstruct: true})).join('') : '<div class="empty">No links yet.</div>') + '</div></details>';
   if (sib.length) h += '<details class="more-d"><summary>Related signals<span class="hint">' + esc(fam.label) + '</span></summary><p class="small">' + sib.map(x => '<button class="link" data-act="open-measure" data-id="' + esc(x.id) + '">' + esc(x.name) + '</button>').join(' · ') + '</p></details>';
-  h += '<div class="btns gd-actions"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy as preregistration notes</button><button class="btn" data-act="print">Print this guide</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
+  h += '<div class="btns gd-actions"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy the guide</button><button class="btn" data-act="print">Print this guide</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
   return h;
 }
 V.guide = {
@@ -3169,8 +3219,9 @@ function runSearch(input, box) {
     return '<button data-act="open-construct" data-id="' + esc(x.c.id) + '"><span>' + esc(x.c.name) + '</span><span class="sub">' + esc(ms.length ? 'Measure with: ' + ms.slice(0, 3).map(short).join(', ') + (ms.length > 3 ? ' and ' + (ms.length - 3) + ' more' : '') : FAM[famOf(x.c)].label) + '</span></button>';
   }).join('');
   if (R.ss.length) h += '<h4>Papers</h4>' + R.ss.slice(0, 3).map(x => '<button data-act="open-source" data-id="' + esc(x.src.id) + '"><span>' + esc(x.src.short) + '</span><span class="sub">' + esc(clip(x.src.title || x.src.cite, 110)) + '</span></button>').join('');
-  box.innerHTML = h || '<div class="none">Nothing matches “' + esc(q) + '”. Try fewer or simpler words, for example ' +
-    ['sleep', 'attention', 'memory'].map(w => '<button class="link" data-act="try-q" data-v="' + w + '">' + w + '</button>').join(', ') + '.' +
+  const ex = popularTopics(M, 12).map(c => c.name.toLowerCase()).filter(t => t.split(' ').length <= 3).slice(0, 3);
+  box.innerHTML = h || '<div class="none">Nothing on the site matches “' + esc(q) + '” yet.' +
+    (ex.length ? ' Try ' + ex.map(w => '<button class="link" data-act="try-q" data-v="' + esc(w) + '">' + esc(w) + '</button>').join(', ') + '.' : '') +
     (S.status !== 'ready' ? ' The knowledge base has not loaded yet.' : '') + '</div>';
   box.hidden = false;
 }
@@ -3271,21 +3322,25 @@ function render() {
 
 /* ---------- tutorial ---------- */
 /* Hands-on tutorials, like a strategy game's training missions: a ring and a small bubble point at one thing
-   at a time, and most steps wait until the reader has done it. Optional; started from the Tutorial button. */
+   at a time, and most steps wait until the reader has done it. Axel, a pixel axolotl, keeps the reader company.
+   Optional; started from the Tutorial button. */
 const TOUR = {on: false, track: '', steps: [], i: 0, n: 0, total: 0, final: null, problem: '', flags: {}, practice: false, typedAt: 0,
-  okAt: 0, fresh: true, key: '', scrollAt: 0, autoScrolled: '', reached: false, hint: null, raf: 0, seen: null};
+  okAt: 0, fresh: true, key: '', scrollAt: 0, autoScrolled: '', reached: false, hint: null, raf: 0, seen: null,
+  enteredAt: 0, lastAct: Date.now(), petStep: '', greeted: false};
 const SIDE = ['right', 'left', 'top', 'bottom'];
-const ROUTE_NAME = {overview: 'Home', constructs: 'Topics', measures: 'EEG signals', learn: 'EEG basics', planner: 'Plan a study', contribute: 'Contribute', guide: 'measurement guide'};
+const ROUTE_NAME = {overview: 'Home', constructs: 'Topics', measures: 'EEG signals', learn: 'EEG basics', planner: 'Plan a study', contribute: 'Contribute'};
 const tval = v => typeof v === 'function' ? v() : v;
 /* The element a step points at, if it is on the page and drawn. */
 const tel = t => { const el = typeof t === 'function' ? t() : t ? document.querySelector(t) : null; return el && el.isConnected && el.getClientRects().length ? el : null; };
 const hresOpen = () => { const b = $('#hres'); return !!(b && !b.hidden && b.querySelector('button[data-act="open-measure"], button[data-act="open-construct"]')); };
-const noMatch = () => { const b = $('#hres'); return b && !b.hidden && b.querySelector('.none') ? 'Nothing matches yet. Try fewer or simpler words.' : ''; };
+const noMatch = () => { const b = $('#hres'); return b && !b.hidden && b.querySelector('.none') ? 'Nothing on the site matches that yet. Try one of the words suggested under the box.' : ''; };
 const tourM = () => S.guideId ? model().mById.get(S.guideId) : null;
 /* Typing steps finish only once the reader pauses, not halfway through a word. */
 const typedPause = ms => Date.now() - TOUR.typedAt > ms;
 const gdSec = n => $('#v-guide .gd-step[data-step="' + n + '"]');
 function tourDone() { try { return JSON.parse(store('eegkb.tours') || '{}') || {}; } catch (e) { return {}; } }
+/* Everyday example searches, taken from the topics on the site now. */
+function tourExamples(n) { return popularTopics(model(), 12).map(c => c.name.toLowerCase()).filter(t => t.split(' ').length <= 3).slice(0, n); }
 /* The topic that best fits the reader's own question, to suggest it in the planner. */
 function tourTopic() {
   const M = model();
@@ -3301,10 +3356,10 @@ function tourTopic() {
 /* The two clicks that open a page from the More menu. */
 function viaMore(route, label) {
   return [
-    {target: '#more-btn', place: ['bottom', 'left'], task: 'Open the More menu', text: label + ' is in the More menu, at the end of the top bar.',
+    {target: '#more-btn', place: ['bottom', 'left'], task: 'Open the More menu', text: '“' + label + '” is in the More menu, the last button in the row of tabs.',
       done: () => !$('#more-menu').hidden || S.route === route},
     {target: () => $('#more-menu').hidden ? $('#more-btn') : $('#more-menu [data-route="' + route + '"]'), place: ['left', 'bottom'],
-      task: () => $('#more-menu').hidden ? 'Open the More menu again' : 'Click “' + label + '”', text: 'Every page is one or two clicks from the top bar.',
+      task: () => $('#more-menu').hidden ? 'Open the More menu again' : 'Click “' + label + '”', text: 'Every page is one or two clicks away.',
       done: () => S.route === route}
   ];
 }
@@ -3312,31 +3367,35 @@ function guideSteps() {
   const els = () => !!$('#v-guide .gd-els li');
   return [
     {route: 'guide', target: '#v-guide .gd-head', place: ['bottom', 'top'], next: 'Got it',
-      text: () => 'This is the measurement guide for ' + (tourM() ? tourM().name : 'this signal') + '. Four numbered steps take you from setting up to reporting.'},
+      text: () => 'This is the guide for ' + (tourM() ? tourM().name : 'this signal') + '. Its 4 numbered steps show you how to record it.'},
     {route: 'guide', target: '#v-guide .gd-setup', place: SIDE, next: () => els() ? '' : 'Got it',
-      task: () => els() ? 'Click an electrode in the list' : '',
-      text: () => els() ? 'Step 1: where the electrodes go. Each one lights up on the head when you click it.'
-        : 'Step 1: where the electrodes go. The papers don’t give them for this signal, so the box says what to do.',
+      task: () => els() ? 'Click a sensor name in the list' : '',
+      text: () => els() ? 'Step 1 shows where to put the sensors (called electrodes) on the head.'
+        : 'Step 1 shows where the sensors (electrodes) go. The paper doesn’t say for this signal, so the yellow box says what to do.',
       done: () => els() && !!TOUR.flags.el},
     {route: 'guide', target: () => gdSec(2), place: SIDE, scrollTo: 'Scroll down to Step 2', next: 'Got it',
-      text: 'Step 2: what the signal looks like in the recording, and when or at which frequency to look.'},
+      text: 'Step 2 shows what the signal looks like, and when it appears after something happens.'},
     {route: 'guide', target: () => gdSec(3), place: SIDE, scrollTo: 'Scroll down to Step 3', next: 'Got it',
-      text: () => 'Step 3: the number to report in your results.' + (gdSec(3) && gdSec(3).querySelector('.gd-general') ? ' “General practice” marks standard EEG practice, used where the papers give no specifics.' : '')},
+      text: () => 'Step 3 says which number to measure and put in your results.' + (gdSec(3) && gdSec(3).querySelector('.gd-general') ? ' A grey “General practice” box means the paper doesn’t say, so it shows the usual way.' : '')},
     {route: 'guide', target: () => gdSec(4), place: SIDE, scrollTo: 'Scroll down to Step 4', next: 'Got it',
-      text: 'Step 4: the pitfalls to plan around before you record.'},
-    {route: 'guide', target: '#v-guide .gd-sources', place: SIDE, scrollTo: 'Scroll down to the sources', next: 'Got it',
-      text: 'Every point above cites a paper and page. They are all listed here, so you can check them.'},
-    {route: 'guide', target: '#v-guide [data-act="copy-prereg"]', place: ['top', 'right', 'bottom'], task: 'Click “Copy as preregistration notes”', skip: 'Skip',
-      text: 'It copies the whole guide, ready to paste into a preregistration or protocol.', done: () => !!TOUR.flags.prereg}
+      text: 'Step 4 lists mistakes to avoid when you plan your study.'},
+    {route: 'guide', target: '#v-guide .gd-sources', place: SIDE, scrollTo: 'Scroll down to the papers', next: 'Got it',
+      text: 'Everything on this page comes from a paper. The paper and page are listed here, so you can check.'},
+    {route: 'guide', target: '#v-guide [data-act="copy-prereg"]', place: ['top', 'right', 'bottom'], task: 'Click “Copy the guide”', skip: 'Skip',
+      text: 'It copies the whole guide as text, ready to paste into your study plan or notes.', done: () => !!TOUR.flags.prereg}
   ];
 }
-/* Each step: route (the page it lives on), target, text, and either done (the reader must do something) or next (a button). */
+/* Each step: route (the page it lives on), target, text, and either done (the reader must do something) or next (a button).
+   A brief step is the short "what you will do" card at the start. */
 const TRACKS = {
-  measure: {title: 'Find how to measure something', blurb: 'Search your own research question and follow its guide', len: '2 min',
+  measure: {title: 'Find out how to measure something', blurb: 'Type what you want to study and follow its guide', len: '2 min',
     start: () => { TOUR.problem = ''; if (S.route !== 'overview') go('overview'); },
     steps: () => [
-      {route: 'overview', target: '#hq', also: () => $('#hres'), place: ['top', 'right', 'bottom'], task: 'Type what you want to measure',
-        text: 'Use your own research question, in plain words. For example: REM sleep duration.', wait: noMatch,
+      {brief: true, title: 'Hi, I’m Axel!', next: 'Let’s go',
+        text: 'I’ll show you how this site works. You tell it what you want to study, and it shows you how to record it with EEG.',
+        list: ['Type what you want to study', 'Open its step-by-step guide', 'See where the sensors go on the head', 'Copy the guide for your study plan']},
+      {route: 'overview', target: '#hq', also: () => $('#hres'), place: ['top', 'right', 'bottom'], task: 'Type what you want to study',
+        text: () => { const ex = tourExamples(2); return 'Use everyday words' + (ex.length ? ', like “' + ex.join('” or “') + '”.' : '.'); }, wait: noMatch,
         enter: () => { const q = $('#hq'); if (q && window.innerWidth > 680) q.focus(); },
         done: () => S.route === 'guide' || S.route === 'constructs' || (hresOpen() && typedPause(1200) && $('#hq').value.trim().length >= 3),
         leave: () => {
@@ -3346,67 +3405,75 @@ const TRACKS = {
       {route: ['overview', 'constructs'], wait: () => S.route === 'overview' ? noMatch() : '',
         target: () => S.route === 'constructs' ? $('#cv-detail .gd-open') : hresOpen() ? $('#hres') : $('#hq'),
         place: () => S.route === 'constructs' ? ['bottom', 'top', 'right'] : SIDE,
-        task: () => S.route === 'constructs' ? 'Click “How to measure it →” on a signal' : hresOpen() ? 'Click the best match' : 'Click the search box to see your matches',
-        text: () => S.route === 'constructs' ? 'This topic can be measured with the EEG signals listed here. Pick the one that suits your study.'
-          : (TOUR.problem ? 'Matches for “' + TOUR.problem + '”. ' : '') + 'A measurement guide says exactly how to record a signal; a topic lists the signals that measure it.',
+        task: () => S.route === 'constructs' ? 'Click “How to measure it →”' : hresOpen() ? 'Click the best match' : 'Click the search box to see your matches',
+        text: () => S.route === 'constructs' ? 'This topic can be measured with the brain signals below. Each one has its own guide.'
+          : (TOUR.problem ? 'Here are the matches for “' + TOUR.problem + '”. ' : '') + 'A guide tells you exactly how to record one brain signal. A topic shows which signals can measure it.',
         done: () => S.route === 'guide'}
     ].concat(guideSteps()),
-    end: () => ({title: 'Tutorial complete', text: 'You found how to measure ' + (TOUR.problem ? '“' + TOUR.problem + '”' : 'it') + ': where the electrodes go, what to look for, what number to report and what to watch out for.', next: 'plan'})},
-  guide: {title: 'Read a measurement guide', blurb: 'What each part of a guide tells you', len: '1 min',
+    end: () => ({title: 'You did it!', text: 'Now you know how to measure ' + (TOUR.problem ? '“' + TOUR.problem + '”' : 'it') + ': where the sensors go, what to look for, which number to write down, and what to avoid.', next: 'plan'})},
+  guide: {title: 'Read a guide', blurb: 'What each part of a guide tells you', len: '1 min',
     start: () => { if (S.route !== 'guide' && S.guideId) go('guide'); },
     steps: () => guideSteps(),
-    end: () => ({title: 'Tutorial complete', text: 'You know how to read ' + (tourM() ? 'the guide for ' + tourM().name : 'a measurement guide') + ': where the electrodes go, what to look for, what to report and what to watch out for.', next: 'plan'})},
-  plan: {title: 'Plan a study', blurb: 'Pick a topic and participants; get the signals that fit', len: '1 min',
-    steps: () => viaMore('planner', 'Plan a study').concat([
-      {route: 'planner', target: '#pl-c', place: ['right', 'bottom', 'top'], task: 'Pick the topic you want to study', skip: 'Keep this topic',
-        text: () => { const c = tourTopic(); return 'The planner ranks the EEG signals for one topic.' + (c ? ' Your question fits “' + c.name + '”.' : ''); },
+    end: () => ({title: 'You did it!', text: 'Now you can read ' + (tourM() ? 'the guide for ' + tourM().name : 'any guide') + ': where the sensors go, what to look for, which number to write down, and what to avoid.', next: 'plan'})},
+  plan: {title: 'Plan a study', blurb: 'Answer 3 questions and get the signals that fit', len: '1 min',
+    steps: () => [
+      {brief: true, title: 'Plan a study', next: 'Let’s go',
+        text: 'Not sure which brain signal to use? Answer 3 quick questions, and the planner lists the signals that fit, best first.',
+        list: ['Open the planner', 'Answer 3 questions', 'Look at the list', 'Copy your plan']}
+    ].concat(viaMore('planner', 'Plan a study'), [
+      {route: 'planner', target: '#pl-c', place: ['right', 'bottom', 'top'], task: 'Pick what you want to study', skip: 'Keep this one',
+        text: () => { const c = tourTopic(); return 'This is the brain process your study is about.' + (c ? ' Your search matches “' + c.name + '”.' : ''); },
         done: () => !!TOUR.flags.plc},
-      {route: 'planner', target: () => $$('#pl-form fieldset')[0], place: ['right', 'bottom', 'top'], task: 'Choose who your participants are',
-        text: 'Some signals have only been recorded in adults, so infants or patients narrow the list.', done: () => !!TOUR.flags.plpop},
-      {route: 'planner', target: () => $$('#pl-form fieldset')[1], place: ['right', 'bottom', 'top'], task: 'Say whether participants do a task',
-        text: 'Some signals need a response; others work while people just listen or rest.', done: () => !!TOUR.flags.plpara},
-      {route: 'planner', target: () => $('#pl-out .cands') || $('#pl-out'), place: SIDE, scrollTo: 'Scroll to the results', next: 'Got it',
-        text: 'The signals that fit your answers, best first. Each says why, and links to its measurement guide.'},
+      {route: 'planner', target: () => $$('#pl-form fieldset')[0], place: ['right', 'bottom', 'top'], task: 'Choose who will take part',
+        text: 'Some signals have only been tested in adults.', done: () => !!TOUR.flags.plpop},
+      {route: 'planner', target: () => $$('#pl-form fieldset')[1], place: ['right', 'bottom', 'top'], task: 'Will people do a task?',
+        text: 'A task means something like pressing a button. Some signals need one; some work while people just sit.', done: () => !!TOUR.flags.plpara},
+      {route: 'planner', target: () => $('#pl-out .cands') || $('#pl-out'), place: SIDE, scrollTo: 'Scroll down to the list', next: 'Got it',
+        text: 'These signals fit your answers. The best one is at the top. Click a name to open its guide.'},
       {route: 'planner', target: '#pl-out [data-act="copy-plan"]', place: ['top', 'bottom'], task: 'Click “Copy plan as text”', skip: 'Skip',
-        text: 'Paste the plan into your protocol or send it to your team.', done: () => !!TOUR.flags.plan}
+        text: 'Paste it into a document, or send it to your team.', done: () => !!TOUR.flags.plan}
     ]),
-    end: () => { const c = model().cById.get(S.plan.c); return {title: 'Study planned', text: 'You have a ranked list of EEG signals' + (c ? ' for ' + c.name : '') + ', each linked to its measurement guide.', next: 'contribute'}; }},
-  contribute: {title: 'Add a finding from a paper', blurb: 'Suggest a link: signal, topic, electrodes, paper and page', len: '2 min',
+    end: () => { const c = model().cById.get(S.plan.c); return {title: 'Plan ready', text: 'You have a list of brain signals that fit your study' + (c ? ' on ' + c.name.toLowerCase() : '') + '. Each one links to its guide.', next: 'contribute'}; }},
+  contribute: {title: 'Add a paper', blurb: 'Add what a paper found, step by step', len: '2 min',
     start: () => { if (S.edit) cancelEdit(); },
-    steps: () => viaMore('contribute', 'Contribute').concat([
+    steps: () => [
+      {brief: true, title: 'Add a paper', next: 'Let’s go',
+        text: 'Read a paper that links a brain signal to what people think or do? Add it here. An admin checks it before it appears.',
+        list: ['Pick the brain signal and the topic', 'Mark the sensors on the head', 'Say which paper and page', 'Write what it found, in your own words']}
+    ].concat(viaMore('contribute', 'Contribute'), [
       {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
-        task: 'Sign in, or practise without an account', text: 'Sending a suggestion needs an account, and the site is invite-only. You can still follow along; the form stays locked.',
-        done: () => !!S.session || TOUR.practice, extra: [['tour-practice', 'Practise without signing in', 'alt']]},
-      {route: 'contribute', target: '#f-measure', place: ['bottom', 'right', 'top'], task: 'Choose the EEG signal the paper measured',
-        text: 'Not in the list? Pick “+ New signal…” at the bottom.', done: () => !!$('#f-measure').value},
-      {route: 'contribute', target: '#f-construct', place: ['bottom', 'left', 'top'], task: 'Choose the topic it measures',
-        text: 'The brain process the paper links the signal to.', done: () => !!$('#f-construct').value},
-      {route: 'contribute', target: '#pl-sites-part', place: SIDE, task: 'Mark the electrodes the paper used', skip: 'The paper doesn’t say',
-        text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click positions on the head, or drag the electrode onto it.',
+        task: 'Sign in, or just look around', text: 'You need an account to send a paper. You can still follow along without one.',
+        done: () => !!S.session || TOUR.practice, extra: [['tour-practice', 'Just look around', 'alt']]},
+      {route: 'contribute', target: '#f-measure', place: ['bottom', 'right', 'top'], task: 'Pick the brain signal the paper recorded',
+        text: 'Not in the list? Choose “+ New signal…” at the bottom and type its name.', done: () => !!$('#f-measure').value},
+      {route: 'contribute', target: '#f-construct', place: ['bottom', 'left', 'top'], task: 'Pick what the signal tells us about',
+        text: 'For example attention or memory. Not in the list? Choose “+ New topic…”.', done: () => !!$('#f-construct').value},
+      {route: 'contribute', target: '#pl-sites-part', place: SIDE, task: 'Click where the paper put the sensors', skip: 'The paper doesn’t say',
+        text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
         done: () => PL.sites.length > 0},
-      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Choose the paper and type the page number',
-        text: 'Every link points to a page, so anyone can check it.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
+      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Pick the paper and type the page',
+        text: 'The page number lets anyone check it. A new paper? Choose “+ Other paper…”.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
       {route: 'contribute', target: '#f-claim', place: ['bottom', 'top'], task: 'Write what the paper found',
-        text: 'One or two sentences in your own words, not a quotation.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
+        text: 'One or two short sentences, in your own words.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
       {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
-        text: 'Optional: if the paper says how to record or measure the signal, add it to the measurement guide here.'},
-      {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: 'Send it for review', skip: 'Finish without sending',
-        text: 'An admin checks every suggestion before it goes live, so send only a real finding.',
+        text: 'Optional: if the paper explains how to record the signal, add it here. It becomes part of the guide.'},
+      {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: 'Send it', skip: 'Finish without sending',
+        text: 'An admin checks it first. Only send real findings, not tests.',
         wait: () => $('#f-msg') && $('#f-msg').classList.contains('err') ? 'Fix what the message next to the button asks for.' : '',
         done: () => !!TOUR.flags.sent}
     ]),
-    end: () => ({title: 'Ready to contribute', text: TOUR.flags.sent ? 'Your suggestion is with the admins. You’ll get an email when it has been reviewed.' : 'You know every part of the form. Admins review each suggestion before it goes live.'})},
-  tour: {title: 'Quick tour of the site', blurb: 'What each part of the top bar is for', len: '30 s',
+    end: () => ({title: 'All done', text: TOUR.flags.sent ? 'Your paper is with the admins. You’ll get an email when it has been checked.' : 'You know every part of the form. When you add a real paper, an admin checks it before it appears.'})},
+  tour: {title: 'Quick tour', blurb: 'What each button in the top bar does', len: '30 s',
     steps: () => [
-      {target: () => S.route === 'overview' ? $('#hq') : $('#q'), place: ['bottom', 'top'], next: 'Next', text: 'Start here: type what you want to measure and open its step-by-step guide.'},
-      {target: '.tabs [data-route="constructs"]', place: ['bottom'], next: 'Next', text: 'Topics: brain processes such as memory or attention, and the EEG signals that measure them.'},
-      {target: '.tabs [data-route="measures"]', place: ['bottom'], next: 'Next', text: 'EEG signals: every signal, in families, each with its own measurement guide.'},
-      {target: '.tabs [data-route="learn"]', place: ['bottom'], next: 'Next', text: 'EEG basics: electrodes, ERPs and brain rhythms, explained from scratch.'},
-      {target: '#more-btn', place: ['bottom', 'left'], next: 'Next', text: 'More: plan a study, the source papers, a map of every link, and the form to add a paper.'},
-      {when: () => !$('#acct').hidden, target: '#acct', place: ['bottom', 'left'], next: 'Next', text: 'Sign in here to suggest links and edits. New accounts need an invitation.'},
-      {target: '#tour-btn', place: ['bottom', 'left'], next: 'Finish', text: 'Come back here any time for a hands-on tutorial, or to turn on page hints.'}
+      {target: () => S.route === 'overview' ? $('#hq') : $('#q'), place: ['bottom', 'top'], next: 'Next', text: 'Start here. Type what you want to study to find its guide.'},
+      {target: '.tabs [data-route="constructs"]', place: ['bottom'], next: 'Next', text: 'Topics: things people study, like attention or memory, and the brain signals that measure them.'},
+      {target: '.tabs [data-route="measures"]', place: ['bottom'], next: 'Next', text: 'EEG signals: every brain signal on the site, each with a step-by-step guide.'},
+      {target: '.tabs [data-route="learn"]', place: ['bottom'], next: 'Next', text: 'EEG basics: a 5-minute introduction to EEG, in plain words.'},
+      {target: '#more-btn', place: ['bottom', 'left'], next: 'Next', text: 'More: plan a study, see the papers, or add a paper.'},
+      {when: () => !$('#acct').hidden, target: '#acct', place: ['bottom', 'left'], next: 'Next', text: 'Sign in here to add papers. You need an invitation first.'},
+      {target: '#tour-btn', place: ['bottom', 'left'], next: 'Finish', text: 'Come back here any time for a tutorial, or to turn on page hints.'}
     ],
-    end: () => ({title: 'That’s the map', text: 'Ready to try it for real? The next tutorial uses your own research question.', next: 'measure'})}
+    end: () => ({title: 'That’s everything', text: 'Ready to try it for real? The next tutorial uses your own question.', next: 'measure'})}
 };
 const MENU_TRACKS = ['measure', 'plan', 'contribute', 'tour'];
 
@@ -3415,10 +3482,10 @@ function tourStart(track) {
   if (!T) return;
   toggleTourMenu(false); hideInvite(true); hintClose(false);
   if (S.drawer) closeDrawer();
-  Object.assign(TOUR, {on: true, track: track, i: 0, n: 0, final: null, flags: {}, practice: false});
+  Object.assign(TOUR, {on: true, track: track, i: 0, n: 0, final: null, flags: {}, practice: false, petStep: ''});
   if (T.start) T.start();
   TOUR.steps = T.steps();
-  TOUR.total = TOUR.steps.filter(s => !s.when || s.when()).length;
+  TOUR.total = TOUR.steps.filter(s => !s.brief && (!s.when || s.when())).length;
   document.body.classList.add('touring');
   $('#tour').hidden = false;
   tourEnter();
@@ -3428,9 +3495,9 @@ function tourStart(track) {
 function tourEnter() {
   while (TOUR.i < TOUR.steps.length && TOUR.steps[TOUR.i].when && !TOUR.steps[TOUR.i].when()) TOUR.i++;
   if (TOUR.i >= TOUR.steps.length) return tourFinish();
-  Object.assign(TOUR, {fresh: true, okAt: 0, key: '', autoScrolled: '', scrollAt: 0, reached: false});
-  TOUR.n++;
+  Object.assign(TOUR, {fresh: true, okAt: 0, key: '', autoScrolled: '', scrollAt: 0, reached: false, enteredAt: Date.now(), lastAct: Date.now()});
   const st = TOUR.steps[TOUR.i];
+  if (!st.brief) TOUR.n++;
   if (st.enter) try { st.enter(); } catch (e) {}
 }
 function tourNext() {
@@ -3454,9 +3521,12 @@ function tourEnd(finished) {
   if (!TOUR.hint) $('#tour').hidden = true;
   if (!finished) toast('Tutorial closed. Start it again from the Tutorial button.');
 }
+/* "Take me there": a guide step with no guide open opens the signal with the most links. */
 function tourGo() {
   const st = TOUR.steps[TOUR.i], r = st && st.route ? [].concat(st.route)[0] : '';
-  if (r) go(r === 'guide' && !S.guideId ? 'overview' : r);
+  if (r !== 'guide') { if (r) go(r); return; }
+  const M = model(), id = S.guideId && M.mById.has(S.guideId) ? S.guideId : (popularMeasures(M, 1)[0] || {}).id;
+  if (id) openMeasure(id); else go('measures');
 }
 /* Scrolls a target into the middle of the window below the top bar, or to its top if it is too tall to fit. */
 function tourScroll(el) {
@@ -3504,14 +3574,15 @@ function tourTick() {
   }
   const st = TOUR.steps[TOUR.i];
   if (!st) return;
-  // A finished step stays put for a moment with its box ticked, then the next one appears.
-  if (TOUR.okAt) { if (Date.now() - TOUR.okAt > 700) tourNext(); return; }
+  // A finished step stays put for a moment with its box ticked (and Axel hopping), then the next one appears.
+  if (TOUR.okAt) { if (Date.now() - TOUR.okAt > 800) tourNext(); return; }
   let done = false;
   try { done = !!(st.done && st.done()); } catch (e) {}
   if (done) {
     if (TOUR.fresh) { TOUR.n--; TOUR.total--; return tourNext(); } // already done when the step came up: skip it, uncounted
     TOUR.okAt = Date.now();
     $('#tour-bub').classList.add('ok'); $('#tour-bub').classList.remove('bob'); $('#tour-btns').hidden = true; $('#tour-ring').hidden = true;
+    petHop(); petSay(PET_CHEER[Math.floor(Math.random() * PET_CHEER.length)]);
     return;
   }
   TOUR.fresh = false;
@@ -3519,9 +3590,10 @@ function tourTick() {
 }
 function tourStep(st) {
   const vm = {count: 'Step ' + TOUR.n + ' of ' + Math.max(TOUR.total, TOUR.n), prog: (TOUR.n - 1) / Math.max(TOUR.total, TOUR.n), place: tval(st.place)};
+  if (st.brief) return tourPaint({key: 'brief|' + TOUR.i, brief: true, title: st.title, text: tval(st.text), list: st.list, buttons: [['tour-next', st.next || 'Start', 'go']]});
   const routes = st.route ? [].concat(st.route) : null;
   if (routes && !routes.includes(S.route)) {
-    return tourPaint(Object.assign(vm, {key: 'route|' + TOUR.i + '|' + S.route, text: 'This step is on the ' + (ROUTE_NAME[routes[0]] || 'other') + ' page.', buttons: [['tour-go', 'Take me there', 'go']]}));
+    return tourPaint(Object.assign(vm, {key: 'route|' + TOUR.i + '|' + S.route, text: 'This step is on ' + (routes[0] === 'guide' ? 'a guide page.' : 'the ' + ROUTE_NAME[routes[0]] + ' page.'), buttons: [['tour-go', 'Take me there', 'go']]}));
   }
   const el = tel(st.target), top = topInset(el);
   let r = el ? el.getBoundingClientRect() : null;
@@ -3538,27 +3610,34 @@ function tourStep(st) {
   // Bring the target into view once per step and page; after that, scrolling is up to the reader.
   if (el && !st.scrollTo && TOUR.autoScrolled !== S.route && !wellInView(el.getBoundingClientRect(), top)) { TOUR.autoScrolled = S.route; tourScroll(el); }
   const locked = !!el && isLocked(el);
+  const now = Date.now();
+  // Never stuck: after 20 seconds on a step that waits for the reader, a Skip link appears. Axel dozes off after 30 idle seconds.
+  const stuck = !!st.done && !st.skip && now - TOUR.enteredAt > 20000;
+  const sleepy = !!st.done && now - TOUR.lastAct > 30000;
   const text = (tval(st.text) || '') + (locked ? ' The form is locked until you sign in, so just have a look.' : '');
-  const task = locked ? '' : tval(st.task) || '', next = tval(st.next) || '', wait = tval(st.wait) || '';
-  const off = !!r && !inView(r, top) && Date.now() - TOUR.scrollAt > 900;
+  const task = locked ? '' : tval(st.task) || '', next = tval(st.next) || '';
+  const wait = tval(st.wait) || (sleepy ? 'Still there? Take your time, or skip this step.' : '');
+  const off = !!r && !inView(r, top) && now - TOUR.scrollAt > 900;
   const btns = [];
-  if (st.skip && !next && !locked) btns.push(['tour-skip', st.skip, 'skip']);
+  if ((st.skip || stuck) && !next && !locked) btns.push(['tour-skip', st.skip || 'Skip this step', 'skip']);
   if (off) btns.push(['tour-show', 'Show me', 'alt']);
   if (st.extra) st.extra.forEach(b => btns.push(b));
   if (next || locked) btns.push(['tour-next', next || 'Next', 'go']);
-  return tourPaint(Object.assign(vm, {key: [TOUR.i, text, task, wait, off, btns.map(b => b[1]).join()].join('|'),
+  return tourPaint(Object.assign(vm, {key: [TOUR.i, text, task, wait, off, btns.map(b => b[1]).join()].join('|'), sleepy: sleepy,
     text: text, task: task, wait: wait, rect: off ? null : r, dir: off ? (r.bottom < top + 24 ? 'up' : 'down') : '', dirText: off ? 'It is ' + (r.bottom < top + 24 ? 'above' : 'below') : '', buttons: btns}));
 }
 function tourPaint(vm) {
   const bub = $('#tour-bub'), ring = $('#tour-ring');
   if (vm.key !== TOUR.key) {
     TOUR.key = vm.key;
-    bub.className = 'tour-bub' + (vm.final ? ' final' : '') + (vm.hint ? ' hint' : '');
+    bub.className = 'tour-bub' + (vm.final ? ' final' : '') + (vm.brief ? ' brief' : '') + (vm.hint ? ' hint' : '');
+    $('#tour').classList.toggle('dim', !!(vm.brief || vm.final));
     $('#tour-n').textContent = vm.count || '';
     $('#tour-prog').style.width = Math.round((vm.prog || 0) * 100) + '%';
     $('#tour-body').innerHTML = (vm.final ? '<div class="tour-medal" aria-hidden="true">✓</div>' : '') +
       (vm.title ? '<p class="tour-title">' + esc(vm.title) + '</p>' : '') +
       (vm.text ? '<p class="tour-txt">' + esc(vm.text) + '</p>' : '') +
+      (vm.list ? '<p class="tour-lh">You will:</p><ol class="tour-list">' + vm.list.map(t => '<li>' + esc(t) + '</li>').join('') + '</ol>' : '') +
       (vm.task ? '<p class="tour-task">' + esc(vm.task) + '</p>' : '') +
       (vm.wait ? '<p class="tour-wait">' + esc(vm.wait) + '</p>' : '') +
       (vm.dir ? '<p class="tour-dir"><i aria-hidden="true" style="--dy:' + (vm.dir === 'up' ? '-3px' : '3px') + '">' + (vm.dir === 'up' ? '↑' : '↓') + '</i>' + esc(vm.dirText || '') + '</p>' : '');
@@ -3568,7 +3647,9 @@ function tourPaint(vm) {
     // Keyboard readers can press Enter to go on, unless they are busy elsewhere on the page.
     const go = $('#tour-btns .tb-go'), a = document.activeElement;
     if (go && (!a || a === document.body || $('#tour').contains(a))) try { go.focus({preventScroll: true}); } catch (e) {}
+    petScene(vm, bub.offsetWidth);
   }
+  $('#ax').classList.toggle('zz', !!vm.sleepy);
   const r = vm.rect || (vm.el ? vm.el.getBoundingClientRect() : null);
   const modal = !$('#modal').hidden || !$('#signin').hidden;
   if (r && !modal) {
@@ -3580,22 +3661,24 @@ function tourPaint(vm) {
   placeBubble(bub, r, vm);
 }
 /* Puts the bubble beside the target on the first side with room, with its arrow pointing at the target;
-   with no room (or no target on screen) it docks at the top or bottom of the window. */
+   with no room (or no target on screen) it docks at the top or bottom of the window. Axel sits on top of
+   the bubble, or hangs underneath it when the top edge faces the target. */
 function placeBubble(bub, r, vm) {
   const vw = document.documentElement.clientWidth, vh = window.innerHeight, m = 12, gap = 16, top = topInset();
-  const bw = bub.offsetWidth, bh = bub.offsetHeight, arrow = $('#tour-arrow');
+  const bw = bub.offsetWidth, bh = bub.offsetHeight, arrow = $('#tour-arrow'), pet = petOn() ? 22 : 0;
   let x = 0, y = 0, side = '';
   if (r) {
     const sp = {bottom: vh - r.bottom, top: r.top - top, right: vw - r.right, left: r.left};
     const shown = r.bottom > top && r.top < vh;
-    side = (vm.place || []).concat(['bottom', 'top', 'right', 'left']).find(s => s === 'top' || s === 'bottom' ? sp[s] >= bh + gap + m : shown && sp[s] >= bw + gap + m) || '';
+    side = (vm.place || []).concat(['bottom', 'top', 'right', 'left']).find(s => s === 'top' || s === 'bottom' ? sp[s] >= bh + gap + m + pet : shown && sp[s] >= bw + gap + m) || '';
     const cx = r.left + r.width / 2, cy = (Math.max(r.top, top) + Math.min(r.bottom, vh)) / 2;
     if (side === 'bottom') { x = cx - bw / 2; y = r.bottom + gap; }
     else if (side === 'top') { x = cx - bw / 2; y = r.top - gap - bh; }
     else if (side === 'right') { x = r.right + gap; y = cy - bh / 2; }
     else if (side === 'left') { x = r.left - gap - bw; y = cy - bh / 2; }
     if (side) {
-      x = Math.min(Math.max(x, m), vw - bw - m); y = Math.min(Math.max(y, top + m), vh - bh - m);
+      const hang = side === 'bottom';
+      x = Math.min(Math.max(x, m), vw - bw - m); y = Math.min(Math.max(y, top + m + (hang ? 0 : pet)), vh - bh - m - (hang ? pet : 0));
       const ax = Math.round(Math.min(Math.max(cx - x - 7, 14), bw - 28)), ay = Math.round(Math.min(Math.max(cy - y - 7, 14), bh - 28));
       arrow.style.cssText = side === 'bottom' ? 'left:' + ax + 'px;top:-6px' : side === 'top' ? 'left:' + ax + 'px;bottom:-6px' : side === 'right' ? 'top:' + ay + 'px;left:-6px' : 'top:' + ay + 'px;right:-6px';
       bub.style.setProperty('--bx', side === 'right' ? '-4px' : side === 'left' ? '4px' : '0px');
@@ -3604,26 +3687,91 @@ function placeBubble(bub, r, vm) {
   }
   if (!side) {
     x = (vw - bw) / 2;
-    y = vm.final ? (vh - bh) / 2 : vm.dir === 'up' || (r && r.top + r.bottom > vh) ? top + m : vh - bh - m;
+    y = vm.final || vm.brief ? (vh - bh) / 2 : vm.dir === 'up' || (r && r.top + r.bottom > vh) ? top + m + pet : vh - bh - m;
     arrow.style.cssText = 'display:none';
   }
+  $('#ax').classList.toggle('hang', side === 'bottom');
   bub.classList.toggle('bob', !!side && !vm.ok);
   bub.style.left = Math.round(x) + 'px'; bub.style.top = Math.round(Math.max(y, m)) + 'px';
 }
 
+/* Axel, the tutorial's pixel axolotl: 18 × 12 pixels, drawn at 2 screen pixels each.
+   g gill, h gill tip, o outline, p body, l belly, e eye, c cheek, m mouth, f foot, t tail. */
+const AX_MAP = [
+  'h................h',
+  'gg...oooooooo...gg',
+  '.gg.oppppppppo.gg.',
+  'hggoppppppppppoggh',
+  '..goppppppppppog..',
+  'hggopeppppppepoggh',
+  '...opcpmppmpcpo...',
+  '....opppmmpppo....',
+  '.....ollllllo.....',
+  '....fopllllpof....',
+  '.....oppppppottt..',
+  '......f....f..tt..'
+];
+const AX_COL = {g: '#E04F7C', h: '#FF93B5', o: '#B33C6E', p: '#F9AFC8', l: '#FDDCE7', e: '#26142B', c: '#F47FA4', m: '#8E2752', f: '#E88AAF', t: '#E88AAF'};
+function axSVG() {
+  let s = '<svg viewBox="0 0 18 12" width="36" height="24" shape-rendering="crispEdges" aria-hidden="true" focusable="false">';
+  AX_MAP.forEach((row, y) => {
+    for (let x = 0; x < row.length;) {
+      const k = row[x];
+      let w = 1;
+      if (k !== 'e' && k !== 'h') while (row[x + w] === k) w++;
+      if (AX_COL[k]) s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="1" fill="' + AX_COL[k] + '"' + (k === 'e' ? ' class="ax-eye"' : k === 'h' ? ' class="ax-tip"' : '') + '/>';
+      x += w;
+    }
+  });
+  return s + '</svg>';
+}
+const PET_CHEER = ['Nice!', 'Yay!', 'Great!', 'Bloop!', 'Woo!'];
+const PET_POKE = ['Hi there!', 'Bloop!', 'You’ve got this!', '♥', 'Keep going!'];
+const petOn = () => store('eegkb.pet') !== '0';
+function setPet(on) {
+  store('eegkb.pet', on ? '1' : '0');
+  document.body.classList.toggle('no-pet', !on);
+  TOUR.key = '';
+  const cb = $('#tm-pet'); if (cb) cb.checked = on;
+  toast(on ? 'Axel is back!' : 'Axel is taking a break. Bring Axel back from the Tutorial button.');
+}
+/* A new step moves Axel to a new spot on the bubble; the finish card makes Axel dance. */
+function petScene(vm, bw) {
+  const ax = $('#ax'), id = vm.final ? 'final' : vm.hint ? vm.key : TOUR.track + TOUR.i;
+  if (id !== TOUR.petStep) {
+    TOUR.petStep = id;
+    ax.style.setProperty('--ax-x', (14 + Math.round(Math.random() * Math.max(0, bw - 36 - 28 - 44))) + 'px');
+    ax.classList.remove('hop');
+    if (vm.brief && !TOUR.greeted) { TOUR.greeted = true; petSay('Hi!'); }
+    if (vm.final) petSay('Woohoo!', 2400);
+  }
+  ax.classList.toggle('party', !!vm.final);
+}
+let hopT = 0, sayT = 0;
+function petHop() {
+  const ax = $('#ax');
+  ax.classList.remove('hop'); void ax.offsetWidth; ax.classList.add('hop');
+  clearTimeout(hopT); hopT = setTimeout(() => ax.classList.remove('hop'), 1000);
+}
+function petSay(t, ms) {
+  const s = $('#ax-say');
+  s.textContent = t; s.hidden = false;
+  clearTimeout(sayT); sayT = setTimeout(() => { s.hidden = true; }, ms || 1500);
+}
+
 /* Page hints: yellow ? marks on the parts of each page worth explaining; each shows a one-line tip once. */
 const HINTS = [
-  {id: 'home-search', route: 'overview', target: '#hq', text: 'Type what you want to measure, in your own words, then open its guide.'},
-  {id: 'guide-steps', route: 'guide', target: '#v-guide .gd-step[data-step="1"] h2', text: 'Every guide has four steps: set up, look for, report, watch out. Each point cites a paper and page.'},
-  {id: 'guide-els', route: 'guide', target: '#v-guide .gd-els', text: 'Click an electrode to find it on the head.'},
-  {id: 'guide-general', route: 'guide', target: '#v-guide .gd-general', text: '“General practice” is standard EEG practice, shown where the papers give no specifics.'},
-  {id: 'guide-copy', route: 'guide', target: '#v-guide [data-act="copy-prereg"]', text: 'Copies the whole guide as text, for a preregistration or protocol.'},
-  {id: 'topic-ways', route: 'constructs', target: '#cv-detail .sec h3', text: 'Each signal below has a step-by-step guide: click “How to measure it →”.'},
-  {id: 'topic-warn', route: 'constructs', target: '#cv-detail .callout.warn', text: 'A signal linked to several topics can’t show which one changed. Add a condition that rules the others out.'},
-  {id: 'signals-type', route: 'measures', target: '#mf-sig', text: 'Show only one kind of signal: ERPs, brain rhythms or sleep scoring.'},
-  {id: 'plan-form', route: 'planner', target: '#pl-form', text: 'Answer the three questions; the ranked list updates as you go.'},
-  {id: 'ct-head', route: 'contribute', target: '#pl-head', text: 'Click the head to mark electrodes, or drag the electrode onto it.'},
-  {id: 'ct-guide', route: 'contribute', target: '#f-guide', text: 'Add the paper’s how-to advice to the signal’s measurement guide.'}
+  {id: 'home-search', route: 'overview', target: '#hq', text: 'Type what you want to study, in everyday words.'},
+  {id: 'guide-steps', route: 'guide', target: '#v-guide .gd-step[data-step="1"] h2', text: 'Every guide has 4 steps: set up, what to look for, what to measure, and mistakes to avoid.'},
+  {id: 'guide-els', route: 'guide', target: '#v-guide .gd-els', text: 'Click a sensor name to see where it goes on the head.'},
+  {id: 'guide-general', route: 'guide', target: '#v-guide .gd-general', text: '“General practice” means the paper doesn’t say, so this is the usual way.'},
+  {id: 'guide-copy', route: 'guide', target: '#v-guide [data-act="copy-prereg"]', text: 'Copies the whole guide as text for your notes.'},
+  {id: 'topic-ways', route: 'constructs', target: '#cv-detail .sec h3', text: 'Each signal below has its own guide. Click “How to measure it →”.'},
+  {id: 'topic-warn', route: 'constructs', target: '#cv-detail .callout.warn', text: 'These signals are linked to more than one topic, so on their own they can’t tell you which one changed.'},
+  {id: 'signals-type', route: 'measures', target: '#mf-sig', text: 'Show only one kind of signal.'},
+  {id: 'plan-form', route: 'planner', target: '#pl-form', text: 'Answer the 3 questions. The list updates as you go.'},
+  {id: 'ct-head', route: 'contribute', target: '#pl-head', text: 'Click the head to mark where the sensors go.'},
+  {id: 'ct-guide', route: 'contribute', target: '#f-guide', text: 'Add the paper’s how-to tips to the signal’s guide.'}
 ];
 const hintsOn = () => store('eegkb.hints') === '1';
 function hintSeen() {
@@ -3688,12 +3836,13 @@ function toggleTourMenu(open) {
   if (open === undefined) open = menu.hidden;
   if (open) {
     const d = tourDone();
-    menu.innerHTML = '<div class="tm-h"><b>Tutorials</b><span>Hands-on: each step waits until you have done it. Leave any time with ×.</span></div>' +
+    menu.innerHTML = '<div class="tm-h"><b>Tutorials</b><span>Learn by doing: Axel shows you one step at a time. Leave any time with ×.</span></div>' +
       MENU_TRACKS.map((k, i) => {
         const T = TRACKS[k];
         return '<button type="button" data-act="tour-start" data-track="' + k + '"><span class="tm-ic" aria-hidden="true">' + (i + 1) + '</span><span class="tm-t"><b>' + esc(T.title) + '</b><span>' + esc(T.blurb) + ' · ' + esc(T.len) + '</span></span><span class="tm-ok">' + (d[k] ? '✓ Done' : '') + '</span></button>';
       }).join('') +
-      '<label class="tm-hints"><input type="checkbox" id="tm-hints"' + (hintsOn() ? ' checked' : '') + '><span class="tm-t"><b>Page hints</b><span>Yellow ? marks on each page; click one for a one-line tip.</span></span></label>';
+      '<label class="tm-hints"><input type="checkbox" id="tm-hints"' + (hintsOn() ? ' checked' : '') + '><span class="tm-t"><b>Page hints</b><span>Yellow ? marks that explain each page.</span></span></label>' +
+      '<label class="tm-hints tm-pet"><input type="checkbox" id="tm-pet"' + (petOn() ? ' checked' : '') + '><span class="tm-t"><b>Axel the axolotl</b><span>Your tiny tutorial buddy.</span></span></label>';
     toggleMore(false);
   }
   menu.hidden = !open;
@@ -3747,7 +3896,7 @@ function onAct(t) {
     case 'try-q': { const inp = searchIn || $('#hq') || $('#q'); inp.value = t.getAttribute('data-v'); runSearch(inp); inp.focus(); break; }
     case 'edit-measure': startEdit(null, id); break;
     case 'cancel-edit': cancelEdit(); break;
-    case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); TOUR.flags.prereg = true; break; }
+    case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Guide'); TOUR.flags.prereg = true; break; }
     case 'copy-cite': { const s = M.sById.get(id); if (s) copyText(s.cite + (s.doi ? ' https://doi.org/' + s.doi : ''), 'Citation'); break; }
     case 'copy-plan': copyText(planText(M), 'Study plan'); TOUR.flags.plan = true; break;
     case 'copy-index': copyText(indexCSV(M), 'Measure Index CSV'); break;
@@ -3812,6 +3961,7 @@ function onAct(t) {
     case 'hint-open': hintOpen(id); break;
     case 'hint-ok': hintClose(true); break;
     case 'hint-off': hintClose(true); setHints(false); break;
+    case 'pet': petHop(); petSay(PET_POKE[Math.floor(Math.random() * PET_POKE.length)]); break;
   }
 }
 let armT = 0;
@@ -3868,12 +4018,14 @@ function bind() {
     else if (t.id === 'mf-sort') { S.mf.sort = t.value; render(); }
     else if (t.id === 'pl-c') { S.plan.c = t.value; TOUR.flags.plc = true; render(); }
     else if (t.id === 'tm-hints') setHints(t.checked);
+    else if (t.id === 'tm-pet') setPet(t.checked);
     else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
   const onNav = () => { const r = routeFromHash(); if (r && (r !== S.route || r === 'guide')) go(r, false); };
   window.addEventListener('hashchange', onNav);
   window.addEventListener('popstate', onNav);
+  ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input'].forEach(t => document.addEventListener(t, () => { TOUR.lastAct = Date.now(); }, {capture: true, passive: true}));
   document.addEventListener('pointerdown', plPointerDown);
   document.addEventListener('pointermove', plPointerMove, {passive: false});
   document.addEventListener('pointerup', plPointerUp);
@@ -4113,6 +4265,8 @@ try {
 } catch (e) {}
 const r0 = routeFromHash();
 go(S.review.token ? 'review' : r0 || 'overview', false);
+$$('.ax-sprite').forEach(el => { el.innerHTML = axSVG(); });
+document.body.classList.toggle('no-pet', !petOn());
 if (hintsOn()) tourLoop();
 connect();
 })();

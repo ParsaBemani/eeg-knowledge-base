@@ -97,7 +97,7 @@ The anon key is designed to be public. The setup script's security rules decide 
 ## 7. Move the data into the database
 
 1. Open the site and click **Sign in** (top right). Enter the email from step 4 and then the code you receive.
-2. You should see an **Admin** badge. Open **More → Admin** and click **Import the starter data**. This copies the 99 links from `data/kb.json` into the database.
+2. You should see an **Admin** badge. Open **More → Admin** and click **Import the starter data**. This copies the links in `data/kb.json` into the database.
 
 ## 8. Test it
 
