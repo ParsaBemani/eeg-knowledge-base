@@ -547,6 +547,9 @@ details[open] > summary{margin-bottom:10px}
 .subform .eyebrow{grid-column:1/-1}
 .fmsg{font-size:14px;color:var(--ink-2)}
 .fmsg.err{color:var(--warn)}
+.fmsg.ok{color:var(--ok)}
+.doi-row{display:flex;gap:8px;align-items:stretch}
+.doi-row input{flex:1;min-width:0}
 .gate{font-size:14px}
 .queue{display:flex;flex-direction:column;gap:10px}
 .qitem{border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
@@ -2172,6 +2175,86 @@ async function submitEdit(setMsg) {
   finally { btn.disabled = false; scheduleUpdate(); }
 }
 
+/* ---------- DOI lookup: fills in a new paper's citation from Crossref ---------- */
+const DOI_HELP = 'Paste the paper’s DOI and the citation fills itself in.';
+let doiT = 0, doiSeq = 0;
+/* Accepts a bare DOI, "doi:10…" or a doi.org link. */
+function doiOf(s) {
+  let t = String(s || '').trim();
+  try { t = decodeURIComponent(t); } catch (e) {}
+  const m = t.match(/(10\.\d{4,9}\/[^\s"<>]+)/);
+  return m ? m[1].replace(/[.,;]+$/, '') : '';
+}
+/* Crossref titles can carry markup such as <i> or &amp;; parse them as text only (an inert document runs nothing). */
+function plainText(s) {
+  try { return new DOMParser().parseFromString('<body>' + String(s || '') + '</body>', 'text/html').body.textContent.replace(/\s+/g, ' ').trim(); }
+  catch (e) { return String(s || '').replace(/<[^>]*>/g, '').trim(); }
+}
+const initials = given => String(given || '').split(/\s+/).filter(Boolean).map(g => g.split('-').map(p => p.charAt(0).toUpperCase() + '.').join('-')).join(' ');
+const apaName = a => a.family ? plainText(a.family) + (a.given ? ', ' + initials(plainText(a.given)) : '') : plainText(a.name || '');
+const apaEditor = a => a.family ? (a.given ? initials(plainText(a.given)) + ' ' : '') + plainText(a.family) : plainText(a.name || '');
+/* APA 7 author list: everyone up to 20, then the first 19, an ellipsis and the last. */
+function apaAuthors(names, max) {
+  const a = names.filter(Boolean);
+  if (!a.length) return '';
+  if (max && a.length > max) return a.slice(0, max - 1).join(', ') + ', … ' + a[a.length - 1];
+  return a.length === 1 ? a[0] : a.slice(0, -1).join(', ') + ', & ' + a[a.length - 1];
+}
+/* Builds an APA-style reference, so the site can read the first author and year from it. */
+function apaCite(m) {
+  const names = arr(m.author).map(apaName);
+  const dp = (m.issued || m['published-print'] || m['published-online'] || m.created || {})['date-parts'];
+  const year = dp && dp[0] && dp[0][0] ? dp[0][0] : 'n.d.';
+  const title = plainText(arr(m.title)[0]).replace(/[.\s]+$/, '');
+  const cont = plainText(arr(m['container-title'])[0]), pub = plainText(m.publisher), pages = String(m.page || '').replace(/-/g, '–');
+  const eds = arr(m.editor).map(apaEditor).filter(Boolean);
+  let tail;
+  if (m.type === 'book-chapter' || m.type === 'proceedings-article') {
+    tail = 'In ' + (eds.length ? apaAuthors(eds) + (eds.length > 1 ? ' (Eds.), ' : ' (Ed.), ') : '') + (cont || 'the book') + (pages ? ' (pp. ' + pages + ')' : '') + '.' + (pub ? ' ' + pub + '.' : '');
+  } else if (/^(book|monograph|edited-book|reference-book)$/.test(m.type)) {
+    tail = pub ? pub + '.' : '';
+  } else {
+    tail = cont ? cont + (m.volume ? ', ' + m.volume + (m.issue ? '(' + m.issue + ')' : '') : '') + (pages ? ', ' + pages : '') + '.' : (pub ? pub + '.' : '');
+  }
+  const build = who => (who ? who + (/\.$/.test(who) ? ' ' : '. ') : '') + '(' + year + '). ' + (title ? title + '. ' : '') + tail;
+  // The citation box holds 400 characters: shorten very long author lists rather than cut the title.
+  let s = build(apaAuthors(names, 20));
+  if (s.length > 400) s = build(apaAuthors(names, 7));
+  if (s.length > 400 && names.length) s = build(names[0] + ' et al.');
+  return s.trim().slice(0, 400);
+}
+function doiMsg(t, cls) { const el = $('#f-doi-msg'); if (el) { el.textContent = t; el.className = cls ? 'fmsg ' + cls : 'small muted'; } }
+/* auto: run after a pause in typing; it then never replaces a citation the person typed themselves. */
+async function doiFill(auto) {
+  const inp = $('#f-doi'), cite = $('#f-cite');
+  if (!inp || !cite || inp.disabled) return;
+  const doi = doiOf(inp.value);
+  if (!doi) { if (!auto) doiMsg(inp.value.trim() ? 'That doesn’t look like a DOI. DOIs start with 10. (for example 10.3758/APP.72.8.2031).' : 'Paste a DOI first.', 'err'); return; }
+  if (auto && cite.dataset.doi === doi) return;
+  if (auto && cite.value.trim() && !cite.dataset.doi) { doiMsg('Press “Fill in from DOI” to replace the citation you typed.', ''); return; }
+  const seq = ++doiSeq;
+  doiMsg('Looking it up…', '');
+  try {
+    const res = await fetch('https://api.crossref.org/works/' + encodeURIComponent(doi).replace(/%2F/gi, '/'));
+    if (seq !== doiSeq) return;
+    if (res.status === 404) throw {notFound: true};
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const m = (await res.json()).message;
+    if (seq !== doiSeq) return;
+    if (!m || !arr(m.title).length) throw {notFound: true};
+    cite.value = apaCite(m);
+    cite.dataset.doi = doi;
+    if (inp.value.trim() !== doi) inp.value = doi;
+    doiMsg('Filled in from Crossref. Check it before you send.', 'ok');
+    cite.dispatchEvent(new Event('input', {bubbles: true}));
+  } catch (e) {
+    if (seq !== doiSeq) return;
+    // A citation filled in for a different DOI no longer fits; one the person typed is kept.
+    if (cite.dataset.doi && cite.dataset.doi !== doi) { cite.value = ''; delete cite.dataset.doi; cite.dispatchEvent(new Event('input', {bubbles: true})); }
+    doiMsg(e && e.notFound ? 'No paper found for that DOI. Check it, or type the citation yourself.' : 'The lookup didn’t work just now. Try again, or type the citation yourself.', 'err');
+  }
+}
+
 V.contribute = {
   mount(el) {
     el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
@@ -2205,8 +2288,10 @@ V.contribute = {
         '<div id="f-entry-part"><div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
           '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
         '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
+          '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" maxlength="300" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
+            '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
           '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
-          '<div class="field wide"><label for="f-doi">DOI or URL</label><input id="f-doi" maxlength="300" placeholder="10.xxxx/xxxxx"></div><div class="dupbox" id="f-s-dup" hidden></div></div>' +
+          '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
         '<div class="field"><label for="f-claim">What the source says (paraphrase)<span class="req">required</span></label><textarea id="f-claim" rows="3" maxlength="700" placeholder="One or two sentences in your own words, not a quotation."></textarea></div>' +
         '<div class="frow"><div class="field"><label for="f-ctype">Claim type</label><select id="f-ctype">' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
           '<div class="field"><label for="f-evid">Kind of evidence</label><select id="f-evid">' + Object.keys(EVID).map(k => '<option value="' + k + '">' + esc(EVID[k].label) + '</option>').join('') + '</select></div></div>' +
@@ -2229,6 +2314,10 @@ V.contribute = {
     $('#ct-form').addEventListener('submit', submitEntry);
     $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; plVisibility(); dupCheck(); });
     ['f-m-name', 'f-c-name', 'f-cite', 'f-doi'].forEach(id => $('#' + id).addEventListener('input', dupCheck));
+    // A pasted DOI fills in the citation, unless the person has typed a citation of their own.
+    $('#f-doi').addEventListener('input', () => { clearTimeout(doiT); doiT = setTimeout(() => doiFill(true), 700); });
+    $('#f-cite').addEventListener('input', ev => { if (ev.isTrusted) { delete ev.target.dataset.doi; } });
+    $('#ct-form').addEventListener('reset', () => { delete $('#f-cite').dataset.doi; doiMsg(DOI_HELP, ''); });
     ['f-construct', 'f-source'].forEach(id => $('#' + id).addEventListener('change', dupCheck));
     $('#f-m-signal').addEventListener('change', plVisibility);
     $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
@@ -3441,7 +3530,7 @@ const TRACKS = {
         text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
         done: () => PL.sites.length > 0},
       {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Pick the paper and type the page',
-        text: 'The page number lets anyone check it. A new paper? Choose “+ Other paper…”.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
+        text: 'The page number lets anyone check it. A new paper? Choose “+ Other paper…” and paste its DOI; the citation fills itself in.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
       {route: 'contribute', target: '#f-claim', place: ['bottom', 'top'], task: 'Write what the paper found',
         text: 'One or two short sentences, in your own words.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
       {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
@@ -3915,6 +4004,7 @@ function onAct(t) {
     case 'pl-toggle': if (!PL.suppressClick && !($('#f-claim') && $('#f-claim').disabled)) togglePl(t.getAttribute('data-site')); break;
     case 'pl-remove': PL.sites = PL.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(); break;
     case 'pl-token': if (!PL.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
+    case 'doi-fill': clearTimeout(doiT); doiFill(false); break;
     case 'pl-usual': if (!($('#f-claim') && $('#f-claim').disabled)) { PL.sites = PL.usual.slice(); renderPlacer(); } break;
     case 'gd-el': S.gdEl = S.gdEl === t.getAttribute('data-site') ? null : t.getAttribute('data-site'); gdElPaint(); TOUR.flags.el = true; break;
     case 'tour-menu': toggleTourMenu(); break;

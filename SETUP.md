@@ -120,3 +120,13 @@ The anon key is designed to be public. The setup script's security rules decide 
 
 - Supabase's free plan comfortably holds this site's data, but projects pause after about a week with no activity and must be restored by hand.
 - Brevo's free plan sends a few hundred emails a day.
+
+## The daily data refresh
+
+A scheduled GitHub workflow, **Refresh saved data** (`.github/workflows/refresh-data.yml`), runs every day at 06:17 UTC. It:
+
+- reads every record from the database, which counts as activity and keeps a free Supabase project from pausing;
+- rewrites `data/kb.json`, the saved copy the site shows if the database cannot be reached, and commits it only when something changed;
+- leaves `data/kb.json` alone and fails if the database does not answer or returns nothing. GitHub then emails the repository owner, which is also your early warning that the project needs restoring.
+
+To run it straight away, open the repository's **Actions** tab, choose **Refresh saved data**, and click **Run workflow**. GitHub switches off scheduled workflows after 60 days with no repository activity, so after a quiet month the workflow commits a one-line note (`.github/last-data-check.txt`) to keep the schedule on.

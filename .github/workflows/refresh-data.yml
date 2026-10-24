@@ -1,0 +1,30 @@
+# Once a day: reads every record from the live database and refreshes data/kb.json, the saved copy the
+# site shows if the database cannot be reached. The daily read also counts as database activity, which
+# keeps a free Supabase project from being paused for inactivity. If the database does not answer, the
+# run fails and GitHub emails the repository owner; data/kb.json is never replaced with an empty copy.
+name: Refresh saved data
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # every day at 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+# Shares a queue with the contribution workflow, so the two never edit data/kb.json at once.
+concurrency:
+  group: add-contributions
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const run = require('./.github/scripts/refresh-data.js');
+            await run({github, context, core});
