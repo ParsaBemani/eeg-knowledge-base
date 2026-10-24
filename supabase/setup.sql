@@ -328,6 +328,36 @@ end $$;
 -- New suggestions: fill in who sent it, limit volume, email every admin
 -- ---------------------------------------------------------------------------
 
+-- Adds notes for a signal's measurement guide (set-up, what to look for, what number to report,
+-- what to watch out for), each cited to the paper and pages of the link they came with.
+create or replace function public._guide_add(d jsonb, g jsonb, p_sid text, p_pages text) returns jsonb
+language plpgsql immutable set search_path = '' as $$
+declare
+  k text; v_add jsonb;
+begin
+  if coalesce(jsonb_typeof(g), '') <> 'object' or coalesce(p_sid, '') = '' then return d; end if;
+  foreach k in array array['setup', 'lookFor', 'quantify', 'caveats'] loop
+    select coalesce(jsonb_agg(jsonb_build_object('t', x.t, 'refs', jsonb_build_array(jsonb_build_object('s', p_sid, 'p', coalesce(p_pages, ''))))), '[]'::jsonb)
+      into v_add
+      from (select left(trim(a.e), 300) as t
+            from jsonb_array_elements_text(case when jsonb_typeof(g->k) = 'array' then g->k else '[]'::jsonb end) as a(e)
+            where trim(a.e) <> '' limit 8) x;
+    if jsonb_array_length(v_add) > 0 then
+      d := d || jsonb_build_object(k, (case when jsonb_typeof(d->k) = 'array' then d->k else '[]'::jsonb end) || v_add);
+    end if;
+  end loop;
+  return d;
+end $$;
+
+-- Guide notes as readable lines, for emails.
+create or replace function public._guide_html(g jsonb) returns text
+language sql immutable set search_path = '' as $$
+  select nullif(string_agg('<br><b>' || l.label || ':</b> ' || public._esc(t.e), '' order by l.n), '')
+  from (values (1, 'setup', 'Set-up'), (2, 'lookFor', 'What to look for'), (3, 'quantify', 'What number to report'), (4, 'caveats', 'Watch out for')) as l(n, k, label),
+    lateral jsonb_array_elements_text(case when jsonb_typeof(g->l.k) = 'array' then g->l.k else '[]'::jsonb end) as t(e)
+  where coalesce(jsonb_typeof(g), '') = 'object' and trim(t.e) <> '';
+$$;
+
 -- Whether a signal or topic record goes by this name: its name, short name, or an also-known-as name
 -- (merged topics keep their old names there).
 create or replace function public._name_matches(d jsonb, v text) returns boolean
@@ -476,6 +506,7 @@ begin
       || case when coalesce(new.payload->>'entryId', '') <> '' then '<br><b>Topic:</b> ' || public._esc(s->>'topic') || '<br><b>Paper:</b> ' || public._esc(s->>'paper') else '' end || '</p>'
       || '<p><b>Changes</b> (on the site now → suggested):<br>' || coalesce(public._edit_html(new.payload), 'none') || '</p>'
       || case when s->>'reason' <> '' then '<p><b>Why:</b> ' || public._esc(s->>'reason') || '</p>' else '' end
+      || coalesce('<p><b>Notes to add to the measurement guide</b>' || public._guide_html(new.payload->'changes'->'guide') || '</p>', '')
       || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown')) || '</p>';
   else
     v_details :=
@@ -484,6 +515,7 @@ begin
       || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
       || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
       || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
+      || coalesce('<p><b>Notes for the measurement guide</b>' || public._guide_html(new.payload->'guide') || '</p>', '')
       || case when jsonb_array_length(coalesce(new.dup_hints, '[]'::jsonb)) > 0
            then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Possible duplicates</b><br>'
              || (select string_agg(public._esc(h), '<br>') from jsonb_array_elements_text(new.dup_hints) as t(h)) || '</p>'
@@ -579,11 +611,11 @@ begin
     if v_name = '' then raise exception 'The suggestion has no EEG signal.'; end if;
     select id into mid from public.kb_records where collection = 'measures' and public._name_matches(doc, v_name) limit 1;
     if mid is null then
-      v_sig := case when p->'newMeasure'->>'signal' in ('time', 'freq', 'phase') then p->'newMeasure'->>'signal' else 'time' end;
+      v_sig := case when p->'newMeasure'->>'signal' in ('time', 'freq', 'phase', 'stage') then p->'newMeasure'->>'signal' else 'time' end;
       mid := 'm-' || public._slug(v_name) || '-' || public._rid();
       insert into public.kb_records (collection, id, doc) values ('measures', mid, jsonb_build_object(
         'name', v_name, 'short', '', 'aka', '[]'::jsonb,
-        'domain', case v_sig when 'freq' then 'Frequency' when 'phase' then 'Frequency / phase' else 'Time (ERP)' end,
+        'domain', case v_sig when 'freq' then 'Frequency' when 'phase' then 'Frequency / phase' when 'stage' then 'Sleep staging' else 'Time (ERP)' end,
         'signal', v_sig, 'spec', coalesce(p->'newMeasure'->>'spec', ''),
         'specRefs', jsonb_build_array(jsonb_build_object('s', sid, 'p', coalesce(p->>'pages', ''))),
         'window', null, 'windowNote', '', 'bands', v_band, 'bandsNote', '', 'sites', v_sites, 'sitesNote', v_snote,
@@ -603,6 +635,11 @@ begin
               then jsonb_build_object('bands', v_band, 'bandsNote', '') else '{}'::jsonb end,
     updated_at = now()
   where collection = 'measures' and id = mid;
+  -- Notes for the signal's measurement guide, cited to this link's paper and pages.
+  if jsonb_typeof(p->'guide') = 'object' then
+    update public.kb_records set doc = public._guide_add(doc, p->'guide', sid, coalesce(p->>'pages', '')), updated_at = now()
+    where collection = 'measures' and id = mid;
+  end if;
 
   -- Topic.
   cid := nullif(p->>'constructId', '');
@@ -703,6 +740,10 @@ begin
   if ch ? 'bands' then
     m_new := m_new || jsonb_build_object('bands', public._bands(ch->'bands'),
       'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'bands' else '[]'::jsonb end);
+  end if;
+  -- Notes for the measurement guide come with a link, so they can be cited to its paper and pages.
+  if eid is not null then
+    m_new := public._guide_add(m_new, ch->'guide', e_new->>'sourceId', e_new->>'pages');
   end if;
 
   if e_new is not distinct from e_old and m_new is not distinct from m_old then

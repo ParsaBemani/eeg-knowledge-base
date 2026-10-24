@@ -22,6 +22,7 @@
   --time:#2650C4; --time-soft:#E3EAFA;
   --freq:#9A5300; --freq-soft:#F6E9D6;
   --phase:#86379A; --phase-soft:#F1E2F4;
+  --stage:#3D6B1C; --stage-soft:#E6F0DC;
   --hl:#EFC94C; --hl-soft:rgba(239,201,76,.42);
   --warn:#AE3D0C; --warn-soft:#FBE7DD; --ok:#2A774A; --ok-soft:#E0F1E6;
   --scrim:rgba(12,18,22,.38);
@@ -40,6 +41,7 @@
   --time:#8AA8FF; --time-soft:#1A2547;
   --freq:#F0A650; --freq-soft:#382813;
   --phase:#D394E5; --phase-soft:#33203A;
+  --stage:#A6D98A; --stage-soft:#1E2B14;
   --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
   --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
   --scrim:rgba(0,0,0,.55);
@@ -54,6 +56,7 @@
   --time:#8AA8FF; --time-soft:#1A2547;
   --freq:#F0A650; --freq-soft:#382813;
   --phase:#D394E5; --phase-soft:#33203A;
+  --stage:#A6D98A; --stage-soft:#1E2B14;
   --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
   --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
   --scrim:rgba(0,0,0,.55);
@@ -146,6 +149,7 @@ main{padding-block:24px 72px}
 .chip.t{background:var(--time-soft);color:var(--time);border-color:transparent}
 .chip.f{background:var(--freq-soft);color:var(--freq);border-color:transparent}
 .chip.p{background:var(--phase-soft);color:var(--phase);border-color:transparent}
+.chip.s{background:var(--stage-soft);color:var(--stage);border-color:transparent}
 .chip.contributed{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .chip.cl-attributed{background:var(--panel);color:var(--ink);border-color:var(--ink-3)}
 .chip.cl-inferred{background:var(--time-soft);color:var(--time);border-color:transparent}
@@ -200,6 +204,44 @@ button.chip:hover{border-color:var(--ink-3);color:var(--ink)}
 .basics h3{font-size:18px}
 .basics p{font-size:14.5px;color:var(--ink-2)}
 .footline{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:13.5px;color:var(--ink-3);padding-top:14px;border-top:1px solid var(--rule)}
+.home{max-width:760px;width:100%;margin:clamp(8px,7vh,72px) auto 0;display:flex;flex-direction:column;gap:16px}
+.home h1{font-size:clamp(30px,5.2vw,48px);font-weight:780;font-stretch:114%;line-height:1.04;letter-spacing:-.015em}
+.home .lede{font-size:16.5px;color:var(--ink-2);max-width:62ch}
+.home .hsearch{max-width:none}
+.home .hsearch > svg{bottom:auto;top:50%;transform:translateY(-50%)}
+.home .hsearch input{font-size:17px;padding-block:15px}
+.home-links{font-size:14px;color:var(--ink-2)}
+.home + .footline{max-width:760px;width:100%;margin:clamp(24px,10vh,96px) auto 0}
+.guide{display:flex;flex-direction:column;gap:16px;max-width:920px;width:100%;margin-inline:auto}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:14px;color:var(--ink-3)}
+.gd-head h1{font-size:clamp(26px,4vw,36px);font-weight:760;font-stretch:108%;line-height:1.1}
+.gd-sum{font-size:16.5px;max-width:70ch}
+.gd-step h2{display:flex;align-items:center;gap:10px;font-size:20px}
+.gd-step h2 .n{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 15px var(--f-body);flex:none}
+.gd-step h3{font-size:15px}
+.gd-text{font-size:15px;max-width:72ch}
+.gd-setup{display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start}
+.gd-fig{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.gd-fig figcaption{font-size:12px;color:var(--ink-3);text-align:center}
+.gd-setup-r{display:flex;flex-direction:column;gap:10px;min-width:0}
+.gd-els{list-style:none;padding:0;margin:0;display:flex;flex-direction:column}
+.gd-els li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:7px 0;border-top:1px solid var(--grid);font-size:14px}
+.gd-els li:first-child{border-top:0}
+.gd-els .nm{font:700 15px var(--f-mono);color:var(--accent)}
+.gd-els .rg{font-weight:700}
+.gd-els .ds{color:var(--ink-2);font-size:13.5px}
+.gd-list{display:flex;flex-direction:column;gap:9px;padding-left:20px;font-size:15px;max-width:76ch}
+.gd-list li::marker{color:var(--accent)}
+.gd-list.warn li::marker{color:var(--warn)}
+.gd-general{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;background:var(--panel-2);max-width:76ch}
+.gd-ruler{display:flex;flex-direction:column;gap:8px;max-width:520px}
+.gd-open{align-self:flex-start;margin-top:4px}
+.gnotes{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;background:var(--panel-2)}
+.gnotes > summary{cursor:pointer;font-weight:700;font-size:14px}
+.gnotes .gn-body{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.gd-mini{margin:0;padding-left:18px}
+@media (max-width:680px){.gd-setup{grid-template-columns:1fr}.gd-fig{justify-self:center}}
+@media print{.topbar,.banner,.crumbs,.gd-actions,.dr-top .btn,.dr-editmenu,#toast,details.more-d{display:none!important}.panel{border:0;padding:0}body{background:#fff}.guide{max-width:none}}
 
 details.more-d{border-top:1px solid var(--grid);padding-top:10px}
 details.more-d > summary{list-style:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;color:var(--ink);padding:4px 0}
@@ -295,7 +337,7 @@ details.more-d[open] > summary{margin-bottom:10px}
 .cap{font:11.5px/1.4 var(--f-mono);color:var(--ink-2);margin-top:3px}
 
 .scalp{display:block;color:var(--ink-3);overflow:visible}
-.scalp.t{color:var(--time)} .scalp.f{color:var(--freq)} .scalp.p{color:var(--phase)}
+.scalp.t{color:var(--time)} .scalp.f{color:var(--freq)} .scalp.p{color:var(--phase)} .scalp.s{color:var(--stage)}
 .scalp .hd,.scalp .ear,.scalp .nose{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:3}
 .scalp .el{fill:var(--rule)}
 .scalp .el.on{fill:currentColor;stroke:var(--panel);stroke-width:2}
@@ -617,7 +659,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
       </button>
       <div class="search" role="search">
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search a topic or signal, e.g. memory, N400" aria-label="Search the knowledge base" aria-controls="sres">
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="What do you want to measure? e.g. REM sleep duration" aria-label="Search for what you want to measure" aria-controls="sres">
         <div id="sres" class="sres" hidden></div>
       </div>
       <div class="acct" id="acct" hidden></div>
@@ -627,12 +669,12 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
         <button class="tab" data-act="go" data-route="overview">Home</button>
         <button class="tab" data-act="go" data-route="constructs">Topics</button>
         <button class="tab" data-act="go" data-route="measures">EEG signals</button>
-        <button class="tab" data-act="go" data-route="planner">Plan a study</button>
         <button class="tab" data-act="go" data-route="learn">EEG basics</button>
       </div>
       <div class="more">
         <button class="tab" id="more-btn" data-act="more" aria-expanded="false" aria-controls="more-menu">More</button>
         <div class="more-menu" id="more-menu" hidden>
+          <button data-act="go" data-route="planner"><b>Plan a study</b><span>Compare signals for a topic and draft a plan</span></button>
           <button data-act="go" data-route="sources"><b>Source papers</b><span>The six papers every link comes from</span></button>
           <button data-act="go" data-route="map"><b>Topic–signal map</b><span>Every link drawn as one diagram</span></button>
           <button data-act="go" data-route="contribute"><b>Contribute</b><span>Suggest a new link from a paper</span></button>
@@ -655,6 +697,7 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
   <section class="view" id="v-sources" aria-label="Sources" hidden></section>
   <section class="view" id="v-contribute" aria-label="Contribute" hidden></section>
   <section class="view" id="v-data" aria-label="Data and export" hidden></section>
+  <section class="view" id="v-guide" aria-label="Measurement guide" hidden></section>
   <section class="view" id="v-admin" aria-label="Admin" hidden></section>
   <section class="view" id="v-review" aria-label="Review a suggestion" hidden></section>
 </main>
@@ -722,7 +765,8 @@ const FEATURED = ['memory', 'attention', 'sensory', 'language', 'hearing', 'cont
 const SIG = {
   time:{label:'Time (ERP)', plain:'ERP', many:'ERPs', tip:'Event-related potential: the average voltage change locked to an event, measured in milliseconds.', k:'t'},
   freq:{label:'Frequency', plain:'Brain rhythm', many:'brain rhythms', tip:'Oscillation: the strength of rhythmic activity in a frequency band, measured in hertz.', k:'f'},
-  phase:{label:'Frequency / phase', plain:'Rhythm coupling', many:'rhythm-coupling measures', tip:'How the timing of one rhythm relates to another rhythm.', k:'p'}
+  phase:{label:'Frequency / phase', plain:'Rhythm coupling', many:'rhythm-coupling measures', tip:'How the timing of one rhythm relates to another rhythm.', k:'p'},
+  stage:{label:'Sleep staging', plain:'Sleep scoring', many:'sleep-scoring measures', tip:'Each 30-second stretch of an overnight recording is given a sleep stage from EEG, eye and chin signals.', k:'s'}
 };
 /* Families of related signals, used to group the EEG signals page. */
 const GROUPS = [
@@ -795,7 +839,7 @@ function sitesOf(m) { return arr(m.sites); }
 function specMissing(m) {
   const miss = [], s = sigOf(m);
   if (s === 'time' && !winOf(m)) miss.push('time window');
-  if (s !== 'time' && !bandsOf(m).length) miss.push('frequency band');
+  if ((s === 'freq' || s === 'phase') && !bandsOf(m).length) miss.push('frequency band');
   if (!sitesOf(m).length) miss.push('standard (10–20) electrode sites');
   return miss;
 }
@@ -848,15 +892,15 @@ const S = {
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
   plan: {c: '', pop: 'adults', para: 'either'},
-  drawer: null, drEdit: null, prefill: null, edit: null,
+  drawer: null, drEdit: null, guideId: null, navs: 0, prefill: null, edit: null,
   /* Supabase mode (sign-in, email approvals): see connectSupabase */
   sb: null, sbMode: false, sbNote: '', session: null,
   adm: {admins: [], invites: [], activity: [], loaded: false},
   review: {token: '', decision: '', data: null, done: null, busy: false},
   armed: null
 };
-const ROUTES = ['overview', 'constructs', 'measures', 'map', 'planner', 'learn', 'sources', 'contribute', 'data', 'admin', 'review'];
-const MORE_ROUTES = {sources:'Source papers', map:'Topic–signal map', contribute:'Contribute', data:'Data & export', admin:'Admin'};
+const ROUTES = ['overview', 'constructs', 'measures', 'guide', 'map', 'planner', 'learn', 'sources', 'contribute', 'data', 'admin', 'review'];
+const MORE_ROUTES = {planner:'Plan a study', sources:'Source papers', map:'Topic–signal map', contribute:'Contribute', data:'Data & export', admin:'Admin'};
 
 /* ---------- derived model ---------- */
 let MODEL = null;
@@ -1075,26 +1119,17 @@ const V = {};
 V.overview = {
   mount(el) {
     el.innerHTML =
-      '<div class="hero"><div class="hero-text">' +
-        '<h1>Find the EEG signal that fits what you want to study</h1>' +
-        '<p class="lede">Pick a topic such as memory or attention. You will see which EEG signals research papers link to it, how strong each link is, and the page to cite.</p>' +
-        '<div class="hsearch" role="search"><label for="hq">What do you want to study?</label>' +
-          '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="Type a topic or a signal name" aria-controls="hres">' +
+      '<div class="home">' +
+        '<h1 id="home-q">What do you want to measure?</h1>' +
+        '<p class="lede">Search for a brain process or an EEG signal. You get a step-by-step guide: where to put the electrodes, what to look for in the recording, what number to report, and the paper and page behind each step.</p>' +
+        '<div class="hsearch" role="search">' +
+          '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. REM sleep duration, working memory, P300" aria-labelledby="home-q" aria-controls="hres">' +
           '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' +
           '<div id="hres" class="sres" hidden></div></div>' +
         '<div class="tries" id="ov-tries"><span>Try:</span></div>' +
-      '</div><div class="hero-trace" id="hero-trace"></div></div>' +
-      '<div class="sh-row"><h2>Or start with a topic area</h2><button class="link" data-act="family" data-fam="all">See all topics</button></div>' +
-      '<div class="tiles" id="ov-tiles"></div>' +
-      '<div class="sh-row"><h2>How to use the site</h2></div>' +
-      '<ol class="steps">' +
-        '<li><b>Pick a topic</b><span>Choose what you want to study, for example working memory.</span></li>' +
-        '<li><b>Compare the signals</b><span>See which EEG signals are linked to it, and when and where on the head each one is measured.</span></li>' +
-        '<li><b>Check the source</b><span>Every link names the paper and page it comes from, so you can read it and cite it.</span></li>' +
-      '</ol>' +
-      '<div class="basics"><div><h3>New to EEG?</h3><p>A five-minute primer covers the two kinds of EEG signals, how electrode names work, and how to read the labels on this site.</p></div><button class="btn primary" data-act="go" data-route="learn">Learn the basics</button></div>' +
+        '<p class="home-links">Not sure what to search? <button class="link" data-act="go" data-route="constructs">Browse topics</button> · <button class="link" data-act="go" data-route="measures">Browse EEG signals</button> · <button class="link" data-act="go" data-route="learn">New to EEG? Learn the basics</button></p>' +
+      '</div>' +
       '<div class="footline" id="ov-foot"></div>';
-    heroTrace();
     const hq = $('#hq');
     hq.addEventListener('input', () => runSearch(hq, $('#hres')));
     hq.addEventListener('focus', () => { if (hq.value.trim()) runSearch(hq, $('#hres')); });
@@ -1103,18 +1138,12 @@ V.overview = {
   update(el) {
     const M = model();
     const ready = S.status === 'ready' || S.status === 'empty';
-    const tries = [['c-working-memory', null], ['c-selective-attention', null], ['c-sound-change', null], [null, 'm-n400'], [null, 'm-alpha']];
+    const tries = [['m', 'm-rem-sleep-scoring-56c09', 'REM sleep duration'], ['c', 'c-working-memory'], ['c', 'c-selective-attention'], ['m', 'm-n400'], ['m', 'm-alpha', 'Alpha power']];
     $('#ov-tries').innerHTML = '<span>Try:</span>' + tries.map(t => {
-      if (t[0] && M.cById.has(t[0])) return '<button data-act="open-construct" data-id="' + t[0] + '">' + esc(M.cById.get(t[0]).name) + '</button>';
-      if (t[1] && M.mById.has(t[1])) return '<button data-act="open-measure" data-id="' + t[1] + '">' + esc(short(M.mById.get(t[1]))) + '</button>';
+      if (t[0] === 'c' && M.cById.has(t[1])) return '<button data-act="open-construct" data-id="' + t[1] + '">' + esc(t[2] || M.cById.get(t[1]).name) + '</button>';
+      if (t[0] === 'm' && M.mById.has(t[1])) return '<button data-act="open-measure" data-id="' + t[1] + '">' + esc(t[2] || short(M.mById.get(t[1]))) + '</button>';
       return '';
     }).join('');
-    const tiles = FEATURED.map(id => {
-      const cs = M.constructs.filter(c => famOf(c) === id);
-      if (ready && !cs.length) return '';
-      return '<button class="tile" data-act="family" data-fam="' + id + '"><b>' + esc(FAM[id].label) + '</b><span class="d">' + esc(FAM[id].desc) + '</span><span class="n">' + (ready ? plural(cs.length, 'topic') : 'Loading…') + '</span></button>';
-    }).join('');
-    $('#ov-tiles').innerHTML = tiles;
     $('#ov-foot').innerHTML = ready
       ? '<span>Built from ' + plural(M.sources.length, 'research paper') + ': ' + plural(M.entries.length, 'link') + ' between ' + plural(M.constructs.length, 'topic') + ' and ' + plural(M.measures.length, 'EEG signal') + '.</span><button class="link" data-act="go" data-route="sources">See the papers</button>' +
         (S.static && S.static.repo ? '<a href="' + esc(S.static.repo) + '" target="_blank" rel="noopener">Source on GitHub ↗</a>' : '')
@@ -1172,14 +1201,14 @@ function constructDetail(c, M) {
   const srcN = uniq(es.map(e => e.sourceId).filter(Boolean)).length;
   h += '<p class="insum">' + (ms.length === 1
     ? 'The papers link <b>one EEG signal</b> to this topic'
-    : 'The papers link <b>' + ms.length + ' EEG signals</b> to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Click a signal to see how it is measured.</p>';
-  h += '<div class="sec">';
+    : 'The papers link <b>' + ms.length + ' EEG signals</b> to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Each one has a step-by-step measurement guide.</p>';
+  h += '<div class="sec"><h3>Ways to measure it</h3>';
   ms.forEach(m => {
     const mes = es.filter(e => e.measureId === m.id);
     const best = mes.slice().sort((a, b) => (CLAIM[b.claimType] || CLAIM.attributed).rank - (CLAIM[a.claimType] || CLAIM.attributed).rank)[0];
     const np = uniq(mes.map(e => e.sourceId).filter(Boolean)).length;
     h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + (np > 1 ? '<span class="chip" title="Papers that make this link">' + np + ' papers</span>' : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
-      '<span class="small muted">' + esc(m.spec || '') + '</span></div>' +
+      '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button></div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
   h += '</div>';
@@ -1202,7 +1231,7 @@ function constructDetail(c, M) {
 
 V.measures = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>EEG signals</h2></div><p>Every EEG signal in the knowledge base, with when and where on the head it is measured. Click a card for the full details.</p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>EEG signals</h2></div><p>Every EEG signal in the knowledge base, grouped into families. Click a card to open its step-by-step measurement guide.</p></div>' +
       '<div class="toolbar">' +
         '<input id="mf-q" class="grow" type="search" placeholder="Search by name, topic or electrode" aria-label="Search signals">' +
         '<div class="seg" role="group" aria-label="Signal type" id="mf-sig"></div>' +
@@ -1218,7 +1247,7 @@ V.measures = {
   update(el) {
     const M = model(), f = S.mf;
     const q = $('#mf-q'); if (q && q.value !== f.q && document.activeElement !== q) q.value = f.q;
-    $('#mf-sig').innerHTML = [['all', 'All'], ['time', 'ERPs'], ['freq', 'Brain rhythms'], ['phase', 'Rhythm coupling']].map(o => '<button data-act="mf-sig" data-v="' + o[0] + '" aria-pressed="' + (f.signal === o[0]) + '">' + o[1] + '</button>').join('');
+    $('#mf-sig').innerHTML = [['all', 'All'], ['time', 'ERPs'], ['freq', 'Brain rhythms'], ['phase', 'Rhythm coupling'], ['stage', 'Sleep scoring']].map(o => '<button data-act="mf-sig" data-v="' + o[0] + '" aria-pressed="' + (f.signal === o[0]) + '">' + o[1] + '</button>').join('');
     $('#mf-view').innerHTML = [['cards', 'Cards'], ['table', 'Spreadsheet']].map(o => '<button data-act="mf-view" data-v="' + o[0] + '" aria-pressed="' + (f.view === o[0]) + '">' + o[1] + '</button>').join('');
     const fam = $('#mf-fam');
     fam.innerHTML = '<option value="all">All topic areas</option>' + FAMILIES.filter(x => M.constructs.some(c => famOf(c) === x.id)).map(x => '<option value="' + x.id + '">' + esc(x.label) + '</option>').join('');
@@ -1569,7 +1598,7 @@ V.learn = {
     const mB = m ? '<button class="link" data-act="open-measure" data-id="' + m.id + '">' + esc(short(m)) + '</button>' : 'one of its signals';
     $('#ln-walk').innerHTML =
       '<li><span>Open <b>Topics</b> and pick ' + cB + ', which sits under Hearing.</span></li>' +
-      '<li><span>Click the ' + mB + ' signal. The panel shows when it appears after a sound and where on the head it is measured.</span></li>' +
+      '<li><span>Click the ' + mB + ' signal. Its measurement guide shows where to put the electrodes, what to look for and what number to report.</span></li>' +
       (m && m.feasibility && m.feasibility.passive === true
         ? '<li><span>Check the green badges near the top. A paper notes that this signal can be recorded without a task, which matters if you study infants or patients.</span></li>'
         : '<li><span>Read the short description at the top, then the list of topics the signal is linked to.</span></li>') +
@@ -1730,7 +1759,7 @@ function plVisibility() {
     const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
     box.hidden = false;
     $('#pl-sites-part').hidden = false;
-    $('#pl-band-part').hidden = !(em && (sigOf(em) !== 'time' || nb));
+    $('#pl-band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
     $('#f-place-intro').textContent = (em && sitesOf(em).length
       ? 'These are the electrodes on the site now. Drag, add or remove them to match the paper.'
       : 'This signal has no electrodes on the site yet. Add them here if the paper gives them.') +
@@ -1740,7 +1769,7 @@ function plVisibility() {
   const sel = $('#f-measure').value, isNew = sel === '__new';
   const m = sel && !isNew ? model().mById.get(sel) : null;
   const needSites = isNew || !!(m && !sitesOf(m).length);
-  const needBand = isNew || !!(m && !bandsOf(m).length && sigOf(m) !== 'time');
+  const needBand = isNew || !!(m && !bandsOf(m).length && (sigOf(m) === 'freq' || sigOf(m) === 'phase'));
   box.hidden = !(needSites || needBand);
   $('#pl-sites-part').hidden = !needSites;
   $('#pl-band-part').hidden = !needBand;
@@ -1902,7 +1931,20 @@ function editRowsHTML(p, live) {
       extra = [add.length ? 'Added ' + add.map(x => x + ' (' + siteInfo(x).region.toLowerCase() + ')').join(', ') : '', rem.length ? 'Removed ' + rem.join(', ') : ''].filter(Boolean).join('. ');
     }
     return '<dt>' + esc(f[1]) + '</dt><dd><span class="was">' + esc(editVal(k, before[k])) + '</span> → <b>' + esc(editVal(k, ch[k])) + '</b>' + (extra ? '<br><span class="note">' + esc(extra) + '</span>' : '') + '</dd>';
-  }).join('');
+  }).join('') + guideNotesHTML(ch.guide, 'Notes to add to the guide');
+}
+/* Notes for a signal's measurement guide, sent with a suggestion or an edit. */
+const GUIDE_KEYS = [['setup', 'Set-up'], ['lookFor', 'What to look for'], ['quantify', 'What number to report'], ['caveats', 'Watch out for']];
+function guideLines() {
+  const lines = id => ($('#' + id) && $('#' + id).value || '').split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 8);
+  const g = {setup: lines('f-g-setup'), lookFor: lines('f-g-look'), quantify: lines('f-g-quant'), caveats: lines('f-g-warn')};
+  return Object.keys(g).some(k => g[k].length) ? g : null;
+}
+function guideNotesHTML(g, label) {
+  if (!g || typeof g !== 'object') return '';
+  const items = [];
+  GUIDE_KEYS.forEach(k => arr(g[k[0]]).forEach(t => { if (String(t).trim()) items.push('<li><b>' + esc(k[1]) + ':</b> ' + esc(t) + '</li>'); }));
+  return items.length ? '<dt>' + esc(label || 'Notes for the guide') + '</dt><dd><ul class="gd-mini">' + items.join('') + '</ul></dd>' : '';
 }
 function startEdit(entryId, measureId) {
   const e = entryId ? S.raw.entries.get(entryId) : null, mid = e ? e.measureId : measureId;
@@ -1946,6 +1988,7 @@ function editPayload() {
     const band = parseBand(), bands = (band && !band.error ? [band] : []).concat(b.bands.slice(1));
     if (!same(bands, b.bands)) ch.bands = bands;
   }
+  if (E.entryId) { const g = guideLines(); if (g) ch.guide = g; }
   const before = {};
   Object.keys(ch).forEach(k => { before[k] = b[k]; });
   const e = E.entryId ? S.raw.entries.get(E.entryId) : null;
@@ -1966,7 +2009,7 @@ async function submitEdit(setMsg) {
     const {error} = await S.sb.from('submissions').insert({payload: payload});
     if (error) throw error;
     S.edit = null;
-    $('#ct-form').reset(); resetPlacer();
+    $('#ct-form').reset(); resetPlacer(); $('#f-guide').open = false;
     setMsg('Sent. The admins have been emailed, and you\'ll get an email when they have reviewed your edit.');
     toast('Edit sent');
     await loadSubs();
@@ -1983,7 +2026,7 @@ V.contribute = {
         '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
         '<div class="subform" id="f-newm" hidden><span class="eyebrow">New measure</span>' +
           '<div class="field"><label for="f-m-name">Measure name</label><input id="f-m-name" maxlength="140"></div><div class="dupbox" id="f-m-dup" hidden></div>' +
-          '<div class="field"><label for="f-m-signal">Signal domain</label><select id="f-m-signal"><option value="time">Time (ERP)</option><option value="freq">Frequency</option><option value="phase">Frequency / phase</option></select></div>' +
+          '<div class="field"><label for="f-m-signal">Signal domain</label><select id="f-m-signal"><option value="time">Time (ERP)</option><option value="freq">Frequency</option><option value="phase">Frequency / phase</option><option value="stage">Sleep scoring</option></select></div>' +
           '<div class="field wide"><label for="f-m-spec">Specification as the source gives it</label><input id="f-m-spec" maxlength="300"></div></div>' +
         '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
           '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
@@ -2014,7 +2057,14 @@ V.contribute = {
         '<div class="frow"><div class="field"><label for="f-paradigm">Paradigm or task</label><input id="f-paradigm" maxlength="200"></div>' +
           '<div class="field"><label for="f-pop">Population</label><input id="f-pop" maxlength="200"></div></div>' +
         '<div class="frow"><div class="field"><label for="f-beh">Behavioural outcome</label><input id="f-beh" maxlength="200"></div>' +
-          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div></div>' +
+          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div>' +
+        '<details class="gnotes" id="f-guide"><summary>Add to the measurement guide (optional)</summary><div class="gn-body">' +
+          '<p class="small muted">Does the paper explain how to record or measure this signal? Add it here, one point per line. Each point is cited to the paper and page(s) above.</p>' +
+          '<div class="field"><label for="f-g-setup">How to set up the recording</label><textarea id="f-g-setup" rows="2" maxlength="1500" placeholder="e.g. Record EEG from Fz, Cz and Pz, referenced to the linked mastoids."></textarea></div>' +
+          '<div class="field"><label for="f-g-look">What to look for in the recording</label><textarea id="f-g-look" rows="2" maxlength="1500"></textarea></div>' +
+          '<div class="field"><label for="f-g-quant">What number to report</label><textarea id="f-g-quant" rows="2" maxlength="1500"></textarea></div>' +
+          '<div class="field"><label for="f-g-warn">What to watch out for</label><textarea id="f-g-warn" rows="2" maxlength="1500"></textarea></div>' +
+        '</div></details></div>' +
         '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
         '<div class="dupbox" id="f-link-dup" hidden></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
@@ -2132,7 +2182,7 @@ function subHTML(s, M) {
   }
   if (S.sbMode) {
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
-      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
+      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + guideNotesHTML(s.guide) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
@@ -2188,7 +2238,7 @@ async function submitEntry(ev) {
       sourceId: sSel === '__new' ? null : sSel,
       reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
       pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
-      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
+      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites'), guide: guideLines()
     }, place);
     // A likely duplicate needs a second press, so it is sent only on purpose.
     if (S.dupStrong && S.armed !== 'dup-send') { armKey('dup-send'); return setMsg('This looks like something already on the site (see the yellow note above). Press Send again to send it anyway.', true); }
@@ -2198,7 +2248,7 @@ async function submitEntry(ev) {
     try {
       const {error} = await S.sb.from('submissions').insert({payload: payload});
       if (error) throw error;
-      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck();
+      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck(); $('#f-guide').open = false;
       setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
       toast('Suggestion sent');
       await loadSubs();
@@ -2650,7 +2700,7 @@ V.review = {
         row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
         row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
         row('Electrodes', placeText(p).sites) + row('Frequency range', placeText(p).band) +
-        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>' + dupHintsHTML(R.data.dup_hints)) +
+        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + guideNotesHTML(p.guide) + '</dl>' + dupHintsHTML(R.data.dup_hints)) +
         '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
         '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
         '<div class="field"><label for="rv-note">Reason (emailed to the contributor if you reject)</label><textarea id="rv-note" maxlength="500"></textarea></div>' +
@@ -2806,15 +2856,11 @@ function drawerHTML(m, M) {
     '<div class="btns"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy preregistration notes</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
 }
 let lastFocus = null;
+/* Every signal opens as a full-page measurement guide (#guide/<id>), so it can be bookmarked and shared. */
 function openMeasure(id) {
   if (!S.raw.measures.has(id)) return;
-  S.drawer = id; S.drEdit = null;
-  lastFocus = document.activeElement;
-  renderDrawer();
-  $('#scrim').hidden = false;
-  const d = $('#drawer'); d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
-  $('#dr-body').scrollTop = 0;
-  setTimeout(() => { const b = $('.dr-bar .btn'); if (b) b.focus(); }, 30);
+  S.guideId = id; S.drEdit = null;
+  go('guide');
 }
 function closeDrawer() {
   if (!S.drawer) return;
@@ -2830,29 +2876,177 @@ function renderDrawer() {
   $('#dr-body').innerHTML = m ? drawerHTML(m, M) : '<div class="empty">This measure is no longer in the knowledge base.</div>';
 }
 
+/* ---------- measurement guide: one page per signal ---------- */
+/* Standard EEG practice, shown (and labelled as such) only where the papers on the site give no specifics. */
+const GENERAL = {
+  setup: {
+    time: 'Record EEG while you present the events this signal responds to, and mark the moment of each event in the recording so that trials can be averaged.',
+    freq: 'Record continuous EEG during the condition you care about (for example eyes-closed rest, a task, or sleep), with enough clean minutes in each condition.',
+    phase: 'Record continuous EEG during the condition you care about, long enough to estimate both rhythms reliably.',
+    stage: 'Record the whole night with EEG, eye-movement and chin-muscle channels (polysomnography).'},
+  quantify: {
+    time: 'Average many trials for each condition, then take the mean voltage within the time window at the electrodes of interest, measured against the pre-event baseline, and compare conditions.',
+    lateral: 'Average many trials, then take the voltage at the electrode opposite the attended or responding side minus the same side, within the time window, and compare conditions.',
+    freq: 'Compute power in the frequency band at the electrodes of interest, and compare it between conditions or with a baseline period.',
+    phase: 'Measure how strongly the phase of the slower rhythm predicts the amplitude of the faster one, and compare it with a baseline or shuffled data.',
+    stage: 'Count the 30-second epochs scored in this stage, and report minutes and the percentage of total sleep.'}
+};
+function guidePoints(list, cls) { return '<ul class="gd-list' + (cls ? ' ' + cls : '') + '">' + list.map(t => '<li>' + esc(t.t) + ' ' + refHTML(t.refs) + '</li>').join('') + '</ul>'; }
+function generalNote(text) {
+  return '<div class="gd-general"><span class="eyebrow">General practice</span><p>' + esc(text) + '</p><p class="small muted">Standard EEG practice, not taken from the papers on this site. If a paper gives specifics, add them with Suggest an edit.</p></div>';
+}
+function gdStep(n, title, body) { return '<section class="gd-step panel"><h2><span class="n">' + n + '</span>' + esc(title) + '</h2>' + body + '</section>'; }
+function guideHTML(m, M) {
+  const es = M.byM.get(m.id) || [], cs = consFor(M, m.id), f = m.feasibility || {}, sk = sigOf(m);
+  const known = sitesOf(m).filter(x => SITES[x]), miss = specMissing(m), fam = GRP[grpOf(m)];
+  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>Suggest an edit</button>' : '';
+  const editMenu = canSuggestEdit() && S.drEdit === m.id && es.length > 1
+    ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head and notes for this guide.</p>' +
+      es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
+        const c = M.cById.get(e.constructId), src = e.sourceId ? M.sById.get(e.sourceId) : null;
+        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', p. ' + e.pages : '')) + '</span></button>';
+      }).join('') +
+      '<button data-act="edit-measure" data-id="' + esc(m.id) + '"><span>Only the electrodes and frequency range</span><span class="sub">No link changes</span></button></div>'
+    : '';
+  const badges = [];
+  if (f.passive === true) badges.push(['ok', 'No task needed']);
+  if (f.passive === false) badges.push(['', 'Needs a task']);
+  if (f.infants === true) badges.push(['ok', 'Used with infants']);
+  let h = '<nav class="crumbs" aria-label="Where you are"><button class="link" data-act="back">← Back</button><span aria-hidden="true">·</span>' +
+    '<button class="link" data-act="go" data-route="measures">All EEG signals</button><span aria-hidden="true">›</span><span>' + esc(fam.label) + '</span></nav>';
+  h += '<header class="gd-head panel"><div class="dr-top"><div class="chips">' + sigChip(m) + contribChip(m.provenance) +
+      badges.map(b => '<span class="bdg ' + b[0] + '" title="' + esc(f.note || '') + '">' + esc(b[1]) + '</span>').join('') + '</div>' + editTop + '</div>' + editMenu +
+    '<span class="eyebrow">Measurement guide</span><h1>' + esc(m.name) + '</h1>' +
+    '<p class="gd-sum">' + esc(m.summary || m.spec || '') + (m.summary ? '' : ' ' + refHTML(m.specRefs)) + '</p>' +
+    (arr(m.aka).length ? '<p class="small muted">Also called: ' + esc(m.aka.slice(0, 5).join(', ')) + (m.aka.length > 5 ? ' and ' + (m.aka.length - 5) + ' more' : '') + '</p>' : '') +
+    '<p class="small muted">The papers link it to: ' + (cs.length ? cs.map(c => '<button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>').join(', ') : 'no topic yet') + '</p></header>';
+  // 1. Set up the recording
+  const elList = '<ul class="gd-els">' + known.map(k => {
+    const i = siteInfo(k), isRef = /^[MA]\d/.test(k);
+    return '<li><b class="nm">' + k + '</b><span><span class="rg">' + esc((isRef ? 'Reference: ' : '') + i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span></li>';
+  }).join('') + '</ul>';
+  const note = m.sitesNote && !/^not (given|specified)/i.test(m.sitesNote) ? m.sitesNote : '';
+  h += gdStep(1, 'Set up the recording',
+    '<div class="gd-setup"><figure class="gd-fig">' + scalp(m, 220, true) + '<figcaption>Head seen from above, nose at the top</figcaption></figure><div class="gd-setup-r">' +
+      (known.length ? '<h3>Where to put the EEG electrodes</h3>' + elList
+        : '<div class="callout warn"><b>The papers on the site do not give the electrode sites</b><span>Choose them before you record, and report your choice.' +
+          (canSuggestEdit() ? ' If a paper gives them, <button class="link" data-act="edit-measure" data-id="' + esc(m.id) + '">add them</button>.' : '') + '</span></div>') +
+      (note ? '<p class="small">' + esc(note) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</p>' : '') +
+      (m.lateralized ? '<p class="small">Measured as the side opposite the stimulus or response minus the same side.</p>' : '') +
+    '</div></div>' +
+    (arr(m.setup).length ? '<h3>Recording set-up</h3>' + guidePoints(m.setup) : generalNote(GENERAL.setup[sk])));
+  // 2. What to look for
+  const timing = sk === 'time' ? (winOf(m) ? winText(m) : '') : (sk === 'freq' || sk === 'phase') ? bandsOf(m).map(bandText).join(', ') : '';
+  const tNote = sk === 'time' ? m.windowNote : m.bandsNote;
+  h += gdStep(2, 'What to look for in the recording',
+    (arr(m.lookFor).length ? guidePoints(m.lookFor) : '<p class="gd-text">' + esc(m.spec || 'Not described in the papers yet.') + ' ' + refHTML(m.specRefs) + '</p>') +
+    (sk !== 'stage' ? '<div class="gd-ruler">' + ruler(m, false) + '<dl class="kv"><dt>' + (sk === 'time' ? 'When' : 'Frequency') + '</dt><dd>' +
+      (timing ? esc(timing) : 'Not given in the papers') + (tNote ? '<br><span class="note">' + esc(tNote) + '</span>' : '') + '</dd></dl></div>' : ''));
+  // 3. What number to report
+  h += gdStep(3, 'What number to report', arr(m.quantify).length ? guidePoints(m.quantify) : generalNote(m.lateralized ? GENERAL.quantify.lateral : GENERAL.quantify[sk]));
+  // 4. Watch out for
+  const auto = [];
+  if (miss.length) auto.push('The papers on the site do not give the ' + miss.join(' or ') + '. Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.');
+  if (cs.length > 1) auto.push('This signal is linked to ' + cs.length + ' topics, so a change in it alone does not show which one is involved. Include a condition that rules the others out.');
+  h += gdStep(4, 'Watch out for',
+    (arr(m.caveats).length ? guidePoints(m.caveats, 'warn') : '') +
+    (auto.length ? '<ul class="gd-list warn">' + auto.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '') +
+    (arr(m.methods).length ? '<h3>Tips</h3>' + guidePoints(m.methods, 'ok') : '') +
+    (!arr(m.caveats).length && !auto.length && !arr(m.methods).length ? '<p class="small muted">No cautions recorded yet.</p>' : ''));
+  // Sources behind this guide
+  const used = new Map();
+  [].concat(arr(m.specRefs), ...['setup', 'lookFor', 'quantify', 'caveats', 'methods'].map(k => [].concat(...arr(m[k]).map(x => arr(x.refs)))), arr(f.refs))
+    .filter(r => r && r.s).forEach(r => { if (!used.has(r.s)) used.set(r.s, new Set()); if (r.p) used.get(r.s).add(r.p); });
+  if (!used.size) es.forEach(e => { if (e.sourceId && !used.has(e.sourceId)) used.set(e.sourceId, new Set(e.pages ? [e.pages] : [])); });
+  h += '<section class="gd-sources panel"><h2>Sources for this guide</h2>' + (used.size ? '<ul class="srcd">' + Array.from(used).map(u => {
+    const src = M.sById.get(u[0]);
+    return '<li>' + (src ? '<button class="link" data-act="open-source" data-id="' + esc(src.id) + '">' + esc(src.short) + '</button> ' + esc(src.cite || '') + ' ' + doiLink(src.doi) : esc(u[0])) +
+      (u[1].size ? '<br><span class="note">Pages used: ' + esc(Array.from(u[1]).join('; ')) + '</span>' : '') + '</li>';
+  }).join('') + '</ul>' : '<p class="small muted">No papers yet.</p>') + '</section>';
+  // Everything else, folded away
+  const sib = M.measures.filter(x => x.id !== m.id && grpOf(x) === grpOf(m));
+  h += '<details class="more-d"><summary>What the papers link it to<span class="hint">' + plural(cs.length, 'topic') + '</span></summary>' +
+    (cs.length ? '<ul class="clist">' + cs.map(c => { const ce = es.filter(e => e.constructId === c.id); return '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="sub">' + claimSummary(ce) + '</span></li>'; }).join('') + '</ul>' : '<p class="small muted">No links yet.</p>') + '</details>';
+  h += '<details class="more-d"><summary>Evidence from the papers<span class="hint">' + plural(es.length, 'link') + ' with page numbers</span></summary><div class="entries">' +
+    (es.length ? es.map(e => entryCard(e, M, {showConstruct: true})).join('') : '<div class="empty">No links yet.</div>') + '</div></details>';
+  if (sib.length) h += '<details class="more-d"><summary>Related signals<span class="hint">' + esc(fam.label) + '</span></summary><p class="small">' + sib.map(x => '<button class="link" data-act="open-measure" data-id="' + esc(x.id) + '">' + esc(x.name) + '</button>').join(' · ') + '</p></details>';
+  h += '<div class="btns gd-actions"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy as preregistration notes</button><button class="btn" data-act="print">Print this guide</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
+  return h;
+}
+V.guide = {
+  mount(el) { el.innerHTML = '<div id="gd-body" class="guide"></div>'; },
+  update(el) {
+    const M = model(), m = S.guideId ? M.mById.get(S.guideId) : null, body = $('#gd-body');
+    if (!m) {
+      body.innerHTML = S.status === 'connecting' ? '<p class="skel">Loading the guide…</p>'
+        : '<div class="empty"><b>This signal is not in the knowledge base.</b><span><button class="link" data-act="go" data-route="measures">See all EEG signals</button></span></div>';
+      return;
+    }
+    document.title = 'How to measure: ' + m.name + ' · EEG Knowledge Base';
+    keepDetails(body, () => { body.innerHTML = guideHTML(m, M); });
+  }
+};
+
 /* ---------- search ---------- */
 let searchIn = null;
+/* Words that say nothing about what is being measured. */
+const Q_STOP = new Set(['the', 'a', 'an', 'of', 'in', 'on', 'to', 'for', 'and', 'or', 'how', 'what', 'which', 'do', 'does', 'i', 'my', 'want', 'with', 'by', 'is', 'are',
+  'measure', 'measuring', 'measured', 'measurement', 'study', 'studying', 'eeg', 'using', 'use']);
+const qToks = t => normTxt(t).split(' ').filter(w => w && !Q_STOP.has(w));
+/* How well one query word matches a field: the whole word, the start of a word, or a close spelling. */
+function wordMatch(q, words, weight) {
+  let best = 0;
+  for (const w of words) {
+    if (w === q) return 1;
+    if ((q.length >= 4 || (q.length === 3 && weight >= 2.5)) && w.startsWith(q)) best = Math.max(best, 0.85);
+    else if (q.length >= 4 && w.length >= 4 && w.includes(q)) best = Math.max(best, 0.6);
+    else if (q.length >= 5 && Math.abs(w.length - q.length) <= 2 && nameSim(q, w) >= 0.6) best = Math.max(best, 0.5);
+  }
+  return best;
+}
+/* Scores a record from weighted fields. Short queries must match every word; longer ones most of them. */
+function scoreRecord(qt, phrase, fields) {
+  const wf = fields.map(f => { const t = normTxt(f[0]); return {w: f[1], text: t, words: t.split(' ').filter(Boolean)}; });
+  let sum = 0, hit = 0;
+  qt.forEach(q => { let b = 0; wf.forEach(f => { const mq = wordMatch(q, f.words, f.w); if (mq) b = Math.max(b, mq * f.w); }); if (b) { hit++; sum += b; } });
+  if (!qt.length || hit / qt.length < (qt.length <= 2 ? 1 : 0.6)) return 0;
+  const bonus = phrase.length > 3 && wf.some(f => f.w >= 2.5 && f.text.includes(phrase)) ? 3 : 0;
+  return sum / qt.length * (hit / qt.length) + bonus;
+}
+function searchKB(q) {
+  const M = model(), qt = qToks(q), phrase = normTxt(q);
+  const ms = M.measures.map(m => ({m: m, s: scoreRecord(qt, phrase, [
+      [m.name, 3], [m.short || '', 3], [arr(m.aka).join(' | '), 2.5], [GRP[grpOf(m)].label, 1], [(m.summary || '') + ' ' + (m.spec || ''), 1],
+      [consFor(M, m.id).map(c => c.name).join(' | '), 1.2], [(M.byM.get(m.id) || []).map(e => e.aspect || '').join(' | '), 1.2], [sitesOf(m).join(' '), 1.5]])}))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+  const cs = M.constructs.map(c => ({c: c, s: scoreRecord(qt, phrase, [
+      [c.name, 3], [arr(c.aka).join(' | '), 2.5], [c.definition || '', 1], [FAM[famOf(c)].label, 1], [measFor(M, c.id).map(m => m.name + ' ' + (m.short || '')).join(' | '), 0.8]])}))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+  const ss = M.sources.map(src => ({src: src, s: scoreRecord(qt, phrase, [[src.short || '', 2], [(src.cite || '') + ' ' + (src.title || ''), 1]])}))
+    .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+  return {ms: ms, cs: cs, ss: ss};
+}
+const clip = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : t; };
 function runSearch(input, box) {
   input = input || searchIn || $('#q'); box = box || (input.id === 'hq' ? $('#hres') : $('#sres'));
   if (!box) return;
   searchIn = input;
   const q = input.value.trim();
   if (!q) { box.hidden = true; box.innerHTML = ''; return; }
-  const M = model(), ql = q.toLowerCase();
-  const byName = (a, b, n) => (n(b).toLowerCase().includes(ql) ? 1 : 0) - (n(a).toLowerCase().includes(ql) ? 1 : 0);
-  const cons = M.constructs.filter(c => [c.name, c.definition, FAM[famOf(c)].label].concat(arr(c.aka)).join(' ').toLowerCase().includes(ql))
-    .sort((a, b) => byName(a, b, c => c.name)).slice(0, 6);
-  const meas = M.measures.filter(m => [m.name, m.short, m.spec, m.domain].concat(arr(m.aka)).join(' ').toLowerCase().includes(ql))
-    .sort((a, b) => byName(a, b, m => m.name + ' ' + (m.short || ''))).slice(0, 6);
-  const srcs = M.sources.filter(s => [s.short, s.cite, s.title].join(' ').toLowerCase().includes(ql)).slice(0, 4);
-  const site = Object.keys(SITES).find(s => s.toLowerCase() === ql);
+  const M = model(), R = searchKB(q);
+  const site = Object.keys(SITES).find(x => x.toLowerCase() === q.toLowerCase());
   const siteN = site ? M.measures.filter(m => sitesOf(m).includes(site)).length : 0;
   let h = '';
   if (site) h += '<h4>Electrode</h4><button data-act="site" data-v="' + site + '"><span>Signals measured at ' + site + '</span><span class="sub">' + plural(siteN, 'signal') + '</span></button>';
-  if (cons.length) h += '<h4>Topics</h4>' + cons.map(c => '<button data-act="open-construct" data-id="' + esc(c.id) + '"><span>' + esc(c.name) + '</span><span class="sub">' + esc(FAM[famOf(c)].label) + ' · ' + plural((M.measOfC.get(c.id) || []).length, 'linked signal') + '</span></button>').join('');
-  if (meas.length) h += '<h4>EEG signals</h4>' + meas.map(m => '<button data-act="open-measure" data-id="' + esc(m.id) + '"><span>' + esc(m.name) + '</span><span class="sub">' + esc(SIG[sigOf(m)].plain) + ' · ' + esc(m.spec) + '</span></button>').join('');
-  if (srcs.length) h += '<h4>Papers</h4>' + srcs.map(s => '<button data-act="open-source" data-id="' + esc(s.id) + '"><span>' + esc(s.short) + '</span><span class="sub">' + esc(s.title || '') + '</span></button>').join('');
-  box.innerHTML = h || '<div class="none">Nothing matches “' + esc(q) + '”. Try a broader word such as memory, attention or hearing.' + (S.status !== 'ready' ? ' The knowledge base has not loaded yet.' : '') + '</div>';
+  if (R.ms.length) h += '<h4>Measurement guides</h4>' + R.ms.slice(0, 5).map(x => '<button data-act="open-measure" data-id="' + esc(x.m.id) + '"><span>' + esc(x.m.name) + '</span><span class="sub">' + esc(GRP[grpOf(x.m)].label + ' · ' + clip(x.m.summary || x.m.spec, 110)) + '</span></button>').join('');
+  if (R.cs.length) h += '<h4>Topics</h4>' + R.cs.slice(0, 4).map(x => {
+    const ms = measFor(M, x.c.id);
+    return '<button data-act="open-construct" data-id="' + esc(x.c.id) + '"><span>' + esc(x.c.name) + '</span><span class="sub">' + esc(ms.length ? 'Measure with: ' + ms.slice(0, 3).map(short).join(', ') + (ms.length > 3 ? ' and ' + (ms.length - 3) + ' more' : '') : FAM[famOf(x.c)].label) + '</span></button>';
+  }).join('');
+  if (R.ss.length) h += '<h4>Papers</h4>' + R.ss.slice(0, 3).map(x => '<button data-act="open-source" data-id="' + esc(x.src.id) + '"><span>' + esc(x.src.short) + '</span><span class="sub">' + esc(clip(x.src.title || x.src.cite, 110)) + '</span></button>').join('');
+  box.innerHTML = h || '<div class="none">Nothing matches “' + esc(q) + '”. Try fewer or simpler words, for example ' +
+    ['sleep', 'attention', 'memory'].map(w => '<button class="link" data-act="try-q" data-v="' + w + '">' + w + '</button>').join(', ') + '.' +
+    (S.status !== 'ready' ? ' The knowledge base has not loaded yet.' : '') + '</div>';
   box.hidden = false;
 }
 function closeSearch() { $('#sres').hidden = true; const h = $('#hres'); if (h) h.hidden = true; }
@@ -2879,10 +3073,22 @@ async function download(filename, data) {
 }
 
 /* ---------- routing + rendering ---------- */
+const DEFAULT_TITLE = document.title;
+const hashFor = r => r === 'guide' && S.guideId ? 'guide/' + S.guideId : r;
+/* The page named in the address bar; a guide's address carries its signal (#guide/<id>). */
+function routeFromHash() {
+  let h = (location.hash || '').slice(1);
+  try { h = decodeURIComponent(h); } catch (e) {}
+  if (h.indexOf('guide/') === 0) { S.guideId = h.slice(6); return 'guide'; }
+  if (!h) return 'overview';
+  return ROUTES.includes(h) && h !== 'guide' ? h : null;
+}
 function go(r, setHash) {
-  if (!ROUTES.includes(r)) r = 'overview';
+  if (!ROUTES.includes(r) || (r === 'guide' && !S.guideId)) r = 'overview';
   S.route = r;
-  if (setHash !== false) { try { if (location.hash.slice(1) !== r) history.replaceState(null, '', '#' + r); } catch (e) {} }
+  if (r !== 'guide') document.title = DEFAULT_TITLE;
+  // Each page gets its own history entry, so the browser's Back button works.
+  if (setHash !== false) { try { const h = hashFor(r); if (decodeURIComponent(location.hash.slice(1)) !== h) { history.pushState(null, '', '#' + h); S.navs++; } } catch (e) {} }
   document.body.setAttribute('data-route', r);
   $$('.tabs .tab, .more-menu button').forEach(t => t.setAttribute('aria-current', t.getAttribute('data-route') === r ? 'page' : 'false'));
   const mb = $('#more-btn');
@@ -2965,12 +3171,15 @@ function onAct(t) {
     case 'contribute-m': if (S.edit) cancelEdit(); S.prefill = {m: id}; closeDrawer(); go('contribute'); break;
     case 'dr-edit': {
       const es = M.byM.get(id) || [];
-      if (es.length > 1) { S.drEdit = S.drEdit === id ? null : id; renderDrawer(); const b = $('#dr-body [data-act="dr-edit"]'); if (b) b.focus(); }
+      if (es.length > 1) { S.drEdit = S.drEdit === id ? null : id; render(); const b = $('#v-guide [data-act="dr-edit"]'); if (b) b.focus(); }
       else startEdit(es.length ? es[0].id : null, id);
       break;
     }
     case 'dup-use': { const sel = $('#' + t.getAttribute('data-field')); if (sel) { sel.value = id; sel.dispatchEvent(new Event('change', {bubbles: true})); } dupCheck(); toast('Using the one already on the site'); break; }
     case 'edit-entry': startEdit(id, null); break;
+    case 'back': if (S.navs > 0) history.back(); else go('measures'); break;
+    case 'print': try { window.print(); } catch (e) {} break;
+    case 'try-q': { const inp = searchIn || $('#hq') || $('#q'); inp.value = t.getAttribute('data-v'); runSearch(inp); inp.focus(); break; }
     case 'edit-measure': startEdit(null, id); break;
     case 'cancel-edit': cancelEdit(); break;
     case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); break; }
@@ -3075,7 +3284,9 @@ function bind() {
     else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
-  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (ROUTES.includes(h) && h !== S.route) go(h, false); });
+  const onNav = () => { const r = routeFromHash(); if (r && (r !== S.route || r === 'guide')) go(r, false); };
+  window.addEventListener('hashchange', onNav);
+  window.addEventListener('popstate', onNav);
   document.addEventListener('pointerdown', plPointerDown);
   document.addEventListener('pointermove', plPointerMove, {passive: false});
   document.addEventListener('pointerup', plPointerUp);
@@ -3313,8 +3524,8 @@ try {
     history.replaceState(null, '', location.pathname + '#review');
   }
 } catch (e) {}
-const h0 = (location.hash || '').slice(1);
-go(S.review.token ? 'review' : ROUTES.includes(h0) ? h0 : 'overview', false);
+const r0 = routeFromHash();
+go(S.review.token ? 'review' : r0 || 'overview', false);
 connect();
 })();
 </script>
