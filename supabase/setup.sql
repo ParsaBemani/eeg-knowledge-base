@@ -175,17 +175,17 @@ begin
 end $$;
 
 create or replace function public._esc(t text) returns text
-language sql immutable as $$
+language sql immutable set search_path = '' as $$
   select replace(replace(replace(replace(coalesce(t, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;');
 $$;
 
 create or replace function public._slug(t text) returns text
-language sql immutable as $$
+language sql immutable set search_path = '' as $$
   select coalesce(nullif(left(trim(both '-' from regexp_replace(lower(coalesce(t, '')), '[^a-z0-9]+', '-', 'g')), 40), ''), 'x');
 $$;
 
 create or replace function public._rid() returns text
-language sql volatile as $$
+language sql volatile set search_path = '' as $$
   select substr(md5(random()::text || clock_timestamp()::text), 1, 5);
 $$;
 
@@ -214,7 +214,7 @@ begin
 end $$;
 
 create or replace function public._email_page(p_title text, p_body text)
-returns text language sql immutable as $$
+returns text language sql immutable set search_path = '' as $$
   select '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#14202A;max-width:600px">'
       || '<h2 style="font-size:19px;margin:0 0 12px">' || public._esc(p_title) || '</h2>' || p_body
       || '<p style="color:#6F7D8A;font-size:12.5px;margin-top:24px">EEG Construct–Measure Knowledge Base</p></div>';
@@ -222,7 +222,7 @@ $$;
 
 -- Electrode names a suggestion may use (10–20 style, e.g. Fz, C3, PO8, M1), without duplicates, at most 30.
 create or replace function public._sites(v jsonb) returns jsonb
-language sql immutable as $$
+language sql immutable set search_path = '' as $$
   select coalesce(jsonb_agg(x.value order by x.ord), '[]'::jsonb) from (
     select t.value, min(t.ord) as ord
     from jsonb_array_elements_text(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) with ordinality as t(value, ord)
@@ -232,7 +232,7 @@ $$;
 
 -- The first frequency range of a suggestion, if it is two numbers with 0 <= from < to <= 1000 Hz.
 create or replace function public._band(v jsonb) returns jsonb
-language sql immutable as $$
+language sql immutable set search_path = '' as $$
   select case
     when jsonb_typeof(v) = 'array' and jsonb_typeof(v->0) = 'object'
      and (v->0->>'lo') ~ '^[0-9]+(\.[0-9]+)?$' and (v->0->>'hi') ~ '^[0-9]+(\.[0-9]+)?$'
@@ -1153,11 +1153,17 @@ grant usage on schema public to anon, authenticated;
 grant select on public.kb_records to anon, authenticated;
 grant select, insert on public.submissions to authenticated;
 grant select on public.admins, public.admin_invites, public.activity, public.owners, public.blocked_emails to authenticated;
-grant execute on function
-  public.is_admin(), public.my_status(), public.get_review(text), public.review_by_token(text, text, text),
-  public.accept_submission(uuid), public.reject_submission(uuid, text), public.add_admin(text), public.cancel_invite(text),
+-- The email review links work without signing in; everything else needs a signed-in account
+-- (and each admin tool still checks that the caller is an admin).
+grant execute on function public.is_admin(), public.get_review(text), public.review_by_token(text, text, text) to anon, authenticated;
+revoke execute on function
+  public.my_status(), public.accept_submission(uuid), public.reject_submission(uuid, text), public.add_admin(text), public.cancel_invite(text),
   public.step_down(), public.delete_record(text, text), public.restore_record(bigint), public.import_kb(jsonb)
-  to anon, authenticated;
+  from public, anon;
+grant execute on function
+  public.my_status(), public.accept_submission(uuid), public.reject_submission(uuid, text), public.add_admin(text), public.cancel_invite(text),
+  public.step_down(), public.delete_record(text, text), public.restore_record(bigint), public.import_kb(jsonb)
+  to authenticated;
 -- Owner tools are only for signed-in users (each still checks that the caller is the owner).
 revoke execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() from public, anon;
 grant execute on function public.is_owner(), public.remove_admin(text), public.block_email(text, text), public.unblock_email(text), public.list_accounts() to authenticated;
