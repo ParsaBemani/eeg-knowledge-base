@@ -25,7 +25,7 @@
   --stage:#3D6B1C; --stage-soft:#E6F0DC;
   --hl:#EFC94C; --hl-soft:rgba(239,201,76,.42);
   --warn:#AE3D0C; --warn-soft:#FBE7DD; --ok:#2A774A; --ok-soft:#E0F1E6;
-  --scrim:rgba(12,18,22,.38);
+  --scrim:rgba(12,18,22,.38); --tour-dim:rgba(12,18,22,.24); --tour-em:#EFC94C; --tour-em-ink:#14202A;
   --shadow:0 1px 2px rgba(20,32,42,.06),0 12px 32px rgba(20,32,42,.12);
   --f-display:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
   --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -44,7 +44,7 @@
   --stage:#A6D98A; --stage-soft:#1E2B14;
   --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
   --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
-  --scrim:rgba(0,0,0,.55);
+  --scrim:rgba(0,0,0,.55); --tour-dim:rgba(0,0,0,.45); --tour-em:#8A5A00; --tour-em-ink:#FFFFFF;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.45);
   color-scheme:dark;
 }}
@@ -59,7 +59,7 @@
   --stage:#A6D98A; --stage-soft:#1E2B14;
   --hl:#E3C04A; --hl-soft:rgba(227,192,74,.26);
   --warn:#FF8B5E; --warn-soft:#3A2016; --ok:#6CD198; --ok-soft:#14301F;
-  --scrim:rgba(0,0,0,.55);
+  --scrim:rgba(0,0,0,.55); --tour-dim:rgba(0,0,0,.45); --tour-em:#8A5A00; --tour-em-ink:#FFFFFF;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.45);
   color-scheme:dark;
 }
@@ -240,8 +240,13 @@ button.chip:hover{border-color:var(--ink-3);color:var(--ink)}
 .gnotes > summary{cursor:pointer;font-weight:700;font-size:14px}
 .gnotes .gn-body{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .gd-mini{margin:0;padding-left:18px}
+.gd-els li[data-act]{cursor:pointer;border-radius:6px;padding-inline:6px;margin-inline:-6px}
+.gd-els li[data-act]:hover{background:var(--panel-2)}
+.gd-els li.hl,.gd-els li.hl:hover{background:var(--hl-soft)}
+.scalp .el.hl,.scalp .el.on.hl{stroke:var(--hl);stroke-width:9;paint-order:stroke}
+.crumbs .crumbs-r{margin-left:auto}
 @media (max-width:680px){.gd-setup{grid-template-columns:1fr}.gd-fig{justify-self:center}}
-@media print{.topbar,.banner,.crumbs,.gd-actions,.dr-top .btn,.dr-editmenu,#toast,details.more-d{display:none!important}.panel{border:0;padding:0}body{background:#fff}.guide{max-width:none}}
+@media print{.topbar,.banner,.crumbs,.gd-actions,.dr-top .btn,.dr-editmenu,#toast,details.more-d,#tour,#tour-beacons,#tour-invite{display:none!important}.panel{border:0;padding:0}body{background:#fff}.guide{max-width:none}}
 
 details.more-d{border-top:1px solid var(--grid);padding-top:10px}
 details.more-d > summary{list-style:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;color:var(--ink);padding:4px 0}
@@ -603,6 +608,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .placer-wrap > div{display:flex;flex-direction:column;gap:10px;min-width:0}
 .placer{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:700px){.placer{grid-template-columns:1fr}.placer-fig{max-width:320px}}
+.placer-wrap{container-type:inline-size}
+@container (max-width:600px){.placer{grid-template-columns:1fr}.placer-fig{max-width:320px}}
 .placer-side{display:flex;flex-direction:column;gap:10px;min-width:0}
 #pl-head{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
 #pl-head .hd,#pl-head .ear,#pl-head .nose{fill:var(--panel);stroke:var(--ink-3);stroke-width:2.5}
@@ -615,6 +622,8 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 #pl-head .ps.on text{fill:var(--accent-ink);font-weight:700}
 #pl-head .ps.hl circle{stroke:var(--hl);stroke-width:4}
 #pl-head .ps.target circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:4}
+#pl-head .ps.usual:not(.on) circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.8;stroke-dasharray:3 2.2}
+#pl-head .ps.usual:not(.on) text{fill:var(--accent)}
 #pl-head .ps:focus{outline:none}
 #pl-head .ps:focus-visible circle{stroke:var(--accent);stroke-width:3.5}
 .pl-token{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px dashed var(--accent);border-radius:999px;background:var(--accent-soft);color:var(--accent);font:700 13.5px var(--f-body);cursor:grab;touch-action:none;user-select:none}
@@ -628,6 +637,74 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .pl-list .nm{font:700 14px var(--f-mono);min-width:38px;padding-top:1px}
 .pl-list .rg{font-weight:700}
 .pl-list .ds{color:var(--ink-2);font-size:13px}
+.pl-usual{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pl-usual .btn{white-space:normal;text-align:left}
+
+/* Tutorial: a ring and a small pointer bubble show one thing at a time; most steps wait until the reader has done it. */
+.tourw{position:relative;flex:none}
+.tour-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:6px 12px 6px 9px;font:700 13px var(--f-body);color:var(--ink);cursor:pointer;white-space:nowrap}
+.tour-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tour-btn svg{color:var(--accent);flex:none}
+.tour-btn[aria-expanded="true"],body.touring .tour-btn{background:var(--accent-soft);border-color:var(--accent)}
+.tour-menu{position:absolute;right:0;top:calc(100% + 6px);width:min(350px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);padding:8px;z-index:37;display:flex;flex-direction:column;gap:2px}
+.tm-h{padding:6px 10px 10px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--grid);margin-bottom:4px}
+.tm-h b{font:700 16px var(--f-display);font-stretch:104%}
+.tm-h span{font-size:12.5px;color:var(--ink-3)}
+.tour-menu > button{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;text-align:left;border:0;background:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+.tour-menu > button:hover,.tour-menu > button:focus-visible{background:var(--panel-2)}
+.tm-ic{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 13px var(--f-body)}
+.tm-t{min-width:0}
+.tm-t b{display:block;font-size:14px}
+.tm-t span{display:block;font-size:12.5px;color:var(--ink-3)}
+.tm-ok{font:600 11.5px var(--f-mono);color:var(--ok);padding-top:6px;white-space:nowrap}
+.tm-hints{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;padding:10px;border-top:1px solid var(--grid);margin-top:4px;cursor:pointer;border-radius:0 0 8px 8px}
+.tm-hints:hover{background:var(--panel-2)}
+.tm-hints input{width:18px;height:18px;margin:4px 0 0 5px;accent-color:var(--accent)}
+@media (max-width:680px){.tourw{order:2;margin-left:auto}.tourw ~ .acct{margin-left:0}}
+@media (max-width:480px){.tour-btn span{display:none}.tour-btn{padding:7px}}
+.tour-ring{position:fixed;z-index:50;left:0;top:0;border-radius:10px;pointer-events:none;box-shadow:0 0 0 3px var(--hl),0 0 0 100vmax var(--tour-dim);transition:left .18s ease-out,top .18s ease-out,width .18s ease-out,height .18s ease-out}
+.tour-ring::after{content:"";position:absolute;inset:-3px;border-radius:13px;border:3px solid var(--hl);animation:tourping 1.8s ease-out infinite}
+@keyframes tourping{0%{inset:-3px;opacity:.9}100%{inset:-16px;opacity:0}}
+.tour-bub{position:fixed;z-index:56;left:0;top:0;width:min(330px,calc(100vw - 24px));background:var(--ink);color:var(--paper);border-radius:12px;padding:11px 14px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.45}
+.tour-bub.bob{animation:tourbob 1.8s ease-in-out infinite}
+@keyframes tourbob{50%{transform:translate(var(--bx,0),var(--by,0))}}
+.tour-bub :focus-visible{outline-color:var(--tour-em)}
+.tour-arrow{position:absolute;width:14px;height:14px;background:var(--ink);transform:rotate(45deg);border-radius:2px}
+.tour-top{display:flex;align-items:center;gap:10px}
+.tour-n{font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;opacity:.8;white-space:nowrap}
+.tour-bar{flex:1;height:4px;border-radius:2px;background:rgba(128,128,128,.4);overflow:hidden}
+.tour-bar i{display:block;height:100%;width:0;background:var(--tour-em);border-radius:2px;transition:width .35s}
+.tour-x{border:0;background:none;color:inherit;opacity:.75;font:400 22px/1 var(--f-body);padding:0 2px;margin-left:auto;cursor:pointer}
+.tour-x:hover{opacity:1}
+.tour-body{display:flex;flex-direction:column;gap:7px}
+.tour-title{font:760 19px/1.2 var(--f-display);font-stretch:108%}
+.tour-task{display:flex;gap:9px;align-items:flex-start;font-weight:700}
+.tour-task::before{content:"";flex:none;display:grid;place-items:center;width:17px;height:17px;margin-top:2px;border:2px solid var(--tour-em);border-radius:4px;font:700 12px/1 var(--f-body);color:var(--tour-em-ink)}
+.tour-bub.ok .tour-task::before{content:"✓";background:var(--tour-em)}
+.tour-bub.ok .tour-task{color:var(--tour-em)}
+.tour-wait{font-size:13px;color:var(--tour-em)}
+.tour-dir{display:flex;align-items:center;gap:6px;font:700 13px var(--f-body);color:var(--tour-em)}
+.tour-dir i{font-style:normal;display:inline-block;animation:tourdir 1.2s ease-in-out infinite}
+@keyframes tourdir{50%{transform:translateY(var(--dy,3px))}}
+.tour-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.tour-btns button{font:700 13.5px var(--f-body);border-radius:8px;cursor:pointer;padding:7px 14px}
+.tour-btns .tb-go{border:0;background:var(--hl);color:#14202A}
+.tour-btns .tb-go:hover{filter:brightness(1.06)}
+.tour-btns .tb-alt{border:1px solid rgba(128,128,128,.55);background:none;color:inherit;padding:6px 12px}
+.tour-btns .tb-skip{margin-right:auto;border:0;background:none;color:inherit;opacity:.8;padding:6px 0;font-weight:400;font-size:13px;text-decoration:underline;text-underline-offset:2px}
+.tour-btns .tb-skip:hover{opacity:1}
+.tour-bub.final{width:min(410px,calc(100vw - 24px));padding:18px 20px;gap:10px}
+.tour-bub.final .tour-top{display:none}
+.tour-medal{width:44px;height:44px;border-radius:50%;background:var(--hl);color:#14202A;display:grid;place-items:center;font:700 24px/1 var(--f-body)}
+.tour-bub.hint .tour-n{opacity:1;color:var(--tour-em)}
+.tour-bub.hint .tour-bar{visibility:hidden}
+.tour-beacon{position:fixed;z-index:29;left:0;top:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--panel);background:var(--hl);color:#14202A;font:700 13px/18px var(--f-body);text-align:center;padding:0;cursor:pointer;animation:beacon 2s ease-out infinite}
+@keyframes beacon{0%{box-shadow:0 0 0 0 var(--hl)}70%,100%{box-shadow:0 0 0 10px rgba(0,0,0,0)}}
+.tour-invite{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;width:min(350px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--rule);border-top:4px solid var(--hl);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.tour-invite .tour-x{position:absolute;top:8px;right:10px;color:var(--ink-3)}
+.tour-invite b{font:700 17px var(--f-display);font-stretch:104%;padding-right:24px}
+.tour-invite p{font-size:14px;color:var(--ink-2)}
+@media (max-width:480px){.tour-invite{left:16px;right:16px;width:auto}}
 
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .modal{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--scrim)}
@@ -661,6 +738,13 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="What do you want to measure? e.g. REM sleep duration" aria-label="Search for what you want to measure" aria-controls="sres">
         <div id="sres" class="sres" hidden></div>
+      </div>
+      <div class="tourw">
+        <button class="tour-btn" id="tour-btn" data-act="tour-menu" aria-expanded="false" aria-controls="tour-menu" aria-label="Tutorial">
+          <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5 1.8 7.6 10 11.7l8.2-4.1L10 3.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M5.2 9.4v3.8c1.3 1.1 2.9 1.7 4.8 1.7s3.5-.6 4.8-1.7V9.4M18.2 7.6v4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Tutorial</span>
+        </button>
+        <div class="tour-menu" id="tour-menu" hidden></div>
       </div>
       <div class="acct" id="acct" hidden></div>
     </div>
@@ -740,6 +824,22 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
   </div>
 </div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="tour" hidden>
+  <div class="tour-ring" id="tour-ring" hidden></div>
+  <div class="tour-bub" id="tour-bub" role="dialog" aria-label="Tutorial">
+    <i class="tour-arrow" id="tour-arrow" aria-hidden="true"></i>
+    <div class="tour-top"><span class="tour-n" id="tour-n"></span><span class="tour-bar" aria-hidden="true"><i id="tour-prog"></i></span><button class="tour-x" type="button" data-act="tour-exit" aria-label="End the tutorial">×</button></div>
+    <div class="tour-body" id="tour-body" aria-live="polite"></div>
+    <div class="tour-btns" id="tour-btns"></div>
+  </div>
+</div>
+<div id="tour-beacons"></div>
+<div id="tour-invite" class="tour-invite" role="dialog" aria-labelledby="ti-h" hidden>
+  <button class="tour-x" type="button" data-act="tour-invite-x" aria-label="Close">×</button>
+  <b id="ti-h">New here?</b>
+  <p>A 2-minute hands-on tutorial walks you through finding how to measure your own research question.</p>
+  <div class="btns"><button class="btn primary sm" type="button" data-act="tour-start" data-track="measure">Start the tutorial</button><button class="btn sm ghost" type="button" data-act="hints-on">Just show page hints</button></div>
+</div>
 
 <script>
 (function () {
@@ -892,7 +992,7 @@ const S = {
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
   plan: {c: '', pop: 'adults', para: 'either'},
-  drawer: null, drEdit: null, guideId: null, navs: 0, prefill: null, edit: null,
+  drawer: null, drEdit: null, guideId: null, gdEl: null, navs: 0, prefill: null, edit: null,
   /* Supabase mode (sign-in, email approvals): see connectSupabase */
   sb: null, sbMode: false, sbNote: '', session: null,
   adm: {admins: [], invites: [], activity: [], loaded: false},
@@ -977,7 +1077,7 @@ function scalp(m, size, labels) {
     const o = on.has(n);
     if ((n === 'M1' || n === 'M2') && !o) continue;
     const p = SITES[n];
-    s += '<circle class="el' + (o ? ' on' : '') + '" cx="' + p[0] + '" cy="' + (-p[1]) + '" r="' + (o ? 9.5 : 4.2) + '"/>';
+    s += '<circle class="el' + (o ? ' on' : '') + '" data-site="' + n + '" cx="' + p[0] + '" cy="' + (-p[1]) + '" r="' + (o ? 9.5 : 4.2) + '"/>';
   }
   if (labels) on.forEach(n => { const p = SITES[n]; s += '<text class="lb" x="' + p[0] + '" y="' + (-p[1] - 14) + '" text-anchor="middle">' + n + '</text>'; });
   if (!on.size) s += '<text class="qm" x="0" y="19" text-anchor="middle">?</text>';
@@ -1128,6 +1228,7 @@ V.overview = {
           '<div id="hres" class="sres" hidden></div></div>' +
         '<div class="tries" id="ov-tries"><span>Try:</span></div>' +
         '<p class="home-links">Not sure what to search? <button class="link" data-act="go" data-route="constructs">Browse topics</button> · <button class="link" data-act="go" data-route="measures">Browse EEG signals</button> · <button class="link" data-act="go" data-route="learn">New to EEG? Learn the basics</button></p>' +
+        '<p class="home-links">First time here? <button class="link" data-act="tour-start" data-track="measure">Take the 2-minute tutorial</button>: it walks you through your own research question, one step at a time.</p>' +
       '</div>' +
       '<div class="footline" id="ov-foot"></div>';
     const hq = $('#hq');
@@ -1430,7 +1531,7 @@ function renderMapInfo(M) {
 V.planner = {
   mount(el) {
     const radios = (name, opts, cur) => '<div class="radios">' + Object.keys(opts).map(k => '<label class="radio"><input type="radio" name="' + name + '" value="' + k + '"' + (k === cur ? ' checked' : '') + '><span>' + esc(opts[k]) + '</span></label>').join('') + '</div>';
-    el.innerHTML = '<div class="sh"><div><h2>Plan a study</h2></div><p>Answer three questions. You get the EEG signals that fit, ranked, plus a design checklist drawn from the papers.</p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Plan a study</h2></div><p>Answer three questions. You get the EEG signals that fit, ranked, plus a design checklist drawn from the papers. <button class="link" data-act="tour-start" data-track="plan">Walk me through it</button></p></div>' +
       '<div class="pl"><form class="panel pl-form" id="pl-form" onsubmit="return false">' +
         '<div class="field"><label for="pl-c">1. What do you want to study?</label><select id="pl-c"></select></div>' +
         '<fieldset><legend>2. Who are your participants?</legend>' + radios('pl-pop', POP, S.plan.pop) + '</fieldset>' +
@@ -1669,7 +1770,7 @@ function siteInfo(name) {
   const pos = a[2].charAt(0).toUpperCase() + a[2].slice(1);
   return {name: name, region: a[1] + ', ' + (suf === 'z' ? 'midline' : side + ' side'), desc: pos + ', ' + where + '. Over the ' + a[3] + '.'};
 }
-const PL = {sites: [], hover: null, drag: null, moved: false, suppressClick: false, last: null};
+const PL = {sites: [], usual: [], hover: null, drag: null, moved: false, suppressClick: false, last: null};
 function placerSVG() {
   let s = '<svg id="pl-head" viewBox="-128 -136 256 264" role="group" aria-label="Head seen from above, nose at the top. Click a position to add or remove an electrode.">' +
     '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>' +
@@ -1752,13 +1853,16 @@ function plPointerUp() {
   }
   renderPlacer();
 }
+/* The head is always shown. For a signal already on the site, its usual electrodes are drawn as dashed
+   circles; the electrodes marked here are the ones this paper used and are saved with the link. */
 function plVisibility() {
   const box = $('#f-place');
   if (!box) return;
+  box.hidden = false;
+  $('#pl-sites-part').hidden = false;
   if (S.edit) {
     const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
-    box.hidden = false;
-    $('#pl-sites-part').hidden = false;
+    setUsual([]);
     $('#pl-band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
     $('#f-place-intro').textContent = (em && sitesOf(em).length
       ? 'These are the electrodes on the site now. Drag, add or remove them to match the paper.'
@@ -1768,15 +1872,27 @@ function plVisibility() {
   }
   const sel = $('#f-measure').value, isNew = sel === '__new';
   const m = sel && !isNew ? model().mById.get(sel) : null;
-  const needSites = isNew || !!(m && !sitesOf(m).length);
-  const needBand = isNew || !!(m && !bandsOf(m).length && (sigOf(m) === 'freq' || sigOf(m) === 'phase'));
-  box.hidden = !(needSites || needBand);
-  $('#pl-sites-part').hidden = !needSites;
-  $('#pl-band-part').hidden = !needBand;
-  const missing = [needSites && 'electrode sites', needBand && 'frequency range'].filter(Boolean).join(' or ');
-  $('#f-place-intro').textContent = isNew
-    ? 'Show where the paper records this signal and, if it gives one, the frequency range. Both are optional; leave the range blank for ERPs.'
-    : m ? 'This signal has no ' + missing + ' on the site yet. If the paper gives them, add them here; they are filled in when the suggestion is accepted.' : '';
+  const usual = m ? sitesOf(m).filter(x => SITES[x]) : [];
+  const sk = isNew ? $('#f-m-signal').value : m ? sigOf(m) : '';
+  const bandOn = sk === 'freq' || sk === 'phase', mb = m ? bandsOf(m)[0] : null;
+  setUsual(usual);
+  $('#pl-band-part').hidden = !bandOn;
+  $('#f-band-lo').placeholder = mb ? String(mb.lo) : 'e.g. 4';
+  $('#f-band-hi').placeholder = mb ? String(mb.hi) : 'e.g. 8';
+  $('#f-band-label').placeholder = mb && mb.label ? mb.label : 'e.g. theta';
+  $('#f-place-intro').textContent = !sel
+    ? 'Mark where the paper put the electrodes. Choose the EEG signal above to see where it is usually recorded.'
+    : isNew ? 'Show where the paper records this signal' + (bandOn ? ' and the frequency range it uses' : '') + '. Optional.'
+    : usual.length ? 'Dashed circles show where this signal is usually recorded (' + usual.join(', ') + '). Mark the electrodes this paper used; they are saved with your link. Optional.'
+    : 'This signal has no electrodes on the site yet. If the paper gives them, mark them here; they are added to the signal when your suggestion is accepted.';
+}
+function setUsual(list) {
+  PL.usual = list;
+  $$('#pl-head .ps').forEach(g => g.classList.toggle('usual', list.includes(g.getAttribute('data-site'))));
+  const b = $('#pl-usual');
+  if (!b) return;
+  b.hidden = !list.length;
+  b.innerHTML = list.length ? '<button type="button" class="btn sm" data-act="pl-usual"' + ($('#f-claim') && $('#f-claim').disabled ? ' disabled' : '') + '>Start from the usual electrodes (' + esc(list.join(', ')) + ')</button>' : '';
 }
 function parseBand() {
   const lo = ($('#f-band-lo') && $('#f-band-lo').value || '').trim(), hi = ($('#f-band-hi') && $('#f-band-hi').value || '').trim();
@@ -2019,7 +2135,7 @@ async function submitEdit(setMsg) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + '</p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
       '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest a link</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
@@ -2031,12 +2147,13 @@ V.contribute = {
         '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
           '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
           '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
-        '<div class="subform placer-wrap" id="f-place" hidden>' +
+        '<div class="subform placer-wrap" id="f-place">' +
           '<p class="small muted" id="f-place-intro"></p>' +
           '<div id="pl-sites-part"><span class="eyebrow">Where on the head</span>' +
             '<div class="placer"><div class="placer-fig">' + placerSVG() + '</div>' +
             '<div class="placer-side"><div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
               '<p class="small muted">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
+              '<div class="pl-usual" id="pl-usual" hidden></div>' +
               '<ul class="pl-list" id="pl-list" aria-live="polite"></ul>' +
               '<div class="field"><label for="f-sites-note">Location in the paper\'s words (optional)</label><input id="f-sites-note" maxlength="200" placeholder="e.g. referenced to the left mastoid, or &quot;posterior sites&quot;"></div>' +
             '</div></div></div>' +
@@ -2250,7 +2367,7 @@ async function submitEntry(ev) {
       if (error) throw error;
       $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck(); $('#f-guide').open = false;
       setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
-      toast('Suggestion sent');
+      toast('Suggestion sent'); TOUR.flags.sent = true;
       await loadSubs();
     } catch (e) { setMsg(sbErr(e), true); }
     finally { btn.disabled = false; scheduleUpdate(); }
@@ -2291,6 +2408,7 @@ async function submitEntry(ev) {
     const fullBody = body + '\n\n<!-- contribution\n' + JSON.stringify(form).replace(/--/g, '\\u002d\\u002d') + '\n-->';
     const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(fullBody);
     try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+    TOUR.flags.sent = true;
     msg.className = 'fmsg';
     msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press <b>Create</b> there. It is added to the site within a few minutes.';
     return;
@@ -2312,7 +2430,7 @@ async function submitEntry(ev) {
     await S.db.collection('submissions').add(doc);
     $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer();
     setMsg('Submitted. It is now in the review queue.');
-    toast('Submitted for review');
+    toast('Submitted for review'); TOUR.flags.sent = true;
   } catch (e) {
     if (e && e.code === 'invalid_argument') { S.readOnly = true; scheduleUpdate(); }
     setMsg(errText(e), true);
@@ -2859,7 +2977,7 @@ let lastFocus = null;
 /* Every signal opens as a full-page measurement guide (#guide/<id>), so it can be bookmarked and shared. */
 function openMeasure(id) {
   if (!S.raw.measures.has(id)) return;
-  S.guideId = id; S.drEdit = null;
+  S.guideId = id; S.drEdit = null; S.gdEl = null;
   go('guide');
 }
 function closeDrawer() {
@@ -2895,7 +3013,7 @@ function guidePoints(list, cls) { return '<ul class="gd-list' + (cls ? ' ' + cls
 function generalNote(text) {
   return '<div class="gd-general"><span class="eyebrow">General practice</span><p>' + esc(text) + '</p><p class="small muted">Standard EEG practice, not taken from the papers on this site. If a paper gives specifics, add them with Suggest an edit.</p></div>';
 }
-function gdStep(n, title, body) { return '<section class="gd-step panel"><h2><span class="n">' + n + '</span>' + esc(title) + '</h2>' + body + '</section>'; }
+function gdStep(n, title, body) { return '<section class="gd-step panel" data-step="' + n + '"><h2><span class="n">' + n + '</span>' + esc(title) + '</h2>' + body + '</section>'; }
 function guideHTML(m, M) {
   const es = M.byM.get(m.id) || [], cs = consFor(M, m.id), f = m.feasibility || {}, sk = sigOf(m);
   const known = sitesOf(m).filter(x => SITES[x]), miss = specMissing(m), fam = GRP[grpOf(m)];
@@ -2913,7 +3031,8 @@ function guideHTML(m, M) {
   if (f.passive === false) badges.push(['', 'Needs a task']);
   if (f.infants === true) badges.push(['ok', 'Used with infants']);
   let h = '<nav class="crumbs" aria-label="Where you are"><button class="link" data-act="back">← Back</button><span aria-hidden="true">·</span>' +
-    '<button class="link" data-act="go" data-route="measures">All EEG signals</button><span aria-hidden="true">›</span><span>' + esc(fam.label) + '</span></nav>';
+    '<button class="link" data-act="go" data-route="measures">All EEG signals</button><span aria-hidden="true">›</span><span>' + esc(fam.label) + '</span>' +
+    '<span class="crumbs-r"><button class="link" data-act="tour-start" data-track="guide">Walk me through this guide</button></span></nav>';
   h += '<header class="gd-head panel"><div class="dr-top"><div class="chips">' + sigChip(m) + contribChip(m.provenance) +
       badges.map(b => '<span class="bdg ' + b[0] + '" title="' + esc(f.note || '') + '">' + esc(b[1]) + '</span>').join('') + '</div>' + editTop + '</div>' + editMenu +
     '<span class="eyebrow">Measurement guide</span><h1>' + esc(m.name) + '</h1>' +
@@ -2923,12 +3042,12 @@ function guideHTML(m, M) {
   // 1. Set up the recording
   const elList = '<ul class="gd-els">' + known.map(k => {
     const i = siteInfo(k), isRef = /^[MA]\d/.test(k);
-    return '<li><b class="nm">' + k + '</b><span><span class="rg">' + esc((isRef ? 'Reference: ' : '') + i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span></li>';
+    return '<li data-act="gd-el" data-site="' + k + '" role="button" tabindex="0" aria-label="' + esc(k + ': ' + (isRef ? 'reference, ' : '') + i.region + '. Show on the head') + '"><b class="nm">' + k + '</b><span><span class="rg">' + esc((isRef ? 'Reference: ' : '') + i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span></li>';
   }).join('') + '</ul>';
   const note = m.sitesNote && !/^not (given|specified)/i.test(m.sitesNote) ? m.sitesNote : '';
   h += gdStep(1, 'Set up the recording',
     '<div class="gd-setup"><figure class="gd-fig">' + scalp(m, 220, true) + '<figcaption>Head seen from above, nose at the top</figcaption></figure><div class="gd-setup-r">' +
-      (known.length ? '<h3>Where to put the EEG electrodes</h3>' + elList
+      (known.length ? '<h3>Where to put the EEG electrodes</h3><p class="small muted">Click an electrode to find it on the head.</p>' + elList
         : '<div class="callout warn"><b>The papers on the site do not give the electrode sites</b><span>Choose them before you record, and report your choice.' +
           (canSuggestEdit() ? ' If a paper gives them, <button class="link" data-act="edit-measure" data-id="' + esc(m.id) + '">add them</button>.' : '') + '</span></div>') +
       (note ? '<p class="small">' + esc(note) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</p>' : '') +
@@ -2984,8 +3103,14 @@ V.guide = {
     }
     document.title = 'How to measure: ' + m.name + ' · EEG Knowledge Base';
     keepDetails(body, () => { body.innerHTML = guideHTML(m, M); });
+    gdElPaint();
   }
 };
+/* Clicking an electrode in a guide's list lights it up on the head drawing. */
+function gdElPaint() {
+  $$('#v-guide .gd-els li[data-site]').forEach(li => li.classList.toggle('hl', li.getAttribute('data-site') === S.gdEl));
+  $$('#v-guide .gd-fig .el[data-site]').forEach(c => c.classList.toggle('hl', c.getAttribute('data-site') === S.gdEl));
+}
 
 /* ---------- search ---------- */
 let searchIn = null;
@@ -3141,7 +3266,447 @@ function render() {
   if (S.mounted[S.route]) { try { keepDetails(el, () => V[S.route].update(el)); } catch (e) { console.error(e); } }
   if (S.drawer) keepDetails($('#dr-body'), renderDrawer);
   if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) runSearch();
+  if (S.route !== 'overview') $('#tour-invite').hidden = true; else maybeInvite();
 }
+
+/* ---------- tutorial ---------- */
+/* Hands-on tutorials, like a strategy game's training missions: a ring and a small bubble point at one thing
+   at a time, and most steps wait until the reader has done it. Optional; started from the Tutorial button. */
+const TOUR = {on: false, track: '', steps: [], i: 0, n: 0, total: 0, final: null, problem: '', flags: {}, practice: false, typedAt: 0,
+  okAt: 0, fresh: true, key: '', scrollAt: 0, autoScrolled: '', reached: false, hint: null, raf: 0, seen: null};
+const SIDE = ['right', 'left', 'top', 'bottom'];
+const ROUTE_NAME = {overview: 'Home', constructs: 'Topics', measures: 'EEG signals', learn: 'EEG basics', planner: 'Plan a study', contribute: 'Contribute', guide: 'measurement guide'};
+const tval = v => typeof v === 'function' ? v() : v;
+/* The element a step points at, if it is on the page and drawn. */
+const tel = t => { const el = typeof t === 'function' ? t() : t ? document.querySelector(t) : null; return el && el.isConnected && el.getClientRects().length ? el : null; };
+const hresOpen = () => { const b = $('#hres'); return !!(b && !b.hidden && b.querySelector('button[data-act="open-measure"], button[data-act="open-construct"]')); };
+const noMatch = () => { const b = $('#hres'); return b && !b.hidden && b.querySelector('.none') ? 'Nothing matches yet. Try fewer or simpler words.' : ''; };
+const tourM = () => S.guideId ? model().mById.get(S.guideId) : null;
+/* Typing steps finish only once the reader pauses, not halfway through a word. */
+const typedPause = ms => Date.now() - TOUR.typedAt > ms;
+const gdSec = n => $('#v-guide .gd-step[data-step="' + n + '"]');
+function tourDone() { try { return JSON.parse(store('eegkb.tours') || '{}') || {}; } catch (e) { return {}; } }
+/* The topic that best fits the reader's own question, to suggest it in the planner. */
+function tourTopic() {
+  const M = model();
+  if (TOUR.problem) {
+    const r = searchKB(TOUR.problem);
+    if (r.cs.length) return r.cs[0].c;
+    const c = r.ms.length ? consFor(M, r.ms[0].m.id)[0] : null;
+    if (c) return c;
+  }
+  const m = tourM();
+  return m ? consFor(M, m.id)[0] || null : null;
+}
+/* The two clicks that open a page from the More menu. */
+function viaMore(route, label) {
+  return [
+    {target: '#more-btn', place: ['bottom', 'left'], task: 'Open the More menu', text: label + ' is in the More menu, at the end of the top bar.',
+      done: () => !$('#more-menu').hidden || S.route === route},
+    {target: () => $('#more-menu').hidden ? $('#more-btn') : $('#more-menu [data-route="' + route + '"]'), place: ['left', 'bottom'],
+      task: () => $('#more-menu').hidden ? 'Open the More menu again' : 'Click “' + label + '”', text: 'Every page is one or two clicks from the top bar.',
+      done: () => S.route === route}
+  ];
+}
+function guideSteps() {
+  const els = () => !!$('#v-guide .gd-els li');
+  return [
+    {route: 'guide', target: '#v-guide .gd-head', place: ['bottom', 'top'], next: 'Got it',
+      text: () => 'This is the measurement guide for ' + (tourM() ? tourM().name : 'this signal') + '. Four numbered steps take you from setting up to reporting.'},
+    {route: 'guide', target: '#v-guide .gd-setup', place: SIDE, next: () => els() ? '' : 'Got it',
+      task: () => els() ? 'Click an electrode in the list' : '',
+      text: () => els() ? 'Step 1: where the electrodes go. Each one lights up on the head when you click it.'
+        : 'Step 1: where the electrodes go. The papers don’t give them for this signal, so the box says what to do.',
+      done: () => els() && !!TOUR.flags.el},
+    {route: 'guide', target: () => gdSec(2), place: SIDE, scrollTo: 'Scroll down to Step 2', next: 'Got it',
+      text: 'Step 2: what the signal looks like in the recording, and when or at which frequency to look.'},
+    {route: 'guide', target: () => gdSec(3), place: SIDE, scrollTo: 'Scroll down to Step 3', next: 'Got it',
+      text: () => 'Step 3: the number to report in your results.' + (gdSec(3) && gdSec(3).querySelector('.gd-general') ? ' “General practice” marks standard EEG practice, used where the papers give no specifics.' : '')},
+    {route: 'guide', target: () => gdSec(4), place: SIDE, scrollTo: 'Scroll down to Step 4', next: 'Got it',
+      text: 'Step 4: the pitfalls to plan around before you record.'},
+    {route: 'guide', target: '#v-guide .gd-sources', place: SIDE, scrollTo: 'Scroll down to the sources', next: 'Got it',
+      text: 'Every point above cites a paper and page. They are all listed here, so you can check them.'},
+    {route: 'guide', target: '#v-guide [data-act="copy-prereg"]', place: ['top', 'right', 'bottom'], task: 'Click “Copy as preregistration notes”', skip: 'Skip',
+      text: 'It copies the whole guide, ready to paste into a preregistration or protocol.', done: () => !!TOUR.flags.prereg}
+  ];
+}
+/* Each step: route (the page it lives on), target, text, and either done (the reader must do something) or next (a button). */
+const TRACKS = {
+  measure: {title: 'Find how to measure something', blurb: 'Search your own research question and follow its guide', len: '2 min',
+    start: () => { TOUR.problem = ''; if (S.route !== 'overview') go('overview'); },
+    steps: () => [
+      {route: 'overview', target: '#hq', also: () => $('#hres'), place: ['top', 'right', 'bottom'], task: 'Type what you want to measure',
+        text: 'Use your own research question, in plain words. For example: REM sleep duration.', wait: noMatch,
+        enter: () => { const q = $('#hq'); if (q && window.innerWidth > 680) q.focus(); },
+        done: () => S.route === 'guide' || S.route === 'constructs' || (hresOpen() && typedPause(1200) && $('#hq').value.trim().length >= 3),
+        leave: () => {
+          const v = ($('#hq') && $('#hq').value || '').trim(), M = model();
+          TOUR.problem = v || (S.route === 'guide' && tourM() ? tourM().name : S.route === 'constructs' && M.cById.has(S.selC) ? M.cById.get(S.selC).name : '');
+        }},
+      {route: ['overview', 'constructs'], wait: () => S.route === 'overview' ? noMatch() : '',
+        target: () => S.route === 'constructs' ? $('#cv-detail .gd-open') : hresOpen() ? $('#hres') : $('#hq'),
+        place: () => S.route === 'constructs' ? ['bottom', 'top', 'right'] : SIDE,
+        task: () => S.route === 'constructs' ? 'Click “How to measure it →” on a signal' : hresOpen() ? 'Click the best match' : 'Click the search box to see your matches',
+        text: () => S.route === 'constructs' ? 'This topic can be measured with the EEG signals listed here. Pick the one that suits your study.'
+          : (TOUR.problem ? 'Matches for “' + TOUR.problem + '”. ' : '') + 'A measurement guide says exactly how to record a signal; a topic lists the signals that measure it.',
+        done: () => S.route === 'guide'}
+    ].concat(guideSteps()),
+    end: () => ({title: 'Tutorial complete', text: 'You found how to measure ' + (TOUR.problem ? '“' + TOUR.problem + '”' : 'it') + ': where the electrodes go, what to look for, what number to report and what to watch out for.', next: 'plan'})},
+  guide: {title: 'Read a measurement guide', blurb: 'What each part of a guide tells you', len: '1 min',
+    start: () => { if (S.route !== 'guide' && S.guideId) go('guide'); },
+    steps: () => guideSteps(),
+    end: () => ({title: 'Tutorial complete', text: 'You know how to read ' + (tourM() ? 'the guide for ' + tourM().name : 'a measurement guide') + ': where the electrodes go, what to look for, what to report and what to watch out for.', next: 'plan'})},
+  plan: {title: 'Plan a study', blurb: 'Pick a topic and participants; get the signals that fit', len: '1 min',
+    steps: () => viaMore('planner', 'Plan a study').concat([
+      {route: 'planner', target: '#pl-c', place: ['right', 'bottom', 'top'], task: 'Pick the topic you want to study', skip: 'Keep this topic',
+        text: () => { const c = tourTopic(); return 'The planner ranks the EEG signals for one topic.' + (c ? ' Your question fits “' + c.name + '”.' : ''); },
+        done: () => !!TOUR.flags.plc},
+      {route: 'planner', target: () => $$('#pl-form fieldset')[0], place: ['right', 'bottom', 'top'], task: 'Choose who your participants are',
+        text: 'Some signals have only been recorded in adults, so infants or patients narrow the list.', done: () => !!TOUR.flags.plpop},
+      {route: 'planner', target: () => $$('#pl-form fieldset')[1], place: ['right', 'bottom', 'top'], task: 'Say whether participants do a task',
+        text: 'Some signals need a response; others work while people just listen or rest.', done: () => !!TOUR.flags.plpara},
+      {route: 'planner', target: () => $('#pl-out .cands') || $('#pl-out'), place: SIDE, scrollTo: 'Scroll to the results', next: 'Got it',
+        text: 'The signals that fit your answers, best first. Each says why, and links to its measurement guide.'},
+      {route: 'planner', target: '#pl-out [data-act="copy-plan"]', place: ['top', 'bottom'], task: 'Click “Copy plan as text”', skip: 'Skip',
+        text: 'Paste the plan into your protocol or send it to your team.', done: () => !!TOUR.flags.plan}
+    ]),
+    end: () => { const c = model().cById.get(S.plan.c); return {title: 'Study planned', text: 'You have a ranked list of EEG signals' + (c ? ' for ' + c.name : '') + ', each linked to its measurement guide.', next: 'contribute'}; }},
+  contribute: {title: 'Add a finding from a paper', blurb: 'Suggest a link: signal, topic, electrodes, paper and page', len: '2 min',
+    start: () => { if (S.edit) cancelEdit(); },
+    steps: () => viaMore('contribute', 'Contribute').concat([
+      {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
+        task: 'Sign in, or practise without an account', text: 'Sending a suggestion needs an account, and the site is invite-only. You can still follow along; the form stays locked.',
+        done: () => !!S.session || TOUR.practice, extra: [['tour-practice', 'Practise without signing in', 'alt']]},
+      {route: 'contribute', target: '#f-measure', place: ['bottom', 'right', 'top'], task: 'Choose the EEG signal the paper measured',
+        text: 'Not in the list? Pick “+ New signal…” at the bottom.', done: () => !!$('#f-measure').value},
+      {route: 'contribute', target: '#f-construct', place: ['bottom', 'left', 'top'], task: 'Choose the topic it measures',
+        text: 'The brain process the paper links the signal to.', done: () => !!$('#f-construct').value},
+      {route: 'contribute', target: '#pl-sites-part', place: SIDE, task: 'Mark the electrodes the paper used', skip: 'The paper doesn’t say',
+        text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click positions on the head, or drag the electrode onto it.',
+        done: () => PL.sites.length > 0},
+      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Choose the paper and type the page number',
+        text: 'Every link points to a page, so anyone can check it.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
+      {route: 'contribute', target: '#f-claim', place: ['bottom', 'top'], task: 'Write what the paper found',
+        text: 'One or two sentences in your own words, not a quotation.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
+      {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
+        text: 'Optional: if the paper says how to record or measure the signal, add it to the measurement guide here.'},
+      {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: 'Send it for review', skip: 'Finish without sending',
+        text: 'An admin checks every suggestion before it goes live, so send only a real finding.',
+        wait: () => $('#f-msg') && $('#f-msg').classList.contains('err') ? 'Fix what the message next to the button asks for.' : '',
+        done: () => !!TOUR.flags.sent}
+    ]),
+    end: () => ({title: 'Ready to contribute', text: TOUR.flags.sent ? 'Your suggestion is with the admins. You’ll get an email when it has been reviewed.' : 'You know every part of the form. Admins review each suggestion before it goes live.'})},
+  tour: {title: 'Quick tour of the site', blurb: 'What each part of the top bar is for', len: '30 s',
+    steps: () => [
+      {target: () => S.route === 'overview' ? $('#hq') : $('#q'), place: ['bottom', 'top'], next: 'Next', text: 'Start here: type what you want to measure and open its step-by-step guide.'},
+      {target: '.tabs [data-route="constructs"]', place: ['bottom'], next: 'Next', text: 'Topics: brain processes such as memory or attention, and the EEG signals that measure them.'},
+      {target: '.tabs [data-route="measures"]', place: ['bottom'], next: 'Next', text: 'EEG signals: every signal, in families, each with its own measurement guide.'},
+      {target: '.tabs [data-route="learn"]', place: ['bottom'], next: 'Next', text: 'EEG basics: electrodes, ERPs and brain rhythms, explained from scratch.'},
+      {target: '#more-btn', place: ['bottom', 'left'], next: 'Next', text: 'More: plan a study, the source papers, a map of every link, and the form to add a paper.'},
+      {when: () => !$('#acct').hidden, target: '#acct', place: ['bottom', 'left'], next: 'Next', text: 'Sign in here to suggest links and edits. New accounts need an invitation.'},
+      {target: '#tour-btn', place: ['bottom', 'left'], next: 'Finish', text: 'Come back here any time for a hands-on tutorial, or to turn on page hints.'}
+    ],
+    end: () => ({title: 'That’s the map', text: 'Ready to try it for real? The next tutorial uses your own research question.', next: 'measure'})}
+};
+const MENU_TRACKS = ['measure', 'plan', 'contribute', 'tour'];
+
+function tourStart(track) {
+  const T = TRACKS[track];
+  if (!T) return;
+  toggleTourMenu(false); hideInvite(true); hintClose(false);
+  if (S.drawer) closeDrawer();
+  Object.assign(TOUR, {on: true, track: track, i: 0, n: 0, final: null, flags: {}, practice: false});
+  if (T.start) T.start();
+  TOUR.steps = T.steps();
+  TOUR.total = TOUR.steps.filter(s => !s.when || s.when()).length;
+  document.body.classList.add('touring');
+  $('#tour').hidden = false;
+  tourEnter();
+  for (let k = 0; k < 12 && TOUR.on && !TOUR.key; k++) tourTick(); // skip what is already done and draw the first step now
+  tourLoop();
+}
+function tourEnter() {
+  while (TOUR.i < TOUR.steps.length && TOUR.steps[TOUR.i].when && !TOUR.steps[TOUR.i].when()) TOUR.i++;
+  if (TOUR.i >= TOUR.steps.length) return tourFinish();
+  Object.assign(TOUR, {fresh: true, okAt: 0, key: '', autoScrolled: '', scrollAt: 0, reached: false});
+  TOUR.n++;
+  const st = TOUR.steps[TOUR.i];
+  if (st.enter) try { st.enter(); } catch (e) {}
+}
+function tourNext() {
+  if (!TOUR.on) return;
+  if (TOUR.final) return tourEnd(true);
+  const st = TOUR.steps[TOUR.i];
+  if (st && st.leave) try { st.leave(); } catch (e) {}
+  TOUR.i++;
+  tourEnter();
+}
+function tourFinish() {
+  const d = tourDone(); d[TOUR.track] = 1; store('eegkb.tours', JSON.stringify(d));
+  TOUR.final = TRACKS[TOUR.track].end();
+  TOUR.key = '';
+}
+function tourEnd(finished) {
+  if (!TOUR.on) return;
+  TOUR.on = false; TOUR.final = null;
+  document.body.classList.remove('touring');
+  $('#tour-ring').hidden = true;
+  if (!TOUR.hint) $('#tour').hidden = true;
+  if (!finished) toast('Tutorial closed. Start it again from the Tutorial button.');
+}
+function tourGo() {
+  const st = TOUR.steps[TOUR.i], r = st && st.route ? [].concat(st.route)[0] : '';
+  if (r) go(r === 'guide' && !S.guideId ? 'overview' : r);
+}
+/* Scrolls a target into the middle of the window below the top bar, or to its top if it is too tall to fit. */
+function tourScroll(el) {
+  const smooth = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const r = el.getBoundingClientRect(), top = topInset(el), room = window.innerHeight - top;
+  const want = r.height + 40 < room ? top + (room - r.height) / 2 : top + 16;
+  try { window.scrollBy({top: r.top - want, behavior: smooth ? 'smooth' : 'auto'}); } catch (e) { window.scrollBy(0, r.top - want); }
+  TOUR.scrollAt = Date.now();
+}
+function tourShow() {
+  const st = TOUR.on && !TOUR.final ? TOUR.steps[TOUR.i] : null, el = st ? tel(st.target) : null;
+  if (el) { tourScroll(el); TOUR.reached = true; TOUR.autoScrolled = S.route; }
+}
+/* The sticky top bar hides the top of the window, except for things inside the bar itself. */
+function topInset(el) {
+  const tb = $('.topbar');
+  if (!tb || (el && tb.contains(el))) return 0;
+  return getComputedStyle(tb).position === 'sticky' ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
+}
+const inView = (r, top) => r.bottom > top + 24 && r.top < window.innerHeight - 24;
+/* Fully on screen if it fits, otherwise starting in the upper half of the window. */
+const wellInView = (r, top) => r.height + 16 < window.innerHeight - top ? r.top >= top - 2 && r.bottom <= window.innerHeight + 2 : r.top >= top - 2 && r.top < window.innerHeight / 2;
+const reachedView = (r, top) => r.top < window.innerHeight * 0.72 && r.bottom > top + 60;
+/* A step whose controls are all switched off (the form before sign-in) becomes a look-only step. */
+function isLocked(el) {
+  const ctl = el.matches('input, select, textarea, button') ? [el] : $$('input, select, textarea, button', el);
+  return ctl.length > 0 && ctl.every(c => c.disabled);
+}
+function tourLoop() {
+  if (TOUR.raf) return;
+  const tick = () => {
+    TOUR.raf = 0;
+    try { tourTick(); } catch (e) { console.warn('tutorial', e); }
+    if (TOUR.on || TOUR.hint || hintsLive()) TOUR.raf = requestAnimationFrame(tick);
+  };
+  TOUR.raf = requestAnimationFrame(tick);
+}
+function tourTick() {
+  hintsTick();
+  if (!TOUR.on) { if (TOUR.hint) hintDraw(); return; }
+  if (TOUR.final) {
+    const F = TOUR.final;
+    return tourPaint({key: 'final', final: true, title: F.title, text: F.text,
+      buttons: F.next ? [['tour-close', 'Done', 'alt'], ['tour-start', 'Next: ' + TRACKS[F.next].title, 'go', F.next]] : [['tour-close', 'Done', 'go']]});
+  }
+  const st = TOUR.steps[TOUR.i];
+  if (!st) return;
+  // A finished step stays put for a moment with its box ticked, then the next one appears.
+  if (TOUR.okAt) { if (Date.now() - TOUR.okAt > 700) tourNext(); return; }
+  let done = false;
+  try { done = !!(st.done && st.done()); } catch (e) {}
+  if (done) {
+    if (TOUR.fresh) { TOUR.n--; TOUR.total--; return tourNext(); } // already done when the step came up: skip it, uncounted
+    TOUR.okAt = Date.now();
+    $('#tour-bub').classList.add('ok'); $('#tour-bub').classList.remove('bob'); $('#tour-btns').hidden = true; $('#tour-ring').hidden = true;
+    return;
+  }
+  TOUR.fresh = false;
+  tourStep(st);
+}
+function tourStep(st) {
+  const vm = {count: 'Step ' + TOUR.n + ' of ' + Math.max(TOUR.total, TOUR.n), prog: (TOUR.n - 1) / Math.max(TOUR.total, TOUR.n), place: tval(st.place)};
+  const routes = st.route ? [].concat(st.route) : null;
+  if (routes && !routes.includes(S.route)) {
+    return tourPaint(Object.assign(vm, {key: 'route|' + TOUR.i + '|' + S.route, text: 'This step is on the ' + (ROUTE_NAME[routes[0]] || 'other') + ' page.', buttons: [['tour-go', 'Take me there', 'go']]}));
+  }
+  const el = tel(st.target), top = topInset(el);
+  let r = el ? el.getBoundingClientRect() : null;
+  const also = st.also ? tel(st.also) : null;
+  if (r && also) { const a = also.getBoundingClientRect(); r = {left: Math.min(r.left, a.left), top: Math.min(r.top, a.top), right: Math.max(r.right, a.right), bottom: Math.max(r.bottom, a.bottom)}; r.width = r.right - r.left; r.height = r.bottom - r.top; }
+  // A step further down the page asks the reader to scroll to it first.
+  if (st.scrollTo && !TOUR.reached) {
+    if (r && reachedView(r, top)) TOUR.reached = true;
+    else {
+      const dir = r && r.bottom < top + 60 ? 'up' : 'down';
+      return tourPaint(Object.assign(vm, {key: 'scroll|' + TOUR.i + '|' + dir, dir: dir, dirText: st.scrollTo, buttons: [['tour-show', 'Show me', 'alt']]}));
+    }
+  }
+  // Bring the target into view once per step and page; after that, scrolling is up to the reader.
+  if (el && !st.scrollTo && TOUR.autoScrolled !== S.route && !wellInView(el.getBoundingClientRect(), top)) { TOUR.autoScrolled = S.route; tourScroll(el); }
+  const locked = !!el && isLocked(el);
+  const text = (tval(st.text) || '') + (locked ? ' The form is locked until you sign in, so just have a look.' : '');
+  const task = locked ? '' : tval(st.task) || '', next = tval(st.next) || '', wait = tval(st.wait) || '';
+  const off = !!r && !inView(r, top) && Date.now() - TOUR.scrollAt > 900;
+  const btns = [];
+  if (st.skip && !next && !locked) btns.push(['tour-skip', st.skip, 'skip']);
+  if (off) btns.push(['tour-show', 'Show me', 'alt']);
+  if (st.extra) st.extra.forEach(b => btns.push(b));
+  if (next || locked) btns.push(['tour-next', next || 'Next', 'go']);
+  return tourPaint(Object.assign(vm, {key: [TOUR.i, text, task, wait, off, btns.map(b => b[1]).join()].join('|'),
+    text: text, task: task, wait: wait, rect: off ? null : r, dir: off ? (r.bottom < top + 24 ? 'up' : 'down') : '', dirText: off ? 'It is ' + (r.bottom < top + 24 ? 'above' : 'below') : '', buttons: btns}));
+}
+function tourPaint(vm) {
+  const bub = $('#tour-bub'), ring = $('#tour-ring');
+  if (vm.key !== TOUR.key) {
+    TOUR.key = vm.key;
+    bub.className = 'tour-bub' + (vm.final ? ' final' : '') + (vm.hint ? ' hint' : '');
+    $('#tour-n').textContent = vm.count || '';
+    $('#tour-prog').style.width = Math.round((vm.prog || 0) * 100) + '%';
+    $('#tour-body').innerHTML = (vm.final ? '<div class="tour-medal" aria-hidden="true">✓</div>' : '') +
+      (vm.title ? '<p class="tour-title">' + esc(vm.title) + '</p>' : '') +
+      (vm.text ? '<p class="tour-txt">' + esc(vm.text) + '</p>' : '') +
+      (vm.task ? '<p class="tour-task">' + esc(vm.task) + '</p>' : '') +
+      (vm.wait ? '<p class="tour-wait">' + esc(vm.wait) + '</p>' : '') +
+      (vm.dir ? '<p class="tour-dir"><i aria-hidden="true" style="--dy:' + (vm.dir === 'up' ? '-3px' : '3px') + '">' + (vm.dir === 'up' ? '↑' : '↓') + '</i>' + esc(vm.dirText || '') + '</p>' : '');
+    const bs = vm.buttons || [];
+    $('#tour-btns').innerHTML = bs.map(b => '<button type="button" class="' + (b[2] === 'go' ? 'tb-go' : b[2] === 'skip' ? 'tb-skip' : 'tb-alt') + '" data-act="' + b[0] + '"' + (b[3] ? ' data-track="' + b[3] + '"' : '') + '>' + esc(b[1]) + '</button>').join('');
+    $('#tour-btns').hidden = !bs.length;
+    // Keyboard readers can press Enter to go on, unless they are busy elsewhere on the page.
+    const go = $('#tour-btns .tb-go'), a = document.activeElement;
+    if (go && (!a || a === document.body || $('#tour').contains(a))) try { go.focus({preventScroll: true}); } catch (e) {}
+  }
+  const r = vm.rect || (vm.el ? vm.el.getBoundingClientRect() : null);
+  const modal = !$('#modal').hidden || !$('#signin').hidden;
+  if (r && !modal) {
+    const p = 6;
+    ring.hidden = false;
+    ring.style.left = (r.left - p) + 'px'; ring.style.top = (r.top - p) + 'px';
+    ring.style.width = (r.width + 2 * p) + 'px'; ring.style.height = (r.height + 2 * p) + 'px';
+  } else ring.hidden = true;
+  placeBubble(bub, r, vm);
+}
+/* Puts the bubble beside the target on the first side with room, with its arrow pointing at the target;
+   with no room (or no target on screen) it docks at the top or bottom of the window. */
+function placeBubble(bub, r, vm) {
+  const vw = document.documentElement.clientWidth, vh = window.innerHeight, m = 12, gap = 16, top = topInset();
+  const bw = bub.offsetWidth, bh = bub.offsetHeight, arrow = $('#tour-arrow');
+  let x = 0, y = 0, side = '';
+  if (r) {
+    const sp = {bottom: vh - r.bottom, top: r.top - top, right: vw - r.right, left: r.left};
+    const shown = r.bottom > top && r.top < vh;
+    side = (vm.place || []).concat(['bottom', 'top', 'right', 'left']).find(s => s === 'top' || s === 'bottom' ? sp[s] >= bh + gap + m : shown && sp[s] >= bw + gap + m) || '';
+    const cx = r.left + r.width / 2, cy = (Math.max(r.top, top) + Math.min(r.bottom, vh)) / 2;
+    if (side === 'bottom') { x = cx - bw / 2; y = r.bottom + gap; }
+    else if (side === 'top') { x = cx - bw / 2; y = r.top - gap - bh; }
+    else if (side === 'right') { x = r.right + gap; y = cy - bh / 2; }
+    else if (side === 'left') { x = r.left - gap - bw; y = cy - bh / 2; }
+    if (side) {
+      x = Math.min(Math.max(x, m), vw - bw - m); y = Math.min(Math.max(y, top + m), vh - bh - m);
+      const ax = Math.round(Math.min(Math.max(cx - x - 7, 14), bw - 28)), ay = Math.round(Math.min(Math.max(cy - y - 7, 14), bh - 28));
+      arrow.style.cssText = side === 'bottom' ? 'left:' + ax + 'px;top:-6px' : side === 'top' ? 'left:' + ax + 'px;bottom:-6px' : side === 'right' ? 'top:' + ay + 'px;left:-6px' : 'top:' + ay + 'px;right:-6px';
+      bub.style.setProperty('--bx', side === 'right' ? '-4px' : side === 'left' ? '4px' : '0px');
+      bub.style.setProperty('--by', side === 'bottom' ? '-4px' : side === 'top' ? '4px' : '0px');
+    }
+  }
+  if (!side) {
+    x = (vw - bw) / 2;
+    y = vm.final ? (vh - bh) / 2 : vm.dir === 'up' || (r && r.top + r.bottom > vh) ? top + m : vh - bh - m;
+    arrow.style.cssText = 'display:none';
+  }
+  bub.classList.toggle('bob', !!side && !vm.ok);
+  bub.style.left = Math.round(x) + 'px'; bub.style.top = Math.round(Math.max(y, m)) + 'px';
+}
+
+/* Page hints: yellow ? marks on the parts of each page worth explaining; each shows a one-line tip once. */
+const HINTS = [
+  {id: 'home-search', route: 'overview', target: '#hq', text: 'Type what you want to measure, in your own words, then open its guide.'},
+  {id: 'guide-steps', route: 'guide', target: '#v-guide .gd-step[data-step="1"] h2', text: 'Every guide has four steps: set up, look for, report, watch out. Each point cites a paper and page.'},
+  {id: 'guide-els', route: 'guide', target: '#v-guide .gd-els', text: 'Click an electrode to find it on the head.'},
+  {id: 'guide-general', route: 'guide', target: '#v-guide .gd-general', text: '“General practice” is standard EEG practice, shown where the papers give no specifics.'},
+  {id: 'guide-copy', route: 'guide', target: '#v-guide [data-act="copy-prereg"]', text: 'Copies the whole guide as text, for a preregistration or protocol.'},
+  {id: 'topic-ways', route: 'constructs', target: '#cv-detail .sec h3', text: 'Each signal below has a step-by-step guide: click “How to measure it →”.'},
+  {id: 'topic-warn', route: 'constructs', target: '#cv-detail .callout.warn', text: 'A signal linked to several topics can’t show which one changed. Add a condition that rules the others out.'},
+  {id: 'signals-type', route: 'measures', target: '#mf-sig', text: 'Show only one kind of signal: ERPs, brain rhythms or sleep scoring.'},
+  {id: 'plan-form', route: 'planner', target: '#pl-form', text: 'Answer the three questions; the ranked list updates as you go.'},
+  {id: 'ct-head', route: 'contribute', target: '#pl-head', text: 'Click the head to mark electrodes, or drag the electrode onto it.'},
+  {id: 'ct-guide', route: 'contribute', target: '#f-guide', text: 'Add the paper’s how-to advice to the signal’s measurement guide.'}
+];
+const hintsOn = () => store('eegkb.hints') === '1';
+function hintSeen() {
+  if (!TOUR.seen) { try { TOUR.seen = JSON.parse(store('eegkb.hintsSeen') || '[]'); } catch (e) { TOUR.seen = []; } }
+  if (!Array.isArray(TOUR.seen)) TOUR.seen = [];
+  return TOUR.seen;
+}
+const hintsLive = () => hintsOn() && HINTS.some(h => !hintSeen().includes(h.id));
+function setHints(on) {
+  store('eegkb.hints', on ? '1' : '0');
+  if (on) { TOUR.seen = []; store('eegkb.hintsSeen', '[]'); toast('Page hints on. Click a yellow ? for a tip.'); tourLoop(); }
+  else { $('#tour-beacons').innerHTML = ''; toast('Page hints off. Turn them back on from the Tutorial button.'); }
+  const cb = $('#tm-hints'); if (cb) cb.checked = on;
+}
+function hintsTick() {
+  const box = $('#tour-beacons');
+  if (TOUR.on || !hintsOn()) { if (box.firstChild) box.innerHTML = ''; return; }
+  const seen = hintSeen(), top = topInset(), vh = window.innerHeight, vw = document.documentElement.clientWidth, keep = new Set();
+  HINTS.forEach(h => {
+    if (h.route !== S.route || seen.includes(h.id) || (TOUR.hint && TOUR.hint.id === h.id)) return;
+    const el = tel(h.target);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top < top + 4 || r.top > vh - 30) return;
+    keep.add(h.id);
+    let b = box.querySelector('[data-id="' + h.id + '"]');
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button'; b.className = 'tour-beacon'; b.textContent = '?';
+      b.setAttribute('data-act', 'hint-open'); b.setAttribute('data-id', h.id); b.setAttribute('aria-label', 'Tip');
+      box.appendChild(b);
+    }
+    b.style.left = Math.round(Math.min(Math.max(r.right - 12, 4), vw - 26)) + 'px';
+    b.style.top = Math.round(Math.max(r.top - 10, top + 2)) + 'px';
+  });
+  Array.from(box.children).forEach(b => { if (!keep.has(b.getAttribute('data-id'))) b.remove(); });
+}
+function hintOpen(id) {
+  const h = HINTS.find(x => x.id === id);
+  if (!h || TOUR.on) return;
+  TOUR.hint = h; TOUR.key = '';
+  $('#tour').hidden = false;
+  hintDraw();
+  tourLoop();
+}
+function hintClose(seen) {
+  const h = TOUR.hint;
+  if (!h) return;
+  if (seen) { const s = hintSeen(); if (!s.includes(h.id)) { s.push(h.id); store('eegkb.hintsSeen', JSON.stringify(s)); } }
+  TOUR.hint = null; TOUR.key = '';
+  if (!TOUR.on) { $('#tour').hidden = true; $('#tour-ring').hidden = true; }
+}
+function hintDraw() {
+  const h = TOUR.hint, el = h.route === S.route ? tel(h.target) : null;
+  if (!el) return hintClose(false);
+  tourPaint({key: 'hint|' + h.id, hint: true, count: 'Tip', text: h.text, el: el, place: ['bottom', 'top', 'right', 'left'],
+    buttons: [['hint-off', 'Turn off hints', 'skip'], ['hint-ok', 'Got it', 'go']]});
+}
+
+function toggleTourMenu(open) {
+  const menu = $('#tour-menu'), btn = $('#tour-btn');
+  if (open === undefined) open = menu.hidden;
+  if (open) {
+    const d = tourDone();
+    menu.innerHTML = '<div class="tm-h"><b>Tutorials</b><span>Hands-on: each step waits until you have done it. Leave any time with ×.</span></div>' +
+      MENU_TRACKS.map((k, i) => {
+        const T = TRACKS[k];
+        return '<button type="button" data-act="tour-start" data-track="' + k + '"><span class="tm-ic" aria-hidden="true">' + (i + 1) + '</span><span class="tm-t"><b>' + esc(T.title) + '</b><span>' + esc(T.blurb) + ' · ' + esc(T.len) + '</span></span><span class="tm-ok">' + (d[k] ? '✓ Done' : '') + '</span></button>';
+      }).join('') +
+      '<label class="tm-hints"><input type="checkbox" id="tm-hints"' + (hintsOn() ? ' checked' : '') + '><span class="tm-t"><b>Page hints</b><span>Yellow ? marks on each page; click one for a one-line tip.</span></span></label>';
+    toggleMore(false);
+  }
+  menu.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  if (open) { const f = $('#tour-menu button'); if (f) setTimeout(() => f.focus(), 0); }
+}
+/* First visit: a small card offers the tutorial once. */
+let inviteT = 0;
+function maybeInvite() {
+  if (inviteT || TOUR.on || S.status !== 'ready' || S.review.token || S.inviteToken || !$('#signin').hidden || store('eegkb.tourSeen')) return;
+  inviteT = setTimeout(() => { if (!TOUR.on && S.route === 'overview' && $('#signin').hidden && !store('eegkb.tourSeen')) $('#tour-invite').hidden = false; }, 1500);
+}
+function hideInvite(seen) { $('#tour-invite').hidden = true; if (seen) store('eegkb.tourSeen', '1'); }
 
 /* ---------- events ---------- */
 function onAct(t) {
@@ -3182,9 +3747,9 @@ function onAct(t) {
     case 'try-q': { const inp = searchIn || $('#hq') || $('#q'); inp.value = t.getAttribute('data-v'); runSearch(inp); inp.focus(); break; }
     case 'edit-measure': startEdit(null, id); break;
     case 'cancel-edit': cancelEdit(); break;
-    case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); break; }
+    case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Preregistration stub'); TOUR.flags.prereg = true; break; }
     case 'copy-cite': { const s = M.sById.get(id); if (s) copyText(s.cite + (s.doi ? ' https://doi.org/' + s.doi : ''), 'Citation'); break; }
-    case 'copy-plan': copyText(planText(M), 'Study plan'); break;
+    case 'copy-plan': copyText(planText(M), 'Study plan'); TOUR.flags.plan = true; break;
     case 'copy-index': copyText(indexCSV(M), 'Measure Index CSV'); break;
     case 'copy-entries': copyText(entriesCSV(M), 'Entries CSV'); break;
     case 'copy-refs': copyText(refsText(M) || 'No sources recorded.', 'Reference list'); break;
@@ -3232,6 +3797,21 @@ function onAct(t) {
     case 'pl-toggle': if (!PL.suppressClick && !($('#f-claim') && $('#f-claim').disabled)) togglePl(t.getAttribute('data-site')); break;
     case 'pl-remove': PL.sites = PL.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(); break;
     case 'pl-token': if (!PL.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
+    case 'pl-usual': if (!($('#f-claim') && $('#f-claim').disabled)) { PL.sites = PL.usual.slice(); renderPlacer(); } break;
+    case 'gd-el': S.gdEl = S.gdEl === t.getAttribute('data-site') ? null : t.getAttribute('data-site'); gdElPaint(); TOUR.flags.el = true; break;
+    case 'tour-menu': toggleTourMenu(); break;
+    case 'tour-start': tourStart(t.getAttribute('data-track')); break;
+    case 'tour-next': case 'tour-skip': tourNext(); break;
+    case 'tour-exit': tourEnd(false); break;
+    case 'tour-close': tourEnd(true); break;
+    case 'tour-go': tourGo(); break;
+    case 'tour-show': tourShow(); break;
+    case 'tour-practice': TOUR.practice = true; break;
+    case 'tour-invite-x': hideInvite(true); break;
+    case 'hints-on': hideInvite(true); setHints(true); break;
+    case 'hint-open': hintOpen(id); break;
+    case 'hint-ok': hintClose(true); break;
+    case 'hint-off': hintClose(true); setHints(false); break;
   }
 }
 let armT = 0;
@@ -3245,8 +3825,10 @@ function bind() {
     const nd = ev.target.closest('#map-svg .nd');
     if (nd) { const c = nd.getAttribute('data-c'), m = nd.getAttribute('data-m'); S.mapPin = (S.mapPin && ((c && S.mapPin.c === c) || (m && S.mapPin.m === m))) ? null : (c ? {c: c} : {m: m}); highlight(S.mapPin); renderMapInfo(model()); return; }
     const t = ev.target.closest('[data-act]');
-    if (!ev.target.closest('.search, .hsearch')) closeSearch();
-    if (!ev.target.closest('.more') && !$('#more-menu').hidden) toggleMore(false);
+    if (ev.target.name === 'pl-pop' || ev.target.name === 'pl-para') TOUR.flags[ev.target.name === 'pl-pop' ? 'plpop' : 'plpara'] = true;
+    if (!ev.target.closest('.search, .hsearch, #tour')) closeSearch();
+    if (!ev.target.closest('.more, #tour') && !$('#more-menu').hidden) toggleMore(false);
+    if (!ev.target.closest('.tourw') && !$('#tour-menu').hidden) toggleTourMenu(false);
     if (!t || t.tagName === 'A') return;
     ev.preventDefault();
     onAct(t);
@@ -3257,7 +3839,10 @@ function bind() {
       if (!$('#signin').hidden) { closeSignin(); return; }
       if (!$('#more-menu').hidden) { toggleMore(false); $('#more-btn').focus(); return; }
       if (!$('#sres').hidden || ($('#hres') && !$('#hres').hidden)) { closeSearch(); return; }
+      if (!$('#tour-menu').hidden) { toggleTourMenu(false); $('#tour-btn').focus(); return; }
       if (S.drawer) { closeDrawer(); return; }
+      if (TOUR.hint) { hintClose(false); return; }
+      if (TOUR.on) { tourEnd(!!TOUR.final); return; }
       if (S.mapPin) { S.mapPin = null; highlight(null); renderMapInfo(model()); }
       return;
     }
@@ -3270,6 +3855,7 @@ function bind() {
   q.addEventListener('focus', () => { if (q.value.trim()) runSearch(q); });
   q.addEventListener('keydown', ev => { if (ev.key === 'Enter') { const b = $('#sres button'); if (b) { ev.preventDefault(); b.click(); } } });
   document.addEventListener('input', ev => {
+    TOUR.typedAt = Date.now();
     if (ev.target.id === 'mf-q') { S.mf.q = ev.target.value; V.measures.update($('#v-measures')); }
     else if (ev.target.id === 'cv-q') { S.cq = ev.target.value; V.constructs.update($('#v-constructs')); }
     else if (ev.target.id === 'acc-q') { S.accQ = ev.target.value; V.admin.update($('#v-admin')); }
@@ -3280,7 +3866,8 @@ function bind() {
     else if (t.id === 'mf-fam') { S.mf.family = t.value; render(); }
     else if (t.id === 'mf-src') { S.mf.source = t.value; render(); }
     else if (t.id === 'mf-sort') { S.mf.sort = t.value; render(); }
-    else if (t.id === 'pl-c') { S.plan.c = t.value; render(); }
+    else if (t.id === 'pl-c') { S.plan.c = t.value; TOUR.flags.plc = true; render(); }
+    else if (t.id === 'tm-hints') setHints(t.checked);
     else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
@@ -3526,6 +4113,7 @@ try {
 } catch (e) {}
 const r0 = routeFromHash();
 go(S.review.token ? 'review' : r0 || 'overview', false);
+if (hintsOn()) tourLoop();
 connect();
 })();
 </script>
