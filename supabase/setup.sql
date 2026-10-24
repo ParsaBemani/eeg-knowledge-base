@@ -7,6 +7,7 @@
 
 create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pg_net with schema extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Tables
@@ -66,6 +67,8 @@ create table if not exists public.submissions (
   entry_id text
 );
 alter table public.submissions enable row level security;
+-- Possible duplicates found when the suggestion arrived (filled in by the database, shown to admins).
+alter table public.submissions add column if not exists dup_hints jsonb not null default '[]'::jsonb;
 
 -- One single-use token per admin per suggestion, for the Accept / Reject buttons in emails.
 -- Only a hash is stored; the token itself exists only in the email.
@@ -115,6 +118,15 @@ create table if not exists public.account_invites (
   expires_at timestamptz not null default now() + interval '30 days'
 );
 alter table public.account_invites enable row level security;
+
+-- Full copies of the data taken before large changes, kept privately (no one can read them through the site).
+create table if not exists public.kb_snapshots (
+  id bigint generated always as identity primary key,
+  taken_at timestamptz not null default now(),
+  label text not null,
+  data jsonb not null
+);
+alter table public.kb_snapshots enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -316,6 +328,97 @@ end $$;
 -- New suggestions: fill in who sent it, limit volume, email every admin
 -- ---------------------------------------------------------------------------
 
+-- Whether a signal or topic record goes by this name: its name, short name, or an also-known-as name
+-- (merged topics keep their old names there).
+create or replace function public._name_matches(d jsonb, v text) returns boolean
+language sql immutable set search_path = '' as $$
+  select lower(trim(coalesce(v, ''))) <> '' and (
+    lower(coalesce(d->>'name', '')) = lower(trim(v))
+    or lower(coalesce(d->>'short', '')) = lower(trim(v))
+    or exists (select 1 from jsonb_array_elements_text(case when jsonb_typeof(d->'aka') = 'array' then d->'aka' else '[]'::jsonb end) as a(x)
+               where lower(a.x) = lower(trim(v))));
+$$;
+
+-- Possible duplicates of a new suggestion, as short sentences for the admins: a new signal, topic or
+-- paper that looks like one already on the site (including old names of merged topics), the same link
+-- already on the site, or the same paper already linking this signal to another topic.
+create or replace function public._dup_hints(p jsonb) returns jsonb
+language plpgsql stable security definer set search_path = public, extensions as $$
+declare
+  v_out jsonb := '[]'::jsonb;
+  v_name text; v_doi text; v_cite text; r record;
+  v_mid text := nullif(p->>'measureId', '');
+  v_cid text := nullif(p->>'constructId', '');
+  v_sid text := nullif(p->>'sourceId', '');
+begin
+  if coalesce(p->>'kind', '') = 'edit' then return v_out; end if;
+  v_name := lower(trim(coalesce(p->'newMeasure'->>'name', '')));
+  if v_mid is null and v_name <> '' then
+    for r in
+      select m.doc->>'name' as name, max(similarity(v_name, lower(n.v))) as s
+      from public.kb_records m,
+        lateral (select m.doc->>'name' union all select m.doc->>'short'
+                 union all select jsonb_array_elements_text(case when jsonb_typeof(m.doc->'aka') = 'array' then m.doc->'aka' else '[]'::jsonb end)) as n(v)
+      where m.collection = 'measures' and coalesce(n.v, '') <> ''
+      group by m.doc->>'name' having max(similarity(v_name, lower(n.v))) >= 0.35
+      order by 2 desc limit 3
+    loop
+      v_out := v_out || to_jsonb('New signal "' || (p->'newMeasure'->>'name') || '" looks like "' || r.name || '", which is already on the site.');
+    end loop;
+  end if;
+  v_name := lower(trim(coalesce(p->'newConstruct'->>'name', '')));
+  if v_cid is null and v_name <> '' then
+    for r in
+      select c.doc->>'name' as name, max(similarity(v_name, lower(n.v))) as s
+      from public.kb_records c,
+        lateral (select c.doc->>'name'
+                 union all select jsonb_array_elements_text(case when jsonb_typeof(c.doc->'aka') = 'array' then c.doc->'aka' else '[]'::jsonb end)) as n(v)
+      where c.collection = 'constructs' and coalesce(n.v, '') <> ''
+      group by c.doc->>'name' having max(similarity(v_name, lower(n.v))) >= 0.35
+      order by 2 desc limit 3
+    loop
+      v_out := v_out || to_jsonb('New topic "' || (p->'newConstruct'->>'name') || '" looks like "' || r.name || '", which is already on the site.');
+    end loop;
+  end if;
+  if v_sid is null and coalesce(p->'reference'->>'cite', '') <> '' then
+    v_doi := lower(regexp_replace(trim(coalesce(p->'reference'->>'doi', '')), '^(https?://)?(dx\.)?doi\.org/', ''));
+    v_cite := lower(trim(p->'reference'->>'cite'));
+    for r in
+      select s.doc->>'short' as short from public.kb_records s
+      where s.collection = 'sources' and (
+        (v_doi <> '' and lower(regexp_replace(coalesce(s.doc->>'doi', ''), '^(https?://)?(dx\.)?doi\.org/', '')) = v_doi)
+        or similarity(v_cite, lower(coalesce(s.doc->>'cite', ''))) >= 0.5)
+      limit 2
+    loop
+      v_out := v_out || to_jsonb('The paper may already be on the site as "' || r.short || '".');
+    end loop;
+  end if;
+  if v_mid is not null and v_cid is not null then
+    for r in
+      select coalesce(s.doc->>'short', 'a paper') as short, coalesce(e.doc->>'pages', '?') as pages, (e.doc->>'sourceId') = v_sid as same_paper
+      from public.kb_records e left join public.kb_records s on s.collection = 'sources' and s.id = e.doc->>'sourceId'
+      where e.collection = 'entries' and e.doc->>'measureId' = v_mid and e.doc->>'constructId' = v_cid
+      order by 3 desc nulls last limit 4
+    loop
+      v_out := v_out || to_jsonb(case when r.same_paper
+        then 'This exact link (same signal, topic and paper) is already on the site: ' || r.short || ', p. ' || r.pages || '.'
+        else 'This signal and topic are already linked by ' || r.short || ', p. ' || r.pages || '.' end);
+    end loop;
+  end if;
+  if v_mid is not null and v_sid is not null then
+    for r in
+      select c.doc->>'name' as topic, coalesce(e.doc->>'pages', '?') as pages
+      from public.kb_records e join public.kb_records c on c.collection = 'constructs' and c.id = e.doc->>'constructId'
+      where e.collection = 'entries' and e.doc->>'measureId' = v_mid and e.doc->>'sourceId' = v_sid
+        and (e.doc->>'constructId') is distinct from v_cid
+      limit 3
+    loop
+      v_out := v_out || to_jsonb('The same paper already links this signal to "' || r.topic || '" (p. ' || r.pages || '). Check that it is not the same idea.');
+    end loop;
+  end if;
+  return v_out;
+end $$;
+
 create or replace function public._before_submission() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -346,6 +449,7 @@ begin
       raise exception 'That EEG signal is no longer on the site.';
     end if;
   end if;
+  new.dup_hints := public._dup_hints(new.payload);
   return new;
 end $$;
 
@@ -380,6 +484,10 @@ begin
       || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
       || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
       || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
+      || case when jsonb_array_length(coalesce(new.dup_hints, '[]'::jsonb)) > 0
+           then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Possible duplicates</b><br>'
+             || (select string_agg(public._esc(h), '<br>') from jsonb_array_elements_text(new.dup_hints) as t(h)) || '</p>'
+           else '' end
       || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
       || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
   end if;
@@ -418,6 +526,7 @@ declare
   v_now text := to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   sm jsonb;
   v_sites jsonb; v_band jsonb; v_snote text; v_spec text;
+  v_cname text; v_aspect text;
 begin
   select * into s from public.submissions where id = p_sub for update;
   if not found then raise exception 'This suggestion no longer exists.'; end if;
@@ -468,7 +577,7 @@ begin
   if mid is null then
     v_name := trim(coalesce(p->'newMeasure'->>'name', ''));
     if v_name = '' then raise exception 'The suggestion has no EEG signal.'; end if;
-    select id into mid from public.kb_records where collection = 'measures' and lower(doc->>'name') = lower(v_name) limit 1;
+    select id into mid from public.kb_records where collection = 'measures' and public._name_matches(doc, v_name) limit 1;
     if mid is null then
       v_sig := case when p->'newMeasure'->>'signal' in ('time', 'freq', 'phase') then p->'newMeasure'->>'signal' else 'time' end;
       mid := 'm-' || public._slug(v_name) || '-' || public._rid();
@@ -503,7 +612,9 @@ begin
   if cid is null then
     v_name := trim(coalesce(p->'newConstruct'->>'name', ''));
     if v_name = '' then raise exception 'The suggestion has no topic.'; end if;
-    select id into cid from public.kb_records where collection = 'constructs' and lower(doc->>'name') = lower(v_name) limit 1;
+    select id, doc->>'name' into cid, v_cname from public.kb_records where collection = 'constructs' and public._name_matches(doc, v_name) limit 1;
+    -- Named after one aspect of an existing topic: link to that topic and keep the wording as the aspect.
+    if cid is not null and lower(v_cname) <> lower(v_name) then v_aspect := v_name; end if;
     if cid is null then
       v_fam := case when p->'newConstruct'->>'family' in ('hearing', 'attention', 'memory', 'language', 'development', 'emotion',
                     'control', 'motor', 'sensory', 'state', 'clinical', 'other') then p->'newConstruct'->>'family' else 'other' end;
@@ -523,7 +634,8 @@ begin
     'evidence', case when p->>'evidence' in ('human-eeg', 'stimulation', 'intracranial', 'review') then p->>'evidence' else 'human-eeg' end,
     'paradigm', coalesce(p->>'paradigm', ''), 'population', coalesce(p->>'population', ''),
     'behaviour', coalesce(p->>'behaviour', ''), 'cites', coalesce(p->>'cites', ''), 'specUsed', v_spec,
-    'provenance', 'contributed', 'status', 'accepted', 'addedAt', to_char(now(), 'YYYY-MM-DD'), 'submissionId', s.id));
+    'provenance', 'contributed', 'status', 'accepted', 'addedAt', to_char(now(), 'YYYY-MM-DD'), 'submissionId', s.id)
+    || case when v_aspect is not null then jsonb_build_object('aspect', v_aspect) else '{}'::jsonb end);
 
   update public.submissions
     set status = 'accepted', reviewed_by = p_actor, reviewer_email = p_email, reviewed_at = now(), entry_id = eid
@@ -675,7 +787,7 @@ begin
   select * into s from public.submissions where id = t.submission_id;
   return jsonb_build_object('ok', true, 'status', s.status, 'admin_email', t.admin_email,
     'submitted_at', s.created_at, 'submitter_email', s.submitter_email,
-    'summary', public._sub_summary(s.payload), 'payload', s.payload);
+    'summary', public._sub_summary(s.payload), 'payload', s.payload, 'dup_hints', coalesce(s.dup_hints, '[]'::jsonb));
 end $$;
 
 create or replace function public.review_by_token(p_token text, p_decision text, p_note text default '') returns jsonb

@@ -399,6 +399,13 @@ table.mini{min-width:600px}
 .dr-editmenu button:hover,.dr-editmenu button:focus-visible{background:var(--panel-2);outline:none}
 .dr-editmenu button:focus-visible{box-shadow:0 0 0 2px var(--accent)}
 .dr-editmenu .sub{font-size:12.5px;color:var(--ink-3)}
+.dupbox{border:1px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:8px 12px;font-size:13.5px;color:var(--ink)}
+.dupbox ul{margin:4px 0;padding-left:18px}
+.subform .dupbox{grid-column:1/-1}
+.dupbox p{margin:3px 0}
+.mgroup{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.mg-head h3{margin:0;font-size:17px}
+.mg-head p{margin:2px 0 0}
 .sec h3{display:flex;align-items:baseline}
 .clist{list-style:none;padding:0;display:flex;flex-direction:column}
 .clist li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-top:1px solid var(--grid);font-size:14px}
@@ -717,6 +724,20 @@ const SIG = {
   freq:{label:'Frequency', plain:'Brain rhythm', many:'brain rhythms', tip:'Oscillation: the strength of rhythmic activity in a frequency band, measured in hertz.', k:'f'},
   phase:{label:'Frequency / phase', plain:'Rhythm coupling', many:'rhythm-coupling measures', tip:'How the timing of one rhythm relates to another rhythm.', k:'p'}
 };
+/* Families of related signals, used to group the EEG signals page. */
+const GROUPS = [
+  {id: 'sensory', label: 'Early sensory responses', tip: 'The first responses to a sight or a sound, within about 200 ms.'},
+  {id: 'detect', label: 'Change, target and preparation', tip: 'Responses to unexpected or task-relevant events, and to getting ready for one.'},
+  {id: 'lateral', label: 'Lateralized ERPs', tip: 'Measured as the difference between the two sides of the head.'},
+  {id: 'error', label: 'Error signals', tip: 'Responses to mistakes and to feedback.'},
+  {id: 'language', label: 'Language ERPs', tip: 'Responses to the meaning and grammar of words and sentences.'},
+  {id: 'erp-other', label: 'Other ERP measures', tip: ''},
+  {id: 'alpha', label: 'Alpha rhythm', tip: 'Different ways of measuring the 8–12 Hz alpha rhythm.'},
+  {id: 'rhythm', label: 'Other brain rhythms', tip: 'Rhythms in other frequency bands, and how rhythms interact.'},
+  {id: 'sleep', label: 'Sleep', tip: 'Signals used to describe sleep and its stages.'}
+];
+const GRP = Object.fromEntries(GROUPS.map(g => [g.id, g]));
+const grpOf = m => GRP[m && m.group] ? m.group : (sigOf(m) === 'time' ? 'erp-other' : 'rhythm');
 const CLAIM = {
   attributed:{label:'Stated by the paper', tip:'The paper says this signal reflects the topic.', rank:4},
   inferred:{label:'Used to infer', tip:'The paper describes studies that used this signal to draw a conclusion about the topic.', rank:3},
@@ -1008,7 +1029,7 @@ function entryCard(e, M, opts) {
   else src = '<span class="muted">No source recorded.</span>';
   return '<article class="entry"><div class="en-top">' + head.join(' ') + '</div>' +
     (e.claim ? '<p class="en-claim">' + esc(e.claim) + '</p>' : '') +
-    '<dl class="en-kv">' + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
+    '<dl class="en-kv">' + row('Aspect', e.aspect) + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
     '<div class="en-src"><span class="eyebrow">Source</span>' + src + '</div>' +
     (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') +
     (canSuggestEdit() || isSbAdmin() ? '<div class="en-admin">' + (canSuggestEdit() ? '<button class="btn sm ghost" data-act="edit-entry" data-id="' + esc(e.id) + '">Suggest an edit</button>' : '') + (isSbAdmin() ? delBtn('entries', e.id, 'Delete this link') : '') + '</div>' : '') + '</article>';
@@ -1082,7 +1103,7 @@ V.overview = {
   update(el) {
     const M = model();
     const ready = S.status === 'ready' || S.status === 'empty';
-    const tries = [['c-memory', null], ['c-attention', null], ['c-aud-deviance', null], [null, 'm-n400'], [null, 'm-alpha']];
+    const tries = [['c-working-memory', null], ['c-selective-attention', null], ['c-sound-change', null], [null, 'm-n400'], [null, 'm-alpha']];
     $('#ov-tries').innerHTML = '<span>Try:</span>' + tries.map(t => {
       if (t[0] && M.cById.has(t[0])) return '<button data-act="open-construct" data-id="' + t[0] + '">' + esc(M.cById.get(t[0]).name) + '</button>';
       if (t[1] && M.mById.has(t[1])) return '<button data-act="open-measure" data-id="' + t[1] + '">' + esc(short(M.mById.get(t[1]))) + '</button>';
@@ -1119,9 +1140,9 @@ V.constructs = {
     fam.value = S.cFam;
     const qi = $('#cv-q'); if (qi.value !== S.cq && document.activeElement !== qi) qi.value = S.cq;
     const ql = S.cq.trim().toLowerCase();
-    const list = M.constructs.filter(c => (S.cFam === 'all' || famOf(c) === S.cFam) && (!ql || [c.name, c.definition].join(' ').toLowerCase().includes(ql)));
+    const list = M.constructs.filter(c => (S.cFam === 'all' || famOf(c) === S.cFam) && (!ql || [c.name, c.definition].concat(arr(c.aka)).join(' ').toLowerCase().includes(ql)));
     if (!S.selC || !M.cById.has(S.selC) || (S.cFam !== 'all' && famOf(M.cById.get(S.selC)) !== S.cFam)) {
-      const pref = list.find(c => c.id === 'c-memory') || list[0];
+      const pref = list.find(c => c.id === 'c-working-memory') || list[0];
       S.selC = pref ? pref.id : null;
     }
     let nav = '', lastF = null;
@@ -1141,7 +1162,9 @@ function constructDetail(c, M) {
   const ms = measFor(M, c.id);
   const sigs = uniq(ms.map(sigOf));
   let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span>' + contribChip(c.provenance) + '</div><h2>' + esc(c.name) + '</h2>' +
-    (c.definition ? '<p class="cd-def">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') + '</div>';
+    (c.definition ? '<p class="cd-def">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') + '</div>' +
+    (arr(c.aspects).length ? '<details class="more-d"><summary>What this topic covers<span class="hint">' + plural(c.aspects.length, 'aspect') + ' named in the papers</span></summary><ul class="srcd">' +
+      c.aspects.map(a => '<li><b>' + esc(a.name) + '.</b> ' + esc(a.definition || '') + ' ' + refHTML(a.defRefs) + '</li>').join('') + '</ul></details>' : '');
   if (!ms.length) {
     h += '<div class="empty">No EEG signal is linked to this topic yet. <button class="link" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest the first link</button></div>';
     return h;
@@ -1154,7 +1177,8 @@ function constructDetail(c, M) {
   ms.forEach(m => {
     const mes = es.filter(e => e.measureId === m.id);
     const best = mes.slice().sort((a, b) => (CLAIM[b.claimType] || CLAIM.attributed).rank - (CLAIM[a.claimType] || CLAIM.attributed).rank)[0];
-    h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
+    const np = uniq(mes.map(e => e.sourceId).filter(Boolean)).length;
+    h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + (np > 1 ? '<span class="chip" title="Papers that make this link">' + np + ' papers</span>' : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
       '<span class="small muted">' + esc(m.spec || '') + '</span></div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
@@ -1227,9 +1251,15 @@ V.measures = {
     if (!M.measures.length) { out.innerHTML = emptyState('Measures'); return; }
     if (!ms.length) { out.innerHTML = '<div class="empty"><b>No signals match.</b><span>Clear the search, or pick All above.</span></div>'; return; }
     if (f.view === 'table') {
-      out.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th style="width:18%">EEG Measure</th><th style="width:8%">Domain</th><th style="width:20%">Specification (band/component, window, site)</th><th style="width:18%">Constructs it has been attributed to (auto, from Entries)</th><th style="width:6%"># Entries in database</th><th style="width:18%">Key caveat</th><th>Sources</th></tr></thead><tbody>' +
-        ms.map(m => { const cv = arr(m.caveats)[0]; return '<tr data-act="open-measure" data-id="' + esc(m.id) + '" tabindex="0"><td><b>' + esc(m.name) + '</b></td><td>' + esc(m.domain || SIG[sigOf(m)].label) + '</td><td>' + esc(m.spec) + '</td><td>' + esc(consFor(M, m.id).map(c => c.name).join('; ')) + '</td><td class="num">' + nE(m) + '</td><td>' + (cv ? esc(cv.t) + ' <span class="note">(' + esc(refText(cv.refs)) + ')</span>' : '<span class="muted">None recorded</span>') + '</td><td>' + esc(srcIdsForM(M, m.id).map(id => (M.sById.get(id) || {}).short || id).join('; ')) + '</td></tr>'; }).join('') +
+      out.innerHTML = '<div class="tbl-wrap"><table><thead><tr><th style="width:16%">EEG Measure</th><th style="width:9%">Family</th><th style="width:7%">Domain</th><th style="width:20%">Specification (band/component, window, site)</th><th style="width:18%">Constructs it has been attributed to (auto, from Entries)</th><th style="width:6%"># Entries in database</th><th style="width:18%">Key caveat</th><th>Sources</th></tr></thead><tbody>' +
+        ms.map(m => { const cv = arr(m.caveats)[0]; return '<tr data-act="open-measure" data-id="' + esc(m.id) + '" tabindex="0"><td><b>' + esc(m.name) + '</b></td><td>' + esc(GRP[grpOf(m)].label) + '</td><td>' + esc(m.domain || SIG[sigOf(m)].label) + '</td><td>' + esc(m.spec) + '</td><td>' + esc(consFor(M, m.id).map(c => c.name).join('; ')) + '</td><td class="num">' + nE(m) + '</td><td>' + (cv ? esc(cv.t) + ' <span class="note">(' + esc(refText(cv.refs)) + ')</span>' : '<span class="muted">None recorded</span>') + '</td><td>' + esc(srcIdsForM(M, m.id).map(id => (M.sById.get(id) || {}).short || id).join('; ')) + '</td></tr>'; }).join('') +
         '</tbody></table></div><p class="note" style="margin-top:8px">Entries whose measure is not on this index (should be 0): <b class="mono">' + M.orphanM.length + '</b></p>';
+    } else if (f.sort === 'index') {
+      out.innerHTML = GROUPS.map(g => {
+        const gm = ms.filter(m => grpOf(m) === g.id);
+        return gm.length ? '<section class="mgroup"><div class="mg-head"><h3>' + esc(g.label) + '<span class="count">' + gm.length + '</span></h3>' +
+          (g.tip ? '<p class="small muted">' + esc(g.tip) + '</p>' : '') + '</div><div class="mgrid">' + gm.map(m => mcard(m, M)).join('') + '</div></section>' : '';
+      }).join('');
     } else {
       out.innerHTML = '<div class="mgrid">' + ms.map(m => mcard(m, M)).join('') + '</div>';
     }
@@ -1364,7 +1394,7 @@ function renderMapInfo(M) {
   } else {
     const links = new Set(M.entries.map(e => e.constructId + '|' + e.measureId)).size;
     box.innerHTML = '<h3>Read the map</h3><p class="small muted">' + plural(links, 'link') + ' between ' + plural(M.constructs.filter(c => (M.measOfC.get(c.id) || []).length).length, 'construct') + ' and ' + plural(M.measures.filter(m => (M.consOfM.get(m.id) || []).length).length, 'measure') + '. Click any name to pin it and list its links here.</p>' +
-      '<p class="small muted">Try <button class="link" data-act="pin" data-m="m-alpha">Alpha power</button> or <button class="link" data-act="pin" data-c="c-memory">Memory processes</button>.</p>';
+      '<p class="small muted">Try <button class="link" data-act="pin" data-m="m-alpha">Alpha power</button> or <button class="link" data-act="pin" data-c="c-working-memory">Working memory</button>.</p>';
   }
 }
 
@@ -1382,7 +1412,7 @@ V.planner = {
   update(el) {
     const M = model();
     const sel = $('#pl-c');
-    if (!S.plan.c || !M.cById.has(S.plan.c)) S.plan.c = M.cById.has('c-aud-deviance') ? 'c-aud-deviance' : (M.constructs[0] ? M.constructs[0].id : '');
+    if (!S.plan.c || !M.cById.has(S.plan.c)) S.plan.c = M.cById.has('c-sound-change') ? 'c-sound-change' : (M.constructs[0] ? M.constructs[0].id : '');
     let opts = '';
     FAMILIES.forEach(f => {
       const cs = M.constructs.filter(c => famOf(c) === f.id);
@@ -1534,7 +1564,7 @@ V.learn = {
   },
   update(el) {
     const M = model();
-    const c = M.cById.get('c-aud-deviance'), m = M.mById.get('m-mmn');
+    const c = M.cById.get('c-sound-change'), m = M.mById.get('m-mmn');
     const cB = c ? '<button class="link" data-act="open-construct" data-id="' + c.id + '">' + esc(c.name) + '</button>' : 'a topic';
     const mB = m ? '<button class="link" data-act="open-measure" data-id="' + m.id + '">' + esc(short(m)) + '</button>' : 'one of its signals';
     $('#ln-walk').innerHTML =
@@ -1748,6 +1778,86 @@ function placeText(s) {
   return {sites: sites, band: b && isFinite(b.lo) && isFinite(b.hi) ? bandText(b) : ''};
 }
 
+/* ---------- duplicate check: is this suggestion already on the site under another name? ---------- */
+const DUP_STOP = new Set(['the', 'of', 'and', 'a', 'an', 'in', 'to', 'for', 'by', 'with', 'on', 'or', 'processing', 'process', 'processes', 'general',
+  'eeg', 'signal', 'activity', 'response', 'responses', 'oscillation', 'oscillations', 'wave', 'waves', 'component']);
+const normTxt = t => String(t || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const dupToks = t => normTxt(t).split(' ').filter(w => w && !DUP_STOP.has(w));
+function trigramSet(t) { const x = '  ' + normTxt(t) + ' ', g = new Set(); for (let i = 0; i < x.length - 2; i++) g.add(x.slice(i, i + 3)); return g; }
+/* How alike two names are, from 0 to 1: shared words, shared letter-triples, or the same code such as P300 or MMN. */
+function nameSim(a, b) {
+  const na = normTxt(a), nb = normTxt(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  const codes = (String(a).match(/\b(?:[A-Z]{2,6}|[A-Za-z]*\d+[A-Za-z]*)\b/g) || []).map(c => c.toLowerCase());
+  const tb = dupToks(b);
+  if (codes.some(c => tb.includes(c)) && dupToks(a).length <= 2) return 0.9;
+  const A = new Set(dupToks(a)), B = new Set(tb);
+  const inter = Array.from(A).filter(w => B.has(w)).length, uni = new Set(Array.from(A).concat(Array.from(B))).size;
+  const ga = trigramSet(na), gb = trigramSet(nb), gi = Array.from(ga).filter(x => gb.has(x)).length;
+  // Letter-triples alone must be a strong match, so one shared long word ("perception") is not enough.
+  const tri = gi / (ga.size + gb.size - gi);
+  return Math.max(uni ? inter / uni : 0, tri >= 0.55 ? tri : 0);
+}
+/* Records whose names look like this name. Besides comparing name by name, it checks how much of the typed
+   name is covered by all of a record's names together (merged topics keep their old names), counting rare
+   words more than common ones such as "perception", so "error monitoring" finds Performance monitoring. */
+function similarRecords(name, items, namesOf) {
+  if (normTxt(name).length < 2) return [];
+  const qt = uniq(dupToks(name)), N = items.length;
+  const vocab = items.map(it => new Set([].concat.apply([], namesOf(it).filter(Boolean).map(dupToks))));
+  const w = {};
+  qt.forEach(t => { w[t] = Math.log((N + 1) / (vocab.filter(v => v.has(t)).length + 0.5)); });
+  const wsum = qt.reduce((a, t) => a + w[t], 0);
+  return items.map((it, i) => {
+    let best = {s: 0, via: ''};
+    namesOf(it).filter(Boolean).forEach(n => { const sc = nameSim(name, n); if (sc > best.s) best = {s: sc, via: n}; });
+    const cover = wsum ? qt.filter(t => vocab[i].has(t)).reduce((a, t) => a + w[t], 0) / wsum * 0.95 : 0;
+    return {it: it, s: Math.max(best.s, cover), name: best.s, via: best.s >= cover ? best.via : ''};
+  }).filter(x => x.s >= 0.45).sort((a, b) => b.s - a.s).filter((x, i, all) => x.s >= all[0].s - 0.3).slice(0, 3);
+}
+const doiKey = d => String(d || '').trim().toLowerCase().replace(/^(https?:\/\/)?(dx\.)?doi\.org\//, '');
+const authYear = c => { const m = String(c || '').match(/^\s*([^,(]+?)\s*[,(].*?\((\d{4})/); return m ? normTxt(m[1]) + ' ' + m[2] : ''; };
+/* Shows notes in the form while someone types: a new signal, topic or paper that may already be on the site,
+   or a link that is already there. S.dupStrong marks a likely duplicate, which then needs a second press to send. */
+function dupCheck() {
+  if (!$('#f-link-dup')) return;
+  const M = model(), v = id => ($('#' + id) && $('#' + id).value || '').trim();
+  const show = (id, html) => { const b = $('#' + id); b.innerHTML = html || ''; b.hidden = !html; };
+  S.dupStrong = false;
+  if (S.edit) { ['f-m-dup', 'f-c-dup', 'f-s-dup', 'f-link-dup'].forEach(id => show(id, '')); return; }
+  const mSel = v('f-measure'), cSel = v('f-construct'), sSel = v('f-source');
+  const also = x => x.via && normTxt(x.via) !== normTxt(x.it.name || x.it.short) ? ' <span class="muted">(matches “' + esc(x.via) + '”)</span>' : '';
+  const useBtn = (field, id, label) => '<button type="button" class="link" data-act="dup-use" data-field="' + field + '" data-id="' + esc(id) + '">' + esc(label) + '</button>';
+  const ms = mSel === '__new' ? similarRecords(v('f-m-name'), M.measures, m => [m.name, m.short].concat(arr(m.aka))) : [];
+  show('f-m-dup', ms.length ? '<b>Already on the site?</b><ul>' + ms.map(x => '<li>' + useBtn('f-measure', x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new signal.</span>' : '');
+  const cs = cSel === '__new' ? similarRecords(v('f-c-name'), M.constructs, c => [c.name].concat(arr(c.aka))) : [];
+  show('f-c-dup', cs.length ? '<b>Already on the site?</b><ul>' + cs.map(x => '<li>' + useBtn('f-construct', x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new topic.</span>' : '');
+  let ss = [];
+  if (sSel === '__new' && (v('f-cite') || v('f-doi'))) {
+    const dk = doiKey(v('f-doi')), ay = authYear(v('f-cite'));
+    ss = M.sources.filter(s => (dk && doiKey(s.doi) === dk) || (ay && authYear(s.cite) === ay) || (v('f-cite').length > 20 && nameSim(v('f-cite'), s.cite || '') >= 0.5)).slice(0, 2);
+  }
+  show('f-s-dup', ss.length ? '<b>This paper may already be on the site</b><ul>' + ss.map(s => '<li>' + useBtn('f-source', s.id, s.short) + ' <span class="muted">' + esc(s.cite || '') + '</span></li>').join('') + '</ul>' : '');
+  const lines = [], mid = mSel && mSel !== '__new' ? mSel : null, cid = cSel && cSel !== '__new' ? cSel : null, sid = sSel && sSel !== '__new' ? sSel : null;
+  const pg = e => (M.sById.get(e.sourceId) || {}).short + (e.pages ? ', p. ' + e.pages : '');
+  if (mid && cid) {
+    const ex = M.entries.filter(e => e.measureId === mid && e.constructId === cid), same = sid ? ex.filter(e => e.sourceId === sid) : [];
+    if (same.length) {
+      lines.push('<b>This exact link is already on the site</b> (' + esc(pg(same[0])) + '). Only send it if your page adds something new; otherwise <button type="button" class="link" data-act="edit-entry" data-id="' + esc(same[0].id) + '">suggest an edit to that link</button>.');
+      S.dupStrong = true;
+    } else if (ex.length) {
+      lines.push('This signal and topic are already linked by ' + esc(uniq(ex.map(pg)).join('; ')) + '. Another paper backing the same link is welcome: it adds evidence.');
+    }
+  }
+  if (mid && sid) {
+    const other = M.entries.filter(e => e.measureId === mid && e.sourceId === sid && e.constructId !== cid);
+    if (other.length) lines.push('This paper already links the signal to ' + other.map(e => '<button type="button" class="link" data-act="edit-entry" data-id="' + esc(e.id) + '">' + esc((M.cById.get(e.constructId) || {}).name || 'a topic') + '</button>' + (e.pages ? ' (p. ' + esc(e.pages) + ')' : '')).join(', ') + '. If that is the same idea, click it to suggest an edit instead.');
+  }
+  show('f-link-dup', lines.map(l => '<p>' + l + '</p>').join(''));
+  if (ms.some(x => x.name >= 0.85) || cs.some(x => x.name >= 0.85) || ss.length) S.dupStrong = true;
+}
+
 /* ---------- suggesting an edit: the Contribute form in edit mode ---------- */
 /* What an edit may change: [key, label, form field]. The first eight belong to the link, the rest to its signal. */
 const EDIT_FIELDS = [
@@ -1872,11 +1982,11 @@ V.contribute = {
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
         '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
         '<div class="subform" id="f-newm" hidden><span class="eyebrow">New measure</span>' +
-          '<div class="field"><label for="f-m-name">Measure name</label><input id="f-m-name" maxlength="140"></div>' +
+          '<div class="field"><label for="f-m-name">Measure name</label><input id="f-m-name" maxlength="140"></div><div class="dupbox" id="f-m-dup" hidden></div>' +
           '<div class="field"><label for="f-m-signal">Signal domain</label><select id="f-m-signal"><option value="time">Time (ERP)</option><option value="freq">Frequency</option><option value="phase">Frequency / phase</option></select></div>' +
           '<div class="field wide"><label for="f-m-spec">Specification as the source gives it</label><input id="f-m-spec" maxlength="300"></div></div>' +
         '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
-          '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div>' +
+          '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
           '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
         '<div class="subform placer-wrap" id="f-place" hidden>' +
           '<p class="small muted" id="f-place-intro"></p>' +
@@ -1897,7 +2007,7 @@ V.contribute = {
           '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
         '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
           '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
-          '<div class="field wide"><label for="f-doi">DOI or URL</label><input id="f-doi" maxlength="300" placeholder="10.xxxx/xxxxx"></div></div>' +
+          '<div class="field wide"><label for="f-doi">DOI or URL</label><input id="f-doi" maxlength="300" placeholder="10.xxxx/xxxxx"></div><div class="dupbox" id="f-s-dup" hidden></div></div>' +
         '<div class="field"><label for="f-claim">What the source says (paraphrase)<span class="req">required</span></label><textarea id="f-claim" rows="3" maxlength="700" placeholder="One or two sentences in your own words, not a quotation."></textarea></div>' +
         '<div class="frow"><div class="field"><label for="f-ctype">Claim type</label><select id="f-ctype">' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
           '<div class="field"><label for="f-evid">Kind of evidence</label><select id="f-evid">' + Object.keys(EVID).map(k => '<option value="' + k + '">' + esc(EVID[k].label) + '</option>').join('') + '</select></div></div>' +
@@ -1906,11 +2016,14 @@ V.contribute = {
         '<div class="frow"><div class="field"><label for="f-beh">Behavioural outcome</label><input id="f-beh" maxlength="200"></div>' +
           '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div></div>' +
         '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
+        '<div class="dupbox" id="f-link-dup" hidden></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
       '</form></section>' +
       '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
-    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; plVisibility(); });
+    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; plVisibility(); dupCheck(); });
+    ['f-m-name', 'f-c-name', 'f-cite', 'f-doi'].forEach(id => $('#' + id).addEventListener('input', dupCheck));
+    ['f-construct', 'f-source'].forEach(id => $('#' + id).addEventListener('change', dupCheck));
     $('#f-m-signal').addEventListener('change', plVisibility);
     $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
     $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; });
@@ -1957,6 +2070,7 @@ V.contribute = {
     $('#f-newc').hidden = $('#f-construct').value !== '__new';
     $('#f-news').hidden = $('#f-source').value !== '__new';
     plVisibility();
+    dupCheck();
     if (S.sbMode) {
       const signed = !!S.session, down = S.sbNote === 'down';
       $('#ct-gate').innerHTML = down
@@ -1999,6 +2113,7 @@ V.contribute = {
     fillNames(q);
   }
 };
+function dupHintsHTML(h) { h = arr(h); return h.length ? '<div class="dupbox"><b>Possible duplicates</b><ul>' + h.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' : ''; }
 function subHTML(s, M) {
   const m = s.measureId ? S.raw.measures.get(s.measureId) : null, c = s.constructId ? S.raw.constructs.get(s.constructId) : null, src = s.sourceId ? S.raw.sources.get(s.sourceId) : null;
   const mName = m ? m.name : (s.newMeasure && s.newMeasure.name ? 'New measure: ' + s.newMeasure.name : 'Unknown measure');
@@ -2017,7 +2132,7 @@ function subHTML(s, M) {
   }
   if (S.sbMode) {
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
-      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' +
+      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
@@ -2075,12 +2190,15 @@ async function submitEntry(ev) {
       pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
       paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
     }, place);
+    // A likely duplicate needs a second press, so it is sent only on purpose.
+    if (S.dupStrong && S.armed !== 'dup-send') { armKey('dup-send'); return setMsg('This looks like something already on the site (see the yellow note above). Press Send again to send it anyway.', true); }
+    S.armed = null;
     const btn = $('#f-submit');
     btn.disabled = true; setMsg('Sending…');
     try {
       const {error} = await S.sb.from('submissions').insert({payload: payload});
       if (error) throw error;
-      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer();
+      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck();
       setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
       toast('Suggestion sent');
       await loadSubs();
@@ -2532,7 +2650,7 @@ V.review = {
         row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
         row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
         row('Electrodes', placeText(p).sites) + row('Frequency range', placeText(p).band) +
-        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>') +
+        row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + '</dl>' + dupHintsHTML(R.data.dup_hints)) +
         '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
         '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
         '<div class="field"><label for="rv-note">Reason (emailed to the contributor if you reject)</label><textarea id="rv-note" maxlength="500"></textarea></div>' +
@@ -2668,6 +2786,7 @@ function drawerHTML(m, M) {
       '<button data-act="edit-measure" data-id="' + esc(m.id) + '"><span>Only the electrodes and frequency range</span><span class="sub">No link changes</span></button></div>'
     : '';
   return '<div class="sec"><div class="dr-top"><div class="chips">' + sigChip(m) + contribChip(m.provenance) + '</div>' + editTop + '</div>' + editMenu + '<h2 id="dr-title">' + esc(m.name) + '</h2>' + (arr(m.aka).length ? '<p class="small muted">Also called: ' + esc(m.aka.join(', ')) + '</p>' : '') +
+      (() => { const sib = M.measures.filter(x => x.id !== m.id && grpOf(x) === grpOf(m)); return '<p class="small muted">Family: <b>' + esc(GRP[grpOf(m)].label) + '</b>' + (sib.length ? ', with ' + sib.map(x => '<button class="link" data-act="open-measure" data-id="' + esc(x.id) + '">' + esc(short(x)) + '</button>').join(', ') : '') + '</p>'; })() +
       '<p class="spec-text">' + esc(m.spec) + ' ' + refHTML(m.specRefs) + '</p>' +
       (feas.length ? '<div class="feas">' + feas.map(t => '<span class="bdg ' + t[0] + '" title="' + esc(refText(f.refs)) + '">' + esc(t[1]) + '</span>').join('') + '</div>' : '') + '</div>' +
     '<div class="sec"><h3>When and where it is measured</h3><div class="dr-viz"><figure>' + scalp(m, 160, true) + '<figcaption>' + esc(m.sitesNote || sitesOf(m).join(', ') || 'Sites not specified') + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + (m.lateralized ? '<br>opposite side minus same side' : '') + '</figcaption></figure>' +
@@ -2721,7 +2840,7 @@ function runSearch(input, box) {
   if (!q) { box.hidden = true; box.innerHTML = ''; return; }
   const M = model(), ql = q.toLowerCase();
   const byName = (a, b, n) => (n(b).toLowerCase().includes(ql) ? 1 : 0) - (n(a).toLowerCase().includes(ql) ? 1 : 0);
-  const cons = M.constructs.filter(c => [c.name, c.definition, FAM[famOf(c)].label].join(' ').toLowerCase().includes(ql))
+  const cons = M.constructs.filter(c => [c.name, c.definition, FAM[famOf(c)].label].concat(arr(c.aka)).join(' ').toLowerCase().includes(ql))
     .sort((a, b) => byName(a, b, c => c.name)).slice(0, 6);
   const meas = M.measures.filter(m => [m.name, m.short, m.spec, m.domain].concat(arr(m.aka)).join(' ').toLowerCase().includes(ql))
     .sort((a, b) => byName(a, b, m => m.name + ' ' + (m.short || ''))).slice(0, 6);
@@ -2850,6 +2969,7 @@ function onAct(t) {
       else startEdit(es.length ? es[0].id : null, id);
       break;
     }
+    case 'dup-use': { const sel = $('#' + t.getAttribute('data-field')); if (sel) { sel.value = id; sel.dispatchEvent(new Event('change', {bubbles: true})); } dupCheck(); toast('Using the one already on the site'); break; }
     case 'edit-entry': startEdit(id, null); break;
     case 'edit-measure': startEdit(null, id); break;
     case 'cancel-edit': cancelEdit(); break;
@@ -3131,12 +3251,12 @@ async function refreshStatus() {
 }
 function subRow(r) {
   return Object.assign({}, r.payload || {}, {id: r.id, status: r.status, submittedAt: r.created_at, submitterEmail: r.submitter_email,
-    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id || (r.payload || {}).entryId || null});
+    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id || (r.payload || {}).entryId || null, dupHints: arr(r.dup_hints)});
 }
 async function loadSubs() {
   if (!S.sb || !S.session) { S.raw.submissions = new Map(); invalidate(); scheduleUpdate(); return; }
   try {
-    const res = await S.sb.from('submissions').select('id,created_at,submitter_email,status,payload,review_note,reviewer_email,reviewed_at,entry_id')
+    const res = await S.sb.from('submissions').select('id,created_at,submitter_email,status,payload,review_note,reviewer_email,reviewed_at,entry_id,dup_hints')
       .order('created_at', {ascending: false}).limit(200);
     if (!res.error && res.data) { S.raw.submissions = new Map(res.data.map(r => [r.id, subRow(r)])); S.loaded.submissions = true; }
   } catch (e) { console.warn('submissions', e); }
