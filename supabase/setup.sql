@@ -69,6 +69,9 @@ create table if not exists public.submissions (
 alter table public.submissions enable row level security;
 -- Possible duplicates found when the suggestion arrived (filled in by the database, shown to admins).
 alter table public.submissions add column if not exists dup_hints jsonb not null default '[]'::jsonb;
+-- Links sent together from one paper (several EEG signals for one topic) share a batch, so admins get one
+-- email for all of them and the contributor gets one email once all of them are reviewed.
+alter table public.submissions add column if not exists batch_id uuid;
 
 -- One single-use token per admin per suggestion, for the Accept / Reject buttons in emails.
 -- Only a hash is stored; the token itself exists only in the email.
@@ -529,14 +532,7 @@ create trigger submissions_before_insert before insert on public.submissions
 create or replace function public._after_submission() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare
-  a record;
-  v_token text;
-  v_link text;
-  v_site text := (select value from public.settings where key = 'site_url');
   s jsonb := public._sub_summary(new.payload);
-  v_edit boolean := coalesce(new.payload->>'kind', '') = 'edit';
-  v_details text;
-  v_fail text;
 begin
   perform public._log('submitted', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'kind', s->>'kind'),
                       new.submitted_by, new.submitter_email);
@@ -545,63 +541,144 @@ begin
   if public.is_admin() then
     begin
       perform public._accept(new.id, new.submitted_by, new.submitter_email);
-      return new;
     exception when others then
-      v_fail := sqlerrm;
-      perform public._log('auto_add_failed', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'reason', v_fail),
+      perform public._log('auto_add_failed', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'reason', sqlerrm),
                           new.submitted_by, new.submitter_email);
     end;
   end if;
-  if v_edit then
-    v_details :=
-         '<p><b>EEG signal:</b> ' || public._esc(s->>'signal')
-      || case when coalesce(new.payload->>'entryId', '') <> '' then '<br><b>Topic:</b> ' || public._esc(s->>'topic') || '<br><b>Paper:</b> ' || public._esc(s->>'paper') else '' end || '</p>'
-      || '<p><b>Changes</b> (on the site now → suggested):<br>' || coalesce(public._edit_html(new.payload), 'none') || '</p>'
-      || case when s->>'reason' <> '' then '<p><b>Why:</b> ' || public._esc(s->>'reason') || '</p>' else '' end
-      || coalesce('<p><b>Notes to add to the measurement guide</b>' || public._guide_html(new.payload->'changes'->'guide') || '</p>', '')
-      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown')) || '</p>';
-  else
-    v_details :=
-         '<p><b>EEG signal:</b> ' || public._esc(s->>'signal') || '<br><b>Topic:</b> ' || public._esc(s->>'topic')
-      || '<br><b>Paper:</b> ' || public._esc(s->>'paper')
-      || '<br><b>Page(s):</b> ' || case when s->>'pages' <> '' then public._esc(s->>'pages') else 'not given' end
-      || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
-      || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
-      || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
-      || coalesce('<p><b>Notes for the measurement guide</b>' || public._guide_html(new.payload->'guide') || '</p>', '')
-      || case when jsonb_array_length(coalesce(new.dup_hints, '[]'::jsonb)) > 0
-           then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Possible duplicates</b><br>'
-             || (select string_agg(public._esc(h), '<br>') from jsonb_array_elements_text(new.dup_hints) as t(h)) || '</p>'
-           else '' end
-      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
-      || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
-  end if;
-  if v_fail is not null then
-    v_details := '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px">Sent by an admin, but it could not be added to the site automatically: '
-      || public._esc(v_fail) || '</p>' || v_details;
-  end if;
-  -- Only admins get this email, and only those who have not switched it off in their email preferences.
-  for a in select user_id, email from public.admins where public._wants_email(email, 'review') loop
-    v_token := encode(gen_random_bytes(24), 'hex');
-    insert into public.review_tokens (token_hash, submission_id, admin_id, admin_email)
-    values (encode(digest(v_token, 'sha256'), 'hex'), new.id, a.user_id, a.email);
-    v_link := v_site || '?review=' || v_token;
-    perform public._send_email(a.email,
-      case when v_edit then 'Suggested edit: ' else 'New suggestion: ' end || (s->>'signal') || ' → ' || (s->>'topic'),
-      public._email_page(case when v_edit then 'An edit was suggested' else 'A new link was suggested' end, v_details
-        || '<p style="margin:20px 0">'
-        || '<a href="' || v_link || '&decision=accept" style="background:#0A6A6A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Accept</a> &nbsp; '
-        || '<a href="' || v_link || '&decision=reject" style="background:#fff;color:#AE3D0C;border:1px solid #AE3D0C;padding:9px 17px;border-radius:6px;text-decoration:none;font-weight:bold">Reject</a></p>'
-        || '<p style="color:#475665;font-size:13.5px">Each button opens a page on the site where you confirm your choice. '
-        || 'The buttons work once and expire after 14 days. You can also review every suggestion on the Admin page.</p>'
-        || public._prefs_note()));
-  end loop;
+  -- The emails go out once per insert, from _after_submissions, so links sent together make one email.
   return new;
 end $$;
 
 drop trigger if exists submissions_after_insert on public.submissions;
 create trigger submissions_after_insert after insert on public.submissions
   for each row execute function public._after_submission();
+
+-- The order of a link among those sent together (the form numbers them 0, 1, 2, …), if it is a small number.
+create or replace function public._seq(p jsonb) returns int
+language sql immutable set search_path = '' as $$
+  select case when p->>'seq' ~ '^[0-9]{1,3}$' then (p->>'seq')::int end;
+$$;
+
+-- One link as HTML for emails: signal, topic, paper, page(s), electrodes, frequency range and what the paper says.
+create or replace function public._link_html(p jsonb) returns text
+language sql stable security definer set search_path = public as $$
+  select '<p><b>EEG signal:</b> ' || public._esc(v->>'signal') || '<br><b>Topic:</b> ' || public._esc(v->>'topic')
+      || '<br><b>Paper:</b> ' || public._esc(v->>'paper')
+      || '<br><b>Page(s):</b> ' || case when v->>'pages' <> '' then public._esc(v->>'pages') else 'not given' end
+      || case when v->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(v->>'sites') else '' end
+      || case when v->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(v->>'band') else '' end || '</p>'
+      || '<p><b>What the paper says:</b> ' || public._esc(v->>'claim') || '</p>'
+  from (select public._sub_summary(p) as v) x;
+$$;
+
+-- Everything an admin needs to review one suggestion (a new link or an edit), as HTML for the review email.
+create or replace function public._sub_details(r public.submissions) returns text
+language plpgsql stable security definer set search_path = public as $$
+declare
+  s jsonb := public._sub_summary(r.payload);
+  v_fail text := (select detail->>'reason' from public.activity
+                  where action = 'auto_add_failed' and detail->>'submission' = r.id::text order by id desc limit 1);
+  v_out text;
+begin
+  if coalesce(r.payload->>'kind', '') = 'edit' then
+    v_out := '<p><b>EEG signal:</b> ' || public._esc(s->>'signal')
+      || case when coalesce(r.payload->>'entryId', '') <> '' then '<br><b>Topic:</b> ' || public._esc(s->>'topic') || '<br><b>Paper:</b> ' || public._esc(s->>'paper') else '' end || '</p>'
+      || '<p><b>Changes</b> (on the site now → suggested):<br>' || coalesce(public._edit_html(r.payload), 'none') || '</p>'
+      || case when s->>'reason' <> '' then '<p><b>Why:</b> ' || public._esc(s->>'reason') || '</p>' else '' end
+      || coalesce('<p><b>Notes to add to the measurement guide</b>' || public._guide_html(r.payload->'changes'->'guide') || '</p>', '')
+      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(r.submitter_email, 'unknown')) || '</p>';
+  else
+    v_out := public._link_html(r.payload)
+      || coalesce('<p><b>Notes for the measurement guide</b>' || public._guide_html(r.payload->'guide') || '</p>', '')
+      || case when jsonb_array_length(coalesce(r.dup_hints, '[]'::jsonb)) > 0
+           then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Possible duplicates</b><br>'
+             || (select string_agg(public._esc(h), '<br>') from jsonb_array_elements_text(r.dup_hints) as t(h)) || '</p>'
+           else '' end
+      || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(r.submitter_email, 'unknown'))
+      || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
+  end if;
+  if v_fail is not null then
+    v_out := '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px">Sent by an admin, but it could not be added to the site automatically: '
+      || public._esc(v_fail) || '</p>' || v_out;
+  end if;
+  return v_out;
+end $$;
+
+-- After each insert of suggestions (one link, or several EEG signals sent together from one paper):
+-- one review email per admin for everything that waits for review, with Accept and Reject buttons for each
+-- link, and one email to the other admins for links an admin added straight to the site.
+create or replace function public._after_submissions() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  a record; r record; rs public.submissions%rowtype; s jsonb;
+  v_ids uuid[]; v_pend uuid[]; v_direct uuid[];
+  v_np int; v_nd int; v_i int;
+  v_site text := (select value from public.settings where key = 'site_url');
+  v_batch uuid := gen_random_uuid();
+  v_token text; v_link text; v_html text; v_subject text; v_title text; v_by uuid; v_by_email text;
+  v_sep text := '<h3 style="font-size:16px;margin:24px 0 6px;padding-top:14px;border-top:1px solid #D9DEE3">';
+begin
+  select array_agg(id) into v_ids from new_rows;
+  if v_ids is null then return null; end if;
+  if array_length(v_ids, 1) > 1 then
+    update public.submissions set batch_id = v_batch where id = any(v_ids);
+  end if;
+  select array_agg(id order by public._seq(payload) nulls last, created_at) into v_pend
+    from public.submissions where id = any(v_ids) and status = 'pending';
+  select array_agg(id order by public._seq(payload) nulls last, created_at) into v_direct
+    from public.submissions where id = any(v_ids) and status = 'accepted' and reviewed_by is not distinct from submitted_by
+      and coalesce(payload->>'kind', '') <> 'edit';
+
+  if v_pend is not null then
+    v_np := array_length(v_pend, 1);
+    select public._sub_summary(payload) || jsonb_build_object('k', coalesce(payload->>'kind', '')) into s from public.submissions where id = v_pend[1];
+    v_subject := case when v_np > 1 then 'New suggestion: ' || v_np || ' EEG signals → ' || (s->>'topic')
+                      else case when s->>'k' = 'edit' then 'Suggested edit: ' else 'New suggestion: ' end || (s->>'signal') || ' → ' || (s->>'topic') end;
+    v_title := case when v_np > 1 then v_np || ' new links were suggested from one paper'
+                    when s->>'k' = 'edit' then 'An edit was suggested' else 'A new link was suggested' end;
+    -- Only admins get this email, and only those who have not switched it off in their email preferences.
+    for a in select user_id, email from public.admins where public._wants_email(email, 'review') loop
+      v_html := ''; v_i := 0;
+      for rs in select * from public.submissions where id = any(v_pend) order by public._seq(payload) nulls last, created_at loop
+        v_i := v_i + 1;
+        v_token := encode(gen_random_bytes(24), 'hex');
+        insert into public.review_tokens (token_hash, submission_id, admin_id, admin_email)
+        values (encode(digest(v_token, 'sha256'), 'hex'), rs.id, a.user_id, a.email);
+        v_link := v_site || '?review=' || v_token;
+        v_html := v_html || case when v_np > 1 then v_sep || 'Link ' || v_i || ' of ' || v_np || '</h3>' else '' end
+          || public._sub_details(rs)
+          || '<p style="margin:16px 0 20px">'
+          || '<a href="' || v_link || '&decision=accept" style="background:#0A6A6A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Accept</a> &nbsp; '
+          || '<a href="' || v_link || '&decision=reject" style="background:#fff;color:#AE3D0C;border:1px solid #AE3D0C;padding:9px 17px;border-radius:6px;text-decoration:none;font-weight:bold">Reject</a></p>';
+      end loop;
+      perform public._send_email(a.email, v_subject, public._email_page(v_title, v_html
+        || '<p style="color:#475665;font-size:13.5px">Each button opens a page on the site where you confirm your choice. '
+        || 'The buttons work once and expire after 14 days. You can also review every suggestion on the Admin page'
+        || case when v_np > 1 then ', where you can accept all of these at once' else '' end || '.</p>'
+        || public._prefs_note()));
+    end loop;
+  end if;
+
+  if v_direct is not null then
+    v_nd := array_length(v_direct, 1);
+    select public._sub_summary(payload), submitted_by, submitter_email into s, v_by, v_by_email from public.submissions where id = v_direct[1];
+    v_html := ''; v_i := 0;
+    for r in select * from public.submissions where id = any(v_direct) order by public._seq(payload) nulls last, created_at loop
+      v_i := v_i + 1;
+      v_html := v_html || case when v_nd > 1 then v_sep || 'Link ' || v_i || ' of ' || v_nd || '</h3>' else '' end || public._link_html(r.payload);
+    end loop;
+    perform public._tell_admins_added(v_by,
+      case when v_nd > 1 then 'Added to the site: ' || v_nd || ' EEG signals → ' || (s->>'topic') else 'Added to the site: ' || (s->>'signal') || ' → ' || (s->>'topic') end,
+      case when v_nd > 1 then v_nd || ' links were added to the site' else 'A link was added to the site' end,
+      v_html || '<p style="color:#475665;font-size:13.5px">Added by ' || public._esc(coalesce(v_by_email, 'an admin')) || '</p>');
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists submissions_after_insert_batch on public.submissions;
+create trigger submissions_after_insert_batch after insert on public.submissions
+  referencing new table as new_rows for each statement execute function public._after_submissions();
 
 -- ---------------------------------------------------------------------------
 -- Accepting and rejecting
@@ -620,6 +697,51 @@ begin
       || '<p><a href="' || v_site || '">Open the knowledge base</a>. Every addition is also listed under Activity on the Admin page.</p>'
       || public._prefs_note()));
   end loop;
+end $$;
+
+-- The email a contributor who is not an admin gets once their suggestion has been reviewed. Links sent
+-- together from one paper get a single email, once the last of them has been accepted or rejected.
+create or replace function public._outcome_email(p_sub uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  s public.submissions%rowtype; r record; sm jsonb;
+  v_site text := (select value from public.settings where key = 'site_url');
+  v_list text := ''; v_n int := 0; v_ok int := 0; v_edit boolean;
+begin
+  select * into s from public.submissions where id = p_sub;
+  if not found or s.status = 'pending' then return; end if;
+  if s.batch_id is not null then
+    if exists (select 1 from public.submissions where batch_id = s.batch_id and status = 'pending') then return; end if;
+    for r in select * from public.submissions where batch_id = s.batch_id order by public._seq(payload) nulls last, created_at loop
+      sm := public._sub_summary(r.payload);
+      v_n := v_n + 1;
+      if r.status = 'accepted' then v_ok := v_ok + 1; end if;
+      v_list := v_list || '<li><b>' || public._esc(sm->>'signal') || '</b> → ' || public._esc(sm->>'topic') || ': '
+        || case when r.status = 'accepted' then 'added to the site'
+                else 'not added' || case when coalesce(r.review_note, '') <> '' then ' (reviewer''s note: ' || public._esc(r.review_note) || ')' else '' end end
+        || '</li>';
+    end loop;
+    perform public._send_email(s.submitter_email, 'Your suggestions were reviewed',
+      public._email_page('Your suggestions were reviewed',
+        '<p>' || v_ok || ' of the ' || v_n || ' links you suggested from one paper ' || case when v_ok = 1 then 'is' else 'are' end || ' now on the site. Thank you.</p>'
+        || '<ul>' || v_list || '</ul><p><a href="' || v_site || '">Open the knowledge base</a></p>'));
+    return;
+  end if;
+  sm := public._sub_summary(s.payload);
+  v_edit := coalesce(s.payload->>'kind', '') = 'edit';
+  if s.status = 'accepted' then
+    perform public._send_email(s.submitter_email, case when v_edit then 'Your suggested edit was accepted' else 'Your suggestion was accepted' end,
+      public._email_page(case when v_edit then 'Your suggested edit was accepted' else 'Your suggestion was accepted' end,
+        case when v_edit then '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic') || '</b> is now on the site. Thank you.</p>'
+             else '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic') || '</b> is now on the site. Thank you.</p>' end
+        || '<p><a href="' || v_site || '">Open the knowledge base</a></p>'));
+  else
+    perform public._send_email(s.submitter_email, case when v_edit then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
+      public._email_page(case when v_edit then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
+        case when v_edit then '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not made.</p>'
+             else '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not added.</p>' end
+        || case when coalesce(s.review_note, '') <> '' then '<p><b>Reviewer''s note:</b> ' || public._esc(s.review_note) || '</p>' else '' end));
+  end if;
 end $$;
 
 create or replace function public._accept(p_sub uuid, p_actor uuid, p_email text) returns text
@@ -756,22 +878,10 @@ begin
   sm := public._sub_summary(p);
   perform public._log('accepted', jsonb_build_object('submission', s.id, 'entry', eid, 'signal', sm->>'signal', 'topic', sm->>'topic',
     'direct', s.submitted_by is not distinct from p_actor), p_actor, p_email);
-  if s.submitted_by is not distinct from p_actor then
-    -- An admin's own link: no "accepted" email, and the other admins hear about it unless they switched that off.
-    perform public._tell_admins_added(p_actor, 'Added to the site: ' || (sm->>'signal') || ' → ' || (sm->>'topic'), 'A link was added to the site',
-      '<p><b>EEG signal:</b> ' || public._esc(sm->>'signal') || '<br><b>Topic:</b> ' || public._esc(sm->>'topic')
-      || '<br><b>Paper:</b> ' || public._esc(sm->>'paper')
-      || case when sm->>'pages' <> '' then '<br><b>Page(s):</b> ' || public._esc(sm->>'pages') else '' end
-      || case when sm->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(sm->>'sites') else '' end || '</p>'
-      || '<p><b>What the paper says:</b> ' || public._esc(sm->>'claim') || '</p>'
-      || '<p style="color:#475665;font-size:13.5px">Added by ' || public._esc(coalesce(p_email, 'an admin')) || '</p>');
-  elsif not exists (select 1 from public.admins where user_id = s.submitted_by) then
-    -- Only people who are not admins get an email about the outcome of their suggestion.
-    perform public._send_email(s.submitter_email, 'Your suggestion was accepted',
-      public._email_page('Your suggestion was accepted',
-        '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic')
-        || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
-        || '">Open the knowledge base</a></p>'));
+  -- An admin's own link is announced to the other admins by _after_submissions, one email per batch.
+  -- Only people who are not admins get an email about the outcome of their suggestion.
+  if s.submitted_by is distinct from p_actor and not exists (select 1 from public.admins where user_id = s.submitted_by) then
+    perform public._outcome_email(s.id);
   end if;
   return eid;
 end $$;
@@ -865,11 +975,7 @@ begin
       || '<p style="color:#475665;font-size:13.5px">Edited by ' || public._esc(coalesce(p_email, 'an admin')) || '</p>');
   elsif not exists (select 1 from public.admins where user_id = s.submitted_by) then
     -- Only people who are not admins get an email about the outcome of their suggestion.
-    perform public._send_email(s.submitter_email, 'Your suggested edit was accepted',
-      public._email_page('Your suggested edit was accepted',
-        '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic')
-        || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
-        || '">Open the knowledge base</a></p>'));
+    perform public._outcome_email(s.id);
   end if;
   return coalesce(eid, mid);
 end $$;
@@ -891,14 +997,9 @@ begin
   sm := public._sub_summary(s.payload);
   perform public._log('rejected', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'note', v_note, 'kind', sm->>'kind'), p_actor, p_email);
   -- Only people who are not admins get an email about the outcome of their suggestion.
-  if exists (select 1 from public.admins where user_id = s.submitted_by) then return; end if;
-  perform public._send_email(s.submitter_email,
-    case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
-    public._email_page(case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
-      case when sm->>'kind' = 'edit'
-        then '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not made.</p>'
-        else '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic') || '</b> was reviewed and not added.</p>' end
-      || case when v_note <> '' then '<p><b>Reviewer''s note:</b> ' || public._esc(v_note) || '</p>' else '' end));
+  if not exists (select 1 from public.admins where user_id = s.submitted_by) then
+    perform public._outcome_email(s.id);
+  end if;
 end $$;
 
 -- Called from the Admin page by a signed-in admin.

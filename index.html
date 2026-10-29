@@ -539,9 +539,49 @@ fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:7px;
 details > summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--ink-2)}
 details[open] > summary{margin-bottom:10px}
 
-.ct{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:1000px){.ct{grid-template-columns:1fr}}
-.ct form{display:flex;flex-direction:column;gap:14px}
+.ct{display:flex;flex-direction:column;gap:20px}
+.ct form{display:flex;flex-direction:column;gap:18px}
+/* Contribute: the paper and topic once, then one card per EEG signal. Two cards sit side by side; from the
+   third on, all but the open card fold into a narrow column on the left that opens on a click. */
+.ct-sec{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ct-st{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:15.5px;margin:0}
+.ct-st .step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 12px var(--f-mono);flex:none}
+.ct-st .count{margin-left:0}
+.ct-sub{font-size:13.5px;color:var(--ink-2);margin:-4px 0 0}
+.sigs{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);align-items:start}
+.sigs.rail{grid-template-columns:minmax(150px,200px) minmax(0,1fr)}
+.sig-rail{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sig-rail[hidden]{display:none}
+.sig-main{display:grid;gap:14px;grid-template-columns:minmax(0,1fr);align-items:start;min-width:0}
+.sigs.two .sig-main{grid-template-columns:repeat(2,minmax(0,1fr))}
+.sig{border:1px solid var(--rule);border-radius:10px;background:var(--panel);display:flex;flex-direction:column;min-width:0;scroll-margin-top:calc(var(--stick) + 12px)}
+.sig.bad{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-soft)}
+.sig-h{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--grid);background:var(--panel-2);border-radius:10px 10px 0 0}
+.sig-n{font:700 11px var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.sig-t{font-size:14.5px;min-width:0;overflow-wrap:anywhere}
+.sig-sum{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12.5px;color:var(--ink-3)}
+.sig-sum .need{color:var(--warn)}
+.sig-sum .ok{color:var(--ok)}
+.sig-x{margin-left:auto}
+.sig-go{display:none;font-size:12.5px;font-weight:700;color:var(--accent)}
+.sig-b{display:flex;flex-direction:column;gap:14px;padding:12px;min-width:0}
+.sig.solo .sig-h{display:none}
+.sig.solo{border:0;background:none}
+.sig.solo .sig-b{padding:0}
+.sig.folded{cursor:pointer}
+.sig.folded .sig-b{display:none}
+.sig.folded .sig-h{flex-direction:column;align-items:flex-start;border-bottom:0;border-radius:10px;gap:4px}
+.sig.folded .sig-x{display:none}
+.sig.folded .sig-go{display:inline}
+.sig.folded:hover{border-color:var(--accent)}
+.sig.folded .sig-h:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sig-add{align-self:flex-start}
+@media (max-width:760px){
+  .sigs.rail{grid-template-columns:minmax(0,1fr)}
+  .sig-rail{flex-direction:row;overflow-x:auto;padding-bottom:4px}
+  .sig-rail .sig{flex:0 0 170px}
+  .sigs.two .sig-main{grid-template-columns:minmax(0,1fr)}
+}
 .frow{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
 .req{font:500 10px var(--f-mono);color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
 .subform{border:1px dashed var(--rule);border-radius:8px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;background:var(--panel-2)}
@@ -628,21 +668,21 @@ details.ep[open] > summary::after{transform:translateY(2px) rotate(-135deg)}
 .placer-wrap{container-type:inline-size}
 @container (max-width:600px){.placer{grid-template-columns:1fr}.placer-fig{max-width:320px}}
 .placer-side{display:flex;flex-direction:column;gap:10px;min-width:0}
-#pl-head{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
-#pl-head .hd,#pl-head .ear,#pl-head .nose{fill:var(--panel);stroke:var(--ink-3);stroke-width:2.5}
-#pl-head .orient{font:500 8px var(--f-mono);fill:var(--ink-3)}
-#pl-head .ps{cursor:pointer}
-#pl-head .ps circle{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:1.4}
-#pl-head .ps text{font:600 7px var(--f-mono);fill:var(--ink-2);text-anchor:middle;pointer-events:none}
-#pl-head .ps:hover circle{stroke:var(--accent);stroke-width:2.2}
-#pl-head .ps.on circle{fill:var(--accent);stroke:var(--accent);cursor:grab}
-#pl-head .ps.on text{fill:var(--accent-ink);font-weight:700}
-#pl-head .ps.hl circle{stroke:var(--hl);stroke-width:4}
-#pl-head .ps.target circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:4}
-#pl-head .ps.usual:not(.on) circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.8;stroke-dasharray:3 2.2}
-#pl-head .ps.usual:not(.on) text{fill:var(--accent)}
-#pl-head .ps:focus{outline:none}
-#pl-head .ps:focus-visible circle{stroke:var(--accent);stroke-width:3.5}
+.pl-head{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.pl-head .hd,.pl-head .ear,.pl-head .nose{fill:var(--panel);stroke:var(--ink-3);stroke-width:2.5}
+.pl-head .orient{font:500 8px var(--f-mono);fill:var(--ink-3)}
+.pl-head .ps{cursor:pointer}
+.pl-head .ps circle{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:1.4}
+.pl-head .ps text{font:600 7px var(--f-mono);fill:var(--ink-2);text-anchor:middle;pointer-events:none}
+.pl-head .ps:hover circle{stroke:var(--accent);stroke-width:2.2}
+.pl-head .ps.on circle{fill:var(--accent);stroke:var(--accent);cursor:grab}
+.pl-head .ps.on text{fill:var(--accent-ink);font-weight:700}
+.pl-head .ps.hl circle{stroke:var(--hl);stroke-width:4}
+.pl-head .ps.target circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:4}
+.pl-head .ps.usual:not(.on) circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.8;stroke-dasharray:3 2.2}
+.pl-head .ps.usual:not(.on) text{fill:var(--accent)}
+.pl-head .ps:focus{outline:none}
+.pl-head .ps:focus-visible circle{stroke:var(--accent);stroke-width:3.5}
 .pl-token{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1.5px dashed var(--accent);border-radius:999px;background:var(--accent-soft);color:var(--accent);font:700 13.5px var(--f-body);cursor:grab;touch-action:none;user-select:none}
 .pl-token i{width:14px;height:14px;border-radius:50%;background:var(--accent);flex:none}
 .pl-token[disabled]{opacity:.5;cursor:not-allowed}
@@ -1850,153 +1890,330 @@ function siteInfo(name) {
   const pos = a[2].charAt(0).toUpperCase() + a[2].slice(1);
   return {name: name, region: a[1] + ', ' + (suf === 'z' ? 'midline' : side + ' side'), desc: pos + ', ' + where + '. Over the ' + a[3] + '.'};
 }
-const PL = {sites: [], usual: [], hover: null, drag: null, moved: false, suppressClick: false, last: null};
-function placerSVG() {
-  let s = '<svg id="pl-head" viewBox="-128 -136 256 264" role="group" aria-label="Head seen from above, nose at the top. Click a position to add or remove an electrode.">' +
+/* ---------- Contribute: one paper and topic, and a card for each EEG signal ---------- */
+/* Each card is one signal the paper links to the topic, with its own electrodes, frequency range, page and claim.
+   One or two cards sit side by side; from the third on, all but the open card fold into a narrow column. */
+const CF = {cards: [], open: 0, seq: 0, locked: false, drag: null, moved: false, suppressClick: false, last: null};
+const CF_MAX = 8;
+const cfCard = k => CF.cards.find(c => c.k === k) || null;
+const cfEl = (c, name) => c ? document.getElementById('f-' + name + '-' + c.k) : null;
+const cfVal = (c, name) => { const e = cfEl(c, name); return (e && e.value || '').trim(); };
+const cfOf = el => { const r = el && el.closest && el.closest('.sig[data-k]'); return r ? cfCard(Number(r.getAttribute('data-k'))) : null; };
+const cfRoot = c => c ? document.querySelector('.sig[data-k="' + c.k + '"]') : null;
+const cf0 = () => CF.cards[0] || null;
+function placerSVG(k) {
+  let s = '<svg class="pl-head" id="f-head-' + k + '" viewBox="-128 -136 256 264" role="group" aria-label="Head seen from above, nose at the top. Click a position to add or remove an electrode.">' +
     '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>' +
     '<text class="orient" x="0" y="-122" text-anchor="middle">nose</text><text class="orient" x="-120" y="-30" text-anchor="middle">L</text><text class="orient" x="120" y="-30" text-anchor="middle">R</text>';
-  Object.keys(SITES).forEach(k => {
-    const p = SITES[k], info = siteInfo(k);
-    s += '<g class="ps" data-site="' + k + '" data-act="pl-toggle" role="button" tabindex="0" aria-pressed="false" aria-label="' + esc(k + ': ' + info.region) + '">' +
-      '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="10.5"/><text x="' + p[0] + '" y="' + (-p[1] + 2.6) + '">' + k + '</text></g>';
+  Object.keys(SITES).forEach(n => {
+    const p = SITES[n], info = siteInfo(n);
+    s += '<g class="ps" data-site="' + n + '" data-act="pl-toggle" role="button" tabindex="0" aria-pressed="false" aria-label="' + esc(n + ': ' + info.region) + '">' +
+      '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="10.5"/><text x="' + p[0] + '" y="' + (-p[1] + 2.6) + '">' + n + '</text></g>';
   });
   return s + '</svg>';
 }
-function renderPlacer() {
-  const svg = $('#pl-head'), list = $('#pl-list');
+/* One signal card: which signal, where and at what frequency the paper measured it, and what the paper says about it. */
+function sigCardHTML(k) {
+  const id = n => 'f-' + n + '-' + k;
+  const opts = (o, ph) => (ph ? '<option value="">' + ph + '</option>' : '') + Object.keys(o).map(x => '<option value="' + x + '">' + esc(o[x].label) + '</option>').join('');
+  const fld = (n, label, input, cls) => '<div class="field' + (cls ? ' ' + cls : '') + '"><label for="' + id(n) + '">' + label + '</label>' + input + '</div>';
+  const inp = (n, max, ph) => '<input id="' + id(n) + '" data-cf="' + n + '" maxlength="' + max + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '>';
+  const area = (n, rows, ph) => '<textarea id="' + id(n) + '" data-cf="' + n + '" rows="' + rows + '" maxlength="' + (n === 'claim' ? 700 : 1500) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></textarea>';
+  const num = (n, ph) => '<input id="' + id(n) + '" data-cf="' + n + '" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="' + ph + '">';
+  return '<div class="sig" data-k="' + k + '">' +
+    '<div class="sig-h" data-act="sig-open"><span class="sig-n"></span><b class="sig-t"></b><span class="sig-sum"></span><span class="sig-go" aria-hidden="true">Open ›</span>' +
+      '<button type="button" class="btn sm ghost sig-x" data-act="sig-remove">Remove</button></div>' +
+    '<div class="sig-b">' +
+      fld('measure', 'EEG signal<span class="req">required</span>', '<select id="' + id('measure') + '" data-cf="measure"></select>') +
+      '<div class="subform" id="' + id('newm') + '" hidden><span class="eyebrow">New signal</span>' +
+        fld('m-name', 'Signal name', inp('m-name', 140)) + '<div class="dupbox" id="' + id('m-dup') + '" hidden></div>' +
+        fld('m-signal', 'Signal domain', '<select id="' + id('m-signal') + '" data-cf="m-signal">' +
+          opts({time: {label: 'Time (ERP)'}, freq: {label: 'Frequency'}, phase: {label: 'Frequency / phase'}, stage: {label: 'Sleep scoring'}}) + '</select>') +
+        fld('m-spec', 'Specification as the source gives it', inp('m-spec', 300), 'wide') + '</div>' +
+      '<div class="subform placer-wrap" id="' + id('place') + '">' +
+        '<p class="small muted" id="' + id('place-intro') + '"></p>' +
+        '<div id="' + id('sites-part') + '"><span class="eyebrow">Where on the head</span>' +
+          '<div class="placer"><div class="placer-fig">' + placerSVG(k) + '</div>' +
+          '<div class="placer-side"><div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
+            '<p class="small muted">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
+            '<div class="pl-usual" id="' + id('usual') + '" hidden></div>' +
+            '<ul class="pl-list" id="' + id('pl-list') + '" aria-live="polite"></ul>' +
+            fld('sites-note', 'Location in the paper\'s words (optional)', inp('sites-note', 200, 'e.g. referenced to the left mastoid, or "posterior sites"')) +
+          '</div></div></div>' +
+        '<div id="' + id('band-part') + '"><span class="eyebrow">Frequency range</span>' +
+          '<div class="frow">' + fld('band-lo', 'From (Hz)', num('band-lo', 'e.g. 4')) + fld('band-hi', 'To (Hz)', num('band-hi', 'e.g. 8')) +
+            fld('band-label', 'Band name (optional)', inp('band-label', 30, 'e.g. theta')) + '</div>' +
+          '<div id="' + id('band-prev') + '"></div></div>' +
+      '</div>' +
+      '<div class="sig-entry" id="' + id('entry-part') + '">' +
+        '<div class="frow">' + fld('pages', 'Page(s)<span class="req">optional</span>', inp('pages', 40, 'e.g., 2034; leave empty if you can\'t check')) + '</div>' +
+        fld('claim', 'What the source says about this signal (paraphrase)<span class="req">required</span>', area('claim', 3, 'One or two sentences in your own words, not a quotation.')) +
+        '<div class="frow">' + fld('ctype', 'Claim type<span class="req">required</span>', '<select id="' + id('ctype') + '" data-cf="ctype">' + opts(CLAIM, 'Choose how firmly…') + '</select>') +
+          fld('evid', 'Kind of evidence', '<select id="' + id('evid') + '" data-cf="evid">' + opts(EVID) + '</select>') + '</div>' +
+        '<div class="frow">' + fld('paradigm', 'Paradigm or task', inp('paradigm', 200)) + fld('pop', 'Population', inp('pop', 200)) + '</div>' +
+        '<div class="frow">' + fld('beh', 'Behavioural outcome', inp('beh', 200)) + fld('cites', 'Primary studies the source cites', inp('cites', 300)) + '</div>' +
+        '<details class="gnotes" id="' + id('guide') + '"><summary>Add to the measurement guide (optional)</summary><div class="gn-body">' +
+          '<p class="small muted">Does the paper explain how to record or measure this signal? Add it here, one point per line. Each point is cited to the paper and page(s).</p>' +
+          fld('g-setup', 'How to set up the recording', area('g-setup', 2, 'e.g. Record EEG from Fz, Cz and Pz, referenced to the linked mastoids.')) +
+          fld('g-look', 'What to look for in the recording', area('g-look', 2)) +
+          fld('g-quant', 'What number to report', area('g-quant', 2)) +
+          fld('g-warn', 'What to watch out for', area('g-warn', 2)) +
+        '</div></details>' +
+      '</div>' +
+      '<div class="dupbox" id="' + id('link-dup') + '" hidden></div>' +
+    '</div></div>';
+}
+function renderPlacer(c) {
+  const svg = cfEl(c, 'head'), list = cfEl(c, 'pl-list');
   if (!svg || !list) return;
   $$('.ps', svg).forEach(g => {
-    const on = PL.sites.includes(g.getAttribute('data-site'));
+    const on = c.sites.includes(g.getAttribute('data-site'));
     g.classList.toggle('on', on); g.setAttribute('aria-pressed', String(on));
   });
-  list.innerHTML = PL.sites.length ? PL.sites.map(k => {
-    const i = siteInfo(k);
-    return '<li data-site="' + k + '"><b class="nm">' + k + '</b><span><span class="rg">' + esc(i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span>' +
-      '<button type="button" class="btn sm ghost" data-act="pl-remove" data-site="' + k + '" aria-label="Remove ' + k + '">Remove</button></li>';
+  list.innerHTML = c.sites.length ? c.sites.map(n => {
+    const i = siteInfo(n);
+    return '<li data-site="' + n + '"><b class="nm">' + n + '</b><span><span class="rg">' + esc(i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span>' +
+      '<button type="button" class="btn sm ghost" data-act="pl-remove" data-site="' + n + '" aria-label="Remove ' + n + '">Remove</button></li>';
   }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
-  plHighlight(PL.hover);
+  plHighlight(c, c.hover);
+  cfSummaries();
 }
-function plHighlight(site) {
-  PL.hover = site;
-  $$('#f-place [data-site]').forEach(el => el.classList.toggle('hl', !!site && el.getAttribute('data-site') === site && (el.tagName !== 'BUTTON')));
+function plHighlight(c, site) {
+  c.hover = site;
+  const box = cfEl(c, 'place');
+  if (box) $$('[data-site]', box).forEach(el => el.classList.toggle('hl', !!site && el.getAttribute('data-site') === site && el.tagName !== 'BUTTON'));
 }
-function togglePl(site) {
+function togglePl(c, site) {
   if (!SITES[site]) return;
-  const i = PL.sites.indexOf(site);
-  if (i >= 0) PL.sites.splice(i, 1); else if (PL.sites.length < 30) PL.sites.push(site);
-  renderPlacer();
+  const i = c.sites.indexOf(site);
+  if (i >= 0) c.sites.splice(i, 1); else if (c.sites.length < 30) c.sites.push(site);
+  renderPlacer(c);
 }
-function plNearest(cx, cy) {
-  const svg = $('#pl-head'), m = svg && svg.getScreenCTM();
+function plNearest(c, cx, cy) {
+  const svg = cfEl(c, 'head'), m = svg && svg.getScreenCTM();
   if (!m) return null;
   const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
   const p = pt.matrixTransform(m.inverse());
-  PL.last = p;
+  CF.last = p;
   let best = null, bd = 18;
-  Object.keys(SITES).forEach(k => { const d = Math.hypot(p.x - SITES[k][0], p.y + SITES[k][1]); if (d < bd) { bd = d; best = k; } });
+  Object.keys(SITES).forEach(n => { const d = Math.hypot(p.x - SITES[n][0], p.y + SITES[n][1]); if (d < bd) { bd = d; best = n; } });
   return best;
 }
 function plPointerDown(ev) {
   const tok = ev.target.closest && ev.target.closest('.pl-token');
-  const g = ev.target.closest && ev.target.closest('#pl-head .ps.on');
-  if ((!tok && !g) || (ev.button !== undefined && ev.button > 0) || ($('#f-claim') && $('#f-claim').disabled)) return;
+  const g = ev.target.closest && ev.target.closest('.pl-head .ps.on');
+  const c = cfOf(ev.target);
+  if ((!tok && !g) || !c || (ev.button !== undefined && ev.button > 0) || CF.locked) return;
   ev.preventDefault();
-  PL.drag = {from: g ? g.getAttribute('data-site') : null, x0: ev.clientX, y0: ev.clientY, ghost: null, target: null};
-  PL.moved = false;
+  CF.drag = {k: c.k, from: g ? g.getAttribute('data-site') : null, x0: ev.clientX, y0: ev.clientY, ghost: null, target: null};
+  CF.moved = false;
 }
 function plPointerMove(ev) {
-  const d = PL.drag;
-  if (!d) return;
-  if (!PL.moved && Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 5) return;
-  PL.moved = true;
+  const d = CF.drag, c = d && cfCard(d.k);
+  if (!c) return;
+  if (!CF.moved && Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 5) return;
+  CF.moved = true;
   ev.preventDefault();
   if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 'pl-ghost'; document.body.appendChild(d.ghost); }
   d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
-  const t = plNearest(ev.clientX, ev.clientY);
-  if (t !== d.target) { d.target = t; $$('#pl-head .ps').forEach(x => x.classList.toggle('target', x.getAttribute('data-site') === t)); }
+  const t = plNearest(c, ev.clientX, ev.clientY);
+  if (t !== d.target) { d.target = t; $$('.ps', cfEl(c, 'head')).forEach(x => x.classList.toggle('target', x.getAttribute('data-site') === t)); }
 }
 function plPointerUp() {
-  const d = PL.drag;
+  const d = CF.drag;
   if (!d) return;
-  PL.drag = null;
+  CF.drag = null;
   if (d.ghost) d.ghost.remove();
-  $$('#pl-head .ps.target').forEach(x => x.classList.remove('target'));
-  if (!PL.moved) return;
-  PL.suppressClick = true; setTimeout(() => { PL.suppressClick = false; }, 0);
+  const c = cfCard(d.k);
+  if (!c) return;
+  $$('.ps.target', cfEl(c, 'head')).forEach(x => x.classList.remove('target'));
+  if (!CF.moved) return;
+  CF.suppressClick = true; setTimeout(() => { CF.suppressClick = false; }, 0);
   if (d.target) {
     if (d.from) {
-      const i = PL.sites.indexOf(d.from);
-      if (PL.sites.includes(d.target)) PL.sites.splice(i, 1); else PL.sites[i] = d.target;
-    } else if (!PL.sites.includes(d.target) && PL.sites.length < 30) PL.sites.push(d.target);
-  } else if (d.from && (!PL.last || Math.hypot(PL.last.x, PL.last.y) > 100)) {
-    PL.sites = PL.sites.filter(s => s !== d.from);
+      const i = c.sites.indexOf(d.from);
+      if (c.sites.includes(d.target)) c.sites.splice(i, 1); else c.sites[i] = d.target;
+    } else if (!c.sites.includes(d.target) && c.sites.length < 30) c.sites.push(d.target);
+  } else if (d.from && (!CF.last || Math.hypot(CF.last.x, CF.last.y) > 100)) {
+    c.sites = c.sites.filter(s => s !== d.from);
   }
-  renderPlacer();
+  renderPlacer(c);
 }
 /* The head is always shown. For a signal already on the site, its usual electrodes are drawn as dashed
    circles; the electrodes marked here are the ones this paper used and are saved with the link. */
-function plVisibility() {
-  const box = $('#f-place');
+function plVisibility(c) {
+  const box = cfEl(c, 'place');
   if (!box) return;
   box.hidden = false;
-  $('#pl-sites-part').hidden = false;
+  cfEl(c, 'sites-part').hidden = false;
   if (S.edit) {
     const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
-    setUsual([]);
-    $('#pl-band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
-    $('#f-place-intro').textContent = (em && sitesOf(em).length
+    setUsual(c, []);
+    cfEl(c, 'band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
+    cfEl(c, 'place-intro').textContent = (em && sitesOf(em).length
       ? 'These are the electrodes on the site now. Drag, add or remove them to match the paper.'
       : 'This signal has no electrodes on the site yet. Add them here if the paper gives them.') +
       (nb > 1 ? ' The signal has ' + nb + ' frequency ranges; this form changes the first one and keeps the others.' : '');
     return;
   }
-  const sel = $('#f-measure').value, isNew = sel === '__new';
+  const sel = cfVal(c, 'measure'), isNew = sel === '__new';
   const m = sel && !isNew ? model().mById.get(sel) : null;
   const usual = m ? sitesOf(m).filter(x => SITES[x]) : [];
-  const sk = isNew ? $('#f-m-signal').value : m ? sigOf(m) : '';
+  const sk = isNew ? cfVal(c, 'm-signal') : m ? sigOf(m) : '';
   const bandOn = sk === 'freq' || sk === 'phase', mb = m ? bandsOf(m)[0] : null;
-  setUsual(usual);
-  $('#pl-band-part').hidden = !bandOn;
-  $('#f-band-lo').placeholder = mb ? String(mb.lo) : 'e.g. 4';
-  $('#f-band-hi').placeholder = mb ? String(mb.hi) : 'e.g. 8';
-  $('#f-band-label').placeholder = mb && mb.label ? mb.label : 'e.g. theta';
-  $('#f-place-intro').textContent = !sel
+  setUsual(c, usual);
+  cfEl(c, 'band-part').hidden = !bandOn;
+  cfEl(c, 'band-lo').placeholder = mb ? String(mb.lo) : 'e.g. 4';
+  cfEl(c, 'band-hi').placeholder = mb ? String(mb.hi) : 'e.g. 8';
+  cfEl(c, 'band-label').placeholder = mb && mb.label ? mb.label : 'e.g. theta';
+  cfEl(c, 'place-intro').textContent = !sel
     ? 'Mark where the paper put the electrodes. Choose the EEG signal above to see where it is usually recorded.'
     : isNew ? 'Show where the paper records this signal' + (bandOn ? ' and the frequency range it uses' : '') + '. Optional.'
     : usual.length ? 'Dashed circles show where this signal is usually recorded (' + usual.join(', ') + '). Mark the electrodes this paper used; they are saved with your link. Optional.'
     : 'This signal has no electrodes on the site yet. If the paper gives them, mark them here; they are added to the signal when your suggestion is accepted.';
 }
-function setUsual(list) {
-  PL.usual = list;
-  $$('#pl-head .ps').forEach(g => g.classList.toggle('usual', list.includes(g.getAttribute('data-site'))));
-  const b = $('#pl-usual');
+function setUsual(c, list) {
+  c.usual = list;
+  $$('.ps', cfEl(c, 'head')).forEach(g => g.classList.toggle('usual', list.includes(g.getAttribute('data-site'))));
+  const b = cfEl(c, 'usual');
   if (!b) return;
   b.hidden = !list.length;
-  b.innerHTML = list.length ? '<button type="button" class="btn sm" data-act="pl-usual"' + ($('#f-claim') && $('#f-claim').disabled ? ' disabled' : '') + '>Start from the usual electrodes (' + esc(list.join(', ')) + ')</button>' : '';
+  b.innerHTML = list.length ? '<button type="button" class="btn sm" data-act="pl-usual"' + (CF.locked ? ' disabled' : '') + '>Start from the usual electrodes (' + esc(list.join(', ')) + ')</button>' : '';
 }
-function parseBand() {
-  const lo = ($('#f-band-lo') && $('#f-band-lo').value || '').trim(), hi = ($('#f-band-hi') && $('#f-band-hi').value || '').trim();
+function parseBand(c) {
+  const lo = cfVal(c, 'band-lo'), hi = cfVal(c, 'band-hi');
   if (!lo && !hi) return null;
   const a = Number(lo), b = Number(hi);
   if (!lo || !hi || !isFinite(a) || !isFinite(b) || a < 0 || b > 1000 || a >= b) return {error: true};
-  return {lo: a, hi: b, label: ($('#f-band-label').value || '').trim().slice(0, 30)};
+  return {lo: a, hi: b, label: cfVal(c, 'band-label').slice(0, 30)};
 }
-function renderBandPreview() {
-  const box = $('#f-band-prev');
+function renderBandPreview(c) {
+  const box = cfEl(c, 'band-prev');
   if (!box) return;
-  const b = parseBand();
+  const b = parseBand(c);
   if (!b) box.innerHTML = '<p class="small muted">Enter both ends to see the range on the scale.</p>';
   else if (b.error) box.innerHTML = '<p class="fmsg err">Use two numbers between 0 and 1000 Hz, with the first one lower.</p>';
   else box.innerHTML = ruler({signal: 'freq', bands: [b]}, false) + '<p class="cap">' + esc(bandText(b)) + '</p>';
 }
-/* What the form adds about where and at what frequency the signal is measured. */
-function placePayload() {
-  const box = $('#f-place');
+const bandShown = c => { const p = cfEl(c, 'band-part'); return !!(p && !p.hidden); };
+/* What a card adds about where and at what frequency the signal is measured. */
+function placePayload(c) {
+  const box = cfEl(c, 'place');
   if (!box || box.hidden) return {sites: [], sitesNote: '', bands: []};
-  const sitesOn = !$('#pl-sites-part').hidden, bandOn = !$('#pl-band-part').hidden, b = bandOn ? parseBand() : null;
-  return {sites: sitesOn ? PL.sites.slice() : [], sitesNote: sitesOn ? ($('#f-sites-note').value || '').trim() : '', bands: b && !b.error ? [b] : []};
+  const sitesOn = !cfEl(c, 'sites-part').hidden, b = bandShown(c) ? parseBand(c) : null;
+  return {sites: sitesOn ? c.sites.slice() : [], sitesNote: sitesOn ? cfVal(c, 'sites-note') : '', bands: b && !b.error ? [b] : []};
 }
-function resetPlacer() { PL.sites = []; PL.hover = null; renderPlacer(); renderBandPreview(); plVisibility(); }
+function fillMeasureSelect(c, M) {
+  const sel = cfEl(c, 'measure');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Choose a signal…</option>' + (M || model()).measures.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>').join('') + '<option value="__new">+ New signal…</option>';
+  if (cur && Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
+}
+/* Adding, removing, folding and numbering the cards. Cards are moved, never rebuilt, so nothing typed is lost. */
+function cfAdd(copyFrom) {
+  const main = $('#sig-main');
+  if (!main) return null;
+  const c = {k: ++CF.seq, sites: [], usual: [], hover: null};
+  CF.cards.push(c);
+  main.insertAdjacentHTML('beforeend', sigCardHTML(c.k));
+  fillMeasureSelect(c);
+  if (copyFrom) ['evid', 'paradigm', 'pop'].forEach(n => { const v = cfVal(copyFrom, n); if (v) cfEl(c, n).value = v; });
+  if (CF.locked) $$('input, select, textarea, button', cfRoot(c)).forEach(x => { x.disabled = true; });
+  renderPlacer(c); renderBandPreview(c); plVisibility(c);
+  return c;
+}
+function cfReset() {
+  CF.cards = []; CF.open = 0;
+  ['#sig-main', '#sig-rail'].forEach(s => { const b = $(s); if (b) b.innerHTML = ''; });
+  const c = cfAdd();
+  if (c) CF.open = c.k;
+  cfLayout();
+}
+function addSigCard() {
+  if (S.edit || CF.locked || CF.cards.length >= CF_MAX) return;
+  const prev = CF.cards[CF.cards.length - 1], c = cfAdd(prev);
+  if (!c) return;
+  CF.open = c.k;
+  cfLayout(); dupCheck(); updateSubmitLabel();
+  try { cfRoot(c).scrollIntoView({block: 'nearest', behavior: 'smooth'}); cfEl(c, 'measure').focus({preventScroll: true}); } catch (e) {}
+  toast('Signal ' + CF.cards.length + ' added' + (prev && (cfVal(prev, 'paradigm') || cfVal(prev, 'pop')) ? '. Its task and population were copied from the signal before it.' : ''));
+}
+function removeSigCard(c) {
+  if (!c || CF.cards.length < 2) return;
+  const key = 'sig-x:' + c.k;
+  if ((cfVal(c, 'measure') || cfVal(c, 'claim') || c.sites.length) && S.armed !== key) { armKey(key); return; }
+  S.armed = null;
+  const i = CF.cards.indexOf(c);
+  CF.cards.splice(i, 1);
+  const el = cfRoot(c);
+  if (el) el.remove();
+  if (CF.open === c.k) CF.open = CF.cards[Math.min(i, CF.cards.length - 1)].k;
+  cfLayout(); dupCheck(); updateSubmitLabel();
+}
+function openSigCard(c) {
+  if (!c || CF.open === c.k || CF.cards.length < 3) return;
+  CF.open = c.k;
+  cfLayout();
+  try { cfRoot(c).scrollIntoView({block: 'nearest', behavior: 'smooth'}); } catch (e) {}
+}
+function cfLayout() {
+  const box = $('#sigs'), main = $('#sig-main'), rail = $('#sig-rail');
+  if (!box || !main || !rail) return;
+  const n = CF.cards.length, folding = n > 2;
+  if (!cfCard(CF.open) && n) CF.open = CF.cards[n - 1].k;
+  box.classList.toggle('rail', folding); box.classList.toggle('two', n === 2);
+  CF.cards.forEach(c => {
+    const el = cfRoot(c), open = !folding || c.k === CF.open, h = el.querySelector('.sig-h');
+    el.classList.toggle('folded', !open);
+    if (open) { h.removeAttribute('role'); h.removeAttribute('tabindex'); h.removeAttribute('aria-label'); }
+    else { h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0'); }
+    (open ? main : rail).appendChild(el);
+  });
+  rail.hidden = !folding;
+  cfSummaries();
+}
+function cfSummaries() {
+  const n = CF.cards.length, M = model();
+  CF.cards.forEach((c, i) => {
+    const root = cfRoot(c);
+    if (!root) return;
+    const sel = cfVal(c, 'measure'), m = sel && sel !== '__new' ? M.mById.get(sel) : null;
+    const name = m ? m.name : sel === '__new' ? (cfVal(c, 'm-name') || 'New signal') : 'No signal chosen yet';
+    const need = [];
+    if (!sel) need.push('signal');
+    if (!cfVal(c, 'claim')) need.push('what it says');
+    if (!CLAIM[cfVal(c, 'ctype')]) need.push('claim type');
+    root.querySelector('.sig-n').textContent = 'Signal ' + (i + 1);
+    root.querySelector('.sig-t').textContent = name;
+    root.querySelector('.sig-sum').innerHTML = (c.sites.length ? '<span>' + esc(plural(c.sites.length, 'electrode')) + '</span>' : '') +
+      (need.length ? '<span class="need">Needs ' + esc(need.join(', ')) + '</span>' : '<span class="ok">Ready</span>');
+    const h = root.querySelector('.sig-h');
+    if (h.getAttribute('role')) h.setAttribute('aria-label', 'Open signal ' + (i + 1) + ': ' + name);
+    const x = root.querySelector('.sig-x'), armed = S.armed === 'sig-x:' + c.k;
+    x.hidden = n < 2 || !!S.edit;
+    x.textContent = armed ? 'Click again to remove' : 'Remove';
+    x.classList.toggle('armed', armed);
+    x.setAttribute('aria-label', armed ? 'Click again to remove signal ' + (i + 1) : 'Remove signal ' + (i + 1));
+    root.classList.toggle('solo', n === 1);
+  });
+  const cnt = $('#sig-count');
+  if (cnt) { cnt.textContent = n; cnt.hidden = n < 2; }
+  const sub = $('#sig-sub');
+  if (sub) sub.textContent = S.edit ? '' : n > 2 ? 'The other signals are folded into small cards. Click one to open it.' : n === 2 ? 'Both signals share the paper and topic above.' : 'Does the paper link more than one signal to this topic? Add each one below instead of starting again.';
+  const add = $('#sig-add');
+  if (add) {
+    add.hidden = !!S.edit || !!(S.static && !S.sbMode);
+    add.disabled = CF.locked || n >= CF_MAX;
+    add.textContent = n >= CF_MAX ? 'Up to ' + CF_MAX + ' signals at once' : '+ Add another signal from this paper';
+  }
+}
+function updateSubmitLabel() {
+  const b = $('#f-submit');
+  if (!b || !S.sbMode) return;
+  const n = CF.cards.length, E = S.edit, admin = isSbAdmin();
+  b.textContent = E ? (admin ? 'Save edit' : 'Send edit for review') : admin ? (n > 1 ? 'Add ' + n + ' links to the site' : 'Add to the site') : (n > 1 ? 'Send ' + n + ' suggestions' : 'Send suggestion');
+}
 function placeText(s) {
   const sites = arr(s.sites).join(', ') + (s.sitesNote ? (arr(s.sites).length ? ' (' : '') + s.sitesNote + (arr(s.sites).length ? ')' : '') : '');
   const b = arr(s.bands)[0];
@@ -2046,49 +2263,56 @@ const authYear = c => { const m = String(c || '').match(/^\s*([^,(]+?)\s*[,(].*?
 /* Shows notes in the form while someone types: a new signal, topic or paper that may already be on the site,
    or a link that is already there. S.dupStrong marks a likely duplicate, which then needs a second press to send. */
 function dupCheck() {
-  if (!$('#f-link-dup')) return;
+  if (!$('#f-s-dup')) return;
   const M = model(), v = id => ($('#' + id) && $('#' + id).value || '').trim();
-  const show = (id, html) => { const b = $('#' + id); b.innerHTML = html || ''; b.hidden = !html; };
+  const show = (b, html) => { if (b) { b.innerHTML = html || ''; b.hidden = !html; } };
   S.dupStrong = false;
-  if (S.edit) { ['f-m-dup', 'f-c-dup', 'f-s-dup', 'f-link-dup'].forEach(id => show(id, '')); return; }
-  const mSel = v('f-measure'), cSel = v('f-construct'), sSel = v('f-source');
+  if (S.edit) { show($('#f-c-dup'), ''); show($('#f-s-dup'), ''); CF.cards.forEach(c => { show(cfEl(c, 'm-dup'), ''); show(cfEl(c, 'link-dup'), ''); }); return; }
+  const cSel = v('f-construct'), sSel = v('f-source');
   const also = x => x.via && normTxt(x.via) !== normTxt(x.it.name || x.it.short) ? ' <span class="muted">(matches “' + esc(x.via) + '”)</span>' : '';
   const useBtn = (field, id, label) => '<button type="button" class="link" data-act="dup-use" data-field="' + field + '" data-id="' + esc(id) + '">' + esc(label) + '</button>';
-  const ms = mSel === '__new' ? similarRecords(v('f-m-name'), M.measures, m => [m.name, m.short].concat(arr(m.aka))) : [];
-  show('f-m-dup', ms.length ? '<b>Already on the site?</b><ul>' + ms.map(x => '<li>' + useBtn('f-measure', x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new signal.</span>' : '');
   const cs = cSel === '__new' ? similarRecords(v('f-c-name'), M.constructs, c => [c.name].concat(arr(c.aka))) : [];
-  show('f-c-dup', cs.length ? '<b>Already on the site?</b><ul>' + cs.map(x => '<li>' + useBtn('f-construct', x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new topic.</span>' : '');
+  show($('#f-c-dup'), cs.length ? '<b>Already on the site?</b><ul>' + cs.map(x => '<li>' + useBtn('f-construct', x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new topic.</span>' : '');
   let ss = [];
   if (sSel === '__new' && (v('f-cite') || v('f-doi'))) {
     const dk = doiKey(v('f-doi')), ay = authYear(v('f-cite'));
     ss = M.sources.filter(s => (dk && doiKey(s.doi) === dk) || (ay && authYear(s.cite) === ay) || (v('f-cite').length > 20 && nameSim(v('f-cite'), s.cite || '') >= 0.5)).slice(0, 2);
   }
-  show('f-s-dup', ss.length ? '<b>This paper may already be on the site</b><ul>' + ss.map(s => '<li>' + useBtn('f-source', s.id, s.short) + ' <span class="muted">' + esc(s.cite || '') + '</span></li>').join('') + '</ul>' : '');
-  const lines = [], mid = mSel && mSel !== '__new' ? mSel : null, cid = cSel && cSel !== '__new' ? cSel : null, sid = sSel && sSel !== '__new' ? sSel : null;
+  show($('#f-s-dup'), ss.length ? '<b>This paper may already be on the site</b><ul>' + ss.map(s => '<li>' + useBtn('f-source', s.id, s.short) + ' <span class="muted">' + esc(s.cite || '') + '</span></li>').join('') + '</ul>' : '');
+  let strong = cs.some(x => x.name >= 0.85) || ss.length > 0;
+  const cid = cSel && cSel !== '__new' ? cSel : null, sid = sSel && sSel !== '__new' ? sSel : null;
   const pg = e => (M.sById.get(e.sourceId) || {}).short + (e.pages ? ', p. ' + e.pages : '');
-  if (mid && cid) {
-    const ex = M.entries.filter(e => e.measureId === mid && e.constructId === cid), same = sid ? ex.filter(e => e.sourceId === sid) : [];
-    if (same.length) {
-      lines.push('<b>This exact link is already on the site</b> (' + esc(pg(same[0])) + '). Only send it if your page adds something new; otherwise <button type="button" class="link" data-act="edit-entry" data-id="' + esc(same[0].id) + '">suggest an edit to that link</button>.');
-      S.dupStrong = true;
-    } else if (ex.length) {
-      lines.push('This signal and topic are already linked by ' + esc(uniq(ex.map(pg)).join('; ')) + '. Another paper backing the same link is welcome: it adds evidence.');
+  // Each signal card: a new signal that may already be on the site, and links this one would repeat.
+  CF.cards.forEach(c => {
+    const mSel = cfVal(c, 'measure');
+    const ms = mSel === '__new' ? similarRecords(cfVal(c, 'm-name'), M.measures, m => [m.name, m.short].concat(arr(m.aka))) : [];
+    show(cfEl(c, 'm-dup'), ms.length ? '<b>Already on the site?</b><ul>' + ms.map(x => '<li>' + useBtn('f-measure-' + c.k, x.it.id, x.it.name) + also(x) + '</li>').join('') + '</ul><span class="small muted">Click one to use it instead of adding a new signal.</span>' : '');
+    if (ms.some(x => x.name >= 0.85)) strong = true;
+    const lines = [], mid = mSel && mSel !== '__new' ? mSel : null;
+    if (mid && cid) {
+      const ex = M.entries.filter(e => e.measureId === mid && e.constructId === cid), same = sid ? ex.filter(e => e.sourceId === sid) : [];
+      if (same.length) {
+        lines.push('<b>This exact link is already on the site</b> (' + esc(pg(same[0])) + '). Only send it if your page adds something new; otherwise <button type="button" class="link" data-act="edit-entry" data-id="' + esc(same[0].id) + '">suggest an edit to that link</button>.');
+        strong = true;
+      } else if (ex.length) {
+        lines.push('This signal and topic are already linked by ' + esc(uniq(ex.map(pg)).join('; ')) + '. Another paper backing the same link is welcome: it adds evidence.');
+      }
     }
-  }
-  if (mid && sid) {
-    const other = M.entries.filter(e => e.measureId === mid && e.sourceId === sid && e.constructId !== cid);
-    if (other.length) lines.push('This paper already links the signal to ' + other.map(e => '<button type="button" class="link" data-act="edit-entry" data-id="' + esc(e.id) + '">' + esc((M.cById.get(e.constructId) || {}).name || 'a topic') + '</button>' + (e.pages ? ' (p. ' + esc(e.pages) + ')' : '')).join(', ') + '. If that is the same idea, click it to suggest an edit instead.');
-  }
-  show('f-link-dup', lines.map(l => '<p>' + l + '</p>').join(''));
-  if (ms.some(x => x.name >= 0.85) || cs.some(x => x.name >= 0.85) || ss.length) S.dupStrong = true;
+    if (mid && sid) {
+      const other = M.entries.filter(e => e.measureId === mid && e.sourceId === sid && e.constructId !== cid);
+      if (other.length) lines.push('This paper already links the signal to ' + other.map(e => '<button type="button" class="link" data-act="edit-entry" data-id="' + esc(e.id) + '">' + esc((M.cById.get(e.constructId) || {}).name || 'a topic') + '</button>' + (e.pages ? ' (p. ' + esc(e.pages) + ')' : '')).join(', ') + '. If that is the same idea, click it to suggest an edit instead.');
+    }
+    show(cfEl(c, 'link-dup'), lines.map(l => '<p>' + l + '</p>').join(''));
+  });
+  S.dupStrong = strong;
 }
 
 /* ---------- suggesting an edit: the Contribute form in edit mode ---------- */
-/* What an edit may change: [key, label, form field]. The first eight belong to the link, the rest to its signal. */
+/* What an edit may change: [key, label, field of the signal card]. The first eight belong to the link, the rest to its signal. */
 const EDIT_FIELDS = [
-  ['claim', 'What the paper says', 'f-claim'], ['pages', 'Page(s)', 'f-pages'], ['claimType', 'Link strength', 'f-ctype'], ['evidence', 'Kind of evidence', 'f-evid'],
-  ['paradigm', 'Task', 'f-paradigm'], ['population', 'Population', 'f-pop'], ['behaviour', 'Behavioural outcome', 'f-beh'], ['cites', 'Original studies cited', 'f-cites'],
-  ['sites', 'Electrodes'], ['sitesNote', 'Location in the paper\'s words', 'f-sites-note'], ['bands', 'Frequency range']
+  ['claim', 'What the paper says', 'claim'], ['pages', 'Page(s)', 'pages'], ['claimType', 'Link strength', 'ctype'], ['evidence', 'Kind of evidence', 'evid'],
+  ['paradigm', 'Task', 'paradigm'], ['population', 'Population', 'pop'], ['behaviour', 'Behavioural outcome', 'beh'], ['cites', 'Original studies cited', 'cites'],
+  ['sites', 'Electrodes'], ['sitesNote', 'Location in the paper\'s words', 'sites-note'], ['bands', 'Frequency range']
 ];
 const ENTRY_KEYS = EDIT_FIELDS.slice(0, 8).map(f => f[0]);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -2131,9 +2355,9 @@ function editRowsHTML(p, live) {
 }
 /* Notes for a signal's measurement guide, sent with a suggestion or an edit. */
 const GUIDE_KEYS = [['setup', 'Set-up'], ['lookFor', 'What to look for'], ['quantify', 'What number to report'], ['caveats', 'Watch out for']];
-function guideLines() {
-  const lines = id => ($('#' + id) && $('#' + id).value || '').split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 8);
-  const g = {setup: lines('f-g-setup'), lookFor: lines('f-g-look'), quantify: lines('f-g-quant'), caveats: lines('f-g-warn')};
+function guideLines(c) {
+  const lines = n => cfVal(c, n).split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 8);
+  const g = {setup: lines('g-setup'), lookFor: lines('g-look'), quantify: lines('g-quant'), caveats: lines('g-warn')};
   return Object.keys(g).some(k => g[k].length) ? g : null;
 }
 function guideNotesHTML(g, label) {
@@ -2149,52 +2373,53 @@ function startEdit(entryId, measureId) {
   S.edit = {entryId: e ? entryId : null, measureId: mid, base: editSnapshot(e ? entryId : null, mid)};
   go('contribute');
   const E = S.edit, b = E.base;
-  $('#ct-form').reset();
-  $('#f-measure').value = mid;
+  $('#ct-form').reset(); cfReset();
+  const c = cf0();
+  cfEl(c, 'measure').value = mid;
   if (e) { $('#f-construct').value = e.constructId; $('#f-source').value = e.sourceId || ''; }
-  EDIT_FIELDS.forEach(f => { if (f[2] && b[f[0]] !== undefined) $('#' + f[2]).value = b[f[0]]; });
+  EDIT_FIELDS.forEach(f => { if (f[2] && b[f[0]] !== undefined) cfEl(c, f[2]).value = b[f[0]]; });
   const b0 = b.bands[0];
-  $('#f-band-lo').value = b0 ? b0.lo : ''; $('#f-band-hi').value = b0 ? b0.hi : ''; $('#f-band-label').value = b0 ? b0.label : '';
-  PL.sites = b.sites.slice(); PL.hover = null;
-  renderPlacer(); renderBandPreview();
+  cfEl(c, 'band-lo').value = b0 ? b0.lo : ''; cfEl(c, 'band-hi').value = b0 ? b0.hi : ''; cfEl(c, 'band-label').value = b0 ? b0.label : '';
+  c.sites = b.sites.slice(); c.hover = null;
+  renderPlacer(c); renderBandPreview(c);
   $('#f-msg').textContent = '';
   render();
   try { $('#ct-form').closest('.panel').scrollIntoView({block: 'start'}); } catch (err) {}
 }
 function cancelEdit() {
   S.edit = null;
-  $('#ct-form').reset(); resetPlacer();
+  $('#ct-form').reset(); cfReset();
   $('#f-msg').textContent = '';
   render();
 }
-/* Only the fields that differ from the site go into the edit. */
+/* Only the fields that differ from the site go into the edit. An edit uses the first (and only) signal card. */
 function editPayload() {
-  const E = S.edit, b = E.base, v = id => ($('#' + id).value || '').trim(), ch = {};
+  const E = S.edit, b = E.base, c = cf0(), v = n => cfVal(c, n), ch = {};
   if (E.entryId) EDIT_FIELDS.slice(0, 8).forEach(f => {
     let val = v(f[2]);
     if (f[0] === 'claimType' && !CLAIM[val]) val = b.claimType;
     if (f[0] === 'evidence' && !EVID[val]) val = b.evidence;
     if (val !== b[f[0]]) ch[f[0]] = val;
   });
-  if (!same(PL.sites, b.sites)) ch.sites = PL.sites.slice();
-  if (v('f-sites-note') !== b.sitesNote) ch.sitesNote = v('f-sites-note');
+  if (!same(c.sites, b.sites)) ch.sites = c.sites.slice();
+  if (v('sites-note') !== b.sitesNote) ch.sitesNote = v('sites-note');
   // Adding the first electrodes replaces a "Not given in the papers" note that was left as it was.
   else if (ch.sites && ch.sites.length && !b.sites.length && /^not (given|specified)/i.test(b.sitesNote)) ch.sitesNote = '';
-  if (!$('#pl-band-part').hidden) {
-    const band = parseBand(), bands = (band && !band.error ? [band] : []).concat(b.bands.slice(1));
+  if (bandShown(c)) {
+    const band = parseBand(c), bands = (band && !band.error ? [band] : []).concat(b.bands.slice(1));
     if (!same(bands, b.bands)) ch.bands = bands;
   }
-  if (E.entryId) { const g = guideLines(); if (g) ch.guide = g; }
+  if (E.entryId) { const g = guideLines(c); if (g) ch.guide = g; }
   const before = {};
   Object.keys(ch).forEach(k => { before[k] = b[k]; });
   const e = E.entryId ? S.raw.entries.get(E.entryId) : null;
   return {kind: 'edit', entryId: E.entryId, measureId: E.measureId, constructId: e ? e.constructId : null, sourceId: e ? e.sourceId || null : null,
-    changes: ch, before: before, reason: v('f-reason')};
+    changes: ch, before: before, reason: ($('#f-reason').value || '').trim()};
 }
 async function submitEdit(setMsg) {
   if (!S.sbMode || !S.sb) return setMsg('Edits need the live database.', true);
   if (!S.session) return setMsg('Sign in first, then send your edit.', true);
-  const band = $('#pl-band-part').hidden ? null : parseBand();
+  const band = bandShown(cf0()) ? parseBand(cf0()) : null;
   if (band && band.error) return setMsg('Fix the frequency range: two numbers from 0 to 1000 Hz, the first one lower.', true);
   const payload = editPayload();
   if (!Object.keys(payload.changes).length) return setMsg('Nothing has changed yet. Change a field or the electrodes on the head, then send.', true);
@@ -2206,7 +2431,7 @@ async function submitEdit(setMsg) {
     if (ins.error) throw ins.error;
     const status = await subStatus(ins.data && ins.data[0] && ins.data[0].id);
     S.edit = null;
-    $('#ct-form').reset(); resetPlacer(); $('#f-guide').open = false;
+    $('#ct-form').reset(); cfReset();
     if (status === 'accepted') {
       setMsg('Saved. The change is on the site now.');
       toast('Edit saved');
@@ -2312,78 +2537,59 @@ async function doiFill(auto) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
-      '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest a link</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest links from a paper: the paper, the topic it studies, and each EEG signal it links to that topic. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
+      '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest links from a paper</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
-        '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
-        '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
-        '<div class="subform" id="f-newm" hidden><span class="eyebrow">New measure</span>' +
-          '<div class="field"><label for="f-m-name">Measure name</label><input id="f-m-name" maxlength="140"></div><div class="dupbox" id="f-m-dup" hidden></div>' +
-          '<div class="field"><label for="f-m-signal">Signal domain</label><select id="f-m-signal"><option value="time">Time (ERP)</option><option value="freq">Frequency</option><option value="phase">Frequency / phase</option><option value="stage">Sleep scoring</option></select></div>' +
-          '<div class="field wide"><label for="f-m-spec">Specification as the source gives it</label><input id="f-m-spec" maxlength="300"></div></div>' +
-        '<div class="subform" id="f-newc" hidden><span class="eyebrow">New construct</span>' +
-          '<div class="field"><label for="f-c-name">Construct name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
-          '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
-        '<div class="subform placer-wrap" id="f-place">' +
-          '<p class="small muted" id="f-place-intro"></p>' +
-          '<div id="pl-sites-part"><span class="eyebrow">Where on the head</span>' +
-            '<div class="placer"><div class="placer-fig">' + placerSVG() + '</div>' +
-            '<div class="placer-side"><div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
-              '<p class="small muted">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
-              '<div class="pl-usual" id="pl-usual" hidden></div>' +
-              '<ul class="pl-list" id="pl-list" aria-live="polite"></ul>' +
-              '<div class="field"><label for="f-sites-note">Location in the paper\'s words (optional)</label><input id="f-sites-note" maxlength="200" placeholder="e.g. referenced to the left mastoid, or &quot;posterior sites&quot;"></div>' +
-            '</div></div></div>' +
-          '<div id="pl-band-part"><span class="eyebrow">Frequency range</span>' +
-            '<div class="frow"><div class="field"><label for="f-band-lo">From (Hz)</label><input id="f-band-lo" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="e.g. 4"></div>' +
-              '<div class="field"><label for="f-band-hi">To (Hz)</label><input id="f-band-hi" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="e.g. 8"></div>' +
-              '<div class="field"><label for="f-band-label">Band name (optional)</label><input id="f-band-label" maxlength="30" placeholder="e.g. theta"></div></div>' +
-            '<div id="f-band-prev"></div></div>' +
+        '<div class="ct-sec" id="ct-shared"><h4 class="ct-st"><span class="step" aria-hidden="true">1</span>The paper and the topic</h4>' +
+          '<div class="frow"><div class="field"><label for="f-source">Source (the paper)<span class="req">required</span></label><select id="f-source"></select></div>' +
+          '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
+          '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
+            '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" maxlength="300" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
+              '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
+            '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
+            '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
+          '<div class="subform" id="f-newc" hidden><span class="eyebrow">New topic</span>' +
+            '<div class="field"><label for="f-c-name">Topic name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
+            '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
         '</div>' +
-        '<div id="f-entry-part"><div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
-          '<div class="field"><label for="f-pages">Page(s)<span class="req">optional</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034; leave empty if you can\'t check"></div></div>' +
-        '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
-          '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" maxlength="300" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
-            '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
-          '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
-          '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
-        '<div class="field"><label for="f-claim">What the source says (paraphrase)<span class="req">required</span></label><textarea id="f-claim" rows="3" maxlength="700" placeholder="One or two sentences in your own words, not a quotation."></textarea></div>' +
-        '<div class="frow"><div class="field"><label for="f-ctype">Claim type<span class="req">required</span></label><select id="f-ctype"><option value="">Choose how firmly…</option>' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
-          '<div class="field"><label for="f-evid">Kind of evidence</label><select id="f-evid">' + Object.keys(EVID).map(k => '<option value="' + k + '">' + esc(EVID[k].label) + '</option>').join('') + '</select></div></div>' +
-        '<div class="frow"><div class="field"><label for="f-paradigm">Paradigm or task</label><input id="f-paradigm" maxlength="200"></div>' +
-          '<div class="field"><label for="f-pop">Population</label><input id="f-pop" maxlength="200"></div></div>' +
-        '<div class="frow"><div class="field"><label for="f-beh">Behavioural outcome</label><input id="f-beh" maxlength="200"></div>' +
-          '<div class="field"><label for="f-cites">Primary studies the source cites</label><input id="f-cites" maxlength="300"></div></div>' +
-        '<details class="gnotes" id="f-guide"><summary>Add to the measurement guide (optional)</summary><div class="gn-body">' +
-          '<p class="small muted">Does the paper explain how to record or measure this signal? Add it here, one point per line. Each point is cited to the paper and page(s) above.</p>' +
-          '<div class="field"><label for="f-g-setup">How to set up the recording</label><textarea id="f-g-setup" rows="2" maxlength="1500" placeholder="e.g. Record EEG from Fz, Cz and Pz, referenced to the linked mastoids."></textarea></div>' +
-          '<div class="field"><label for="f-g-look">What to look for in the recording</label><textarea id="f-g-look" rows="2" maxlength="1500"></textarea></div>' +
-          '<div class="field"><label for="f-g-quant">What number to report</label><textarea id="f-g-quant" rows="2" maxlength="1500"></textarea></div>' +
-          '<div class="field"><label for="f-g-warn">What to watch out for</label><textarea id="f-g-warn" rows="2" maxlength="1500"></textarea></div>' +
-        '</div></details></div>' +
+        '<div class="ct-sec" id="ct-signals"><h4 class="ct-st"><span class="step" aria-hidden="true">2</span>EEG signals the paper links to this topic<span class="count" id="sig-count" hidden>1</span></h4>' +
+          '<p class="ct-sub" id="sig-sub"></p>' +
+          '<div class="sigs" id="sigs"><div class="sig-rail" id="sig-rail" hidden></div><div class="sig-main" id="sig-main"></div></div>' +
+          '<button type="button" class="btn sig-add" id="sig-add" data-act="sig-add">+ Add another signal from this paper</button>' +
+        '</div>' +
         '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
-        '<div class="dupbox" id="f-link-dup" hidden></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
       '</form></section>' +
       '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
-    $('#f-measure').addEventListener('change', () => { $('#f-newm').hidden = $('#f-measure').value !== '__new'; plVisibility(); dupCheck(); });
-    ['f-m-name', 'f-c-name', 'f-cite', 'f-doi'].forEach(id => $('#' + id).addEventListener('input', dupCheck));
+    ['f-c-name', 'f-cite', 'f-doi'].forEach(id => $('#' + id).addEventListener('input', dupCheck));
     // A pasted DOI fills in the citation, unless the person has typed a citation of their own.
     $('#f-doi').addEventListener('input', () => { clearTimeout(doiT); doiT = setTimeout(() => doiFill(true), 700); });
     $('#f-cite').addEventListener('input', ev => { if (ev.isTrusted) { delete ev.target.dataset.doi; } });
     $('#ct-form').addEventListener('reset', () => { delete $('#f-cite').dataset.doi; doiMsg(DOI_HELP, ''); });
-    ['f-construct', 'f-source'].forEach(id => $('#' + id).addEventListener('change', dupCheck));
-    $('#f-m-signal').addEventListener('change', plVisibility);
-    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; });
-    $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; });
-    ['f-band-lo', 'f-band-hi', 'f-band-label'].forEach(id => $('#' + id).addEventListener('input', renderBandPreview));
-    const place = $('#f-place');
-    const hover = ev => { const t = ev.target.closest && ev.target.closest('[data-site]'); plHighlight(t ? t.getAttribute('data-site') : null); };
-    place.addEventListener('mouseover', hover);
-    place.addEventListener('focusin', hover);
-    place.addEventListener('mouseleave', () => plHighlight(null));
-    renderPlacer(); renderBandPreview();
+    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; dupCheck(); });
+    $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; dupCheck(); });
+    // One set of listeners serves every signal card.
+    const sigs = $('#sigs');
+    sigs.addEventListener('change', ev => {
+      const c = cfOf(ev.target), f = ev.target.getAttribute('data-cf');
+      if (!c) return;
+      if (f === 'measure') { cfEl(c, 'newm').hidden = ev.target.value !== '__new'; plVisibility(c); dupCheck(); }
+      else if (f === 'm-signal') plVisibility(c);
+      cfSummaries();
+    });
+    sigs.addEventListener('input', ev => {
+      const c = cfOf(ev.target), f = ev.target.getAttribute('data-cf') || '';
+      if (!c) return;
+      if (f === 'm-name') dupCheck();
+      if (f.indexOf('band-') === 0) renderBandPreview(c);
+      if (f === 'claim' || f === 'm-name') cfSummaries();
+    });
+    const hover = ev => { const c = cfOf(ev.target); if (!c) return; const t = ev.target.closest('[data-site]'); plHighlight(c, t ? t.getAttribute('data-site') : null); };
+    sigs.addEventListener('mouseover', hover);
+    sigs.addEventListener('focusin', hover);
+    sigs.addEventListener('mouseleave', () => CF.cards.forEach(c => { if (c.hover) plHighlight(c, null); }));
+    cfReset();
   },
   update(el) {
     const M = model();
@@ -2392,7 +2598,11 @@ V.contribute = {
       sel.innerHTML = '<option value="">' + ph + '</option>' + items + '<option value="__new">+ ' + label + '…</option>';
       if (cur && Array.from(sel.options).some(o => o.value === cur)) sel.value = cur;
     };
-    fill($('#f-measure'), M.measures.map(m => '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>').join(''), 'New signal', 'Choose a signal…');
+    // Who may use the form decides whether its fields are switched on.
+    const issues = S.static && S.static.repo ? String(S.static.repo).replace(/\/$/, '') + '/issues' : '';
+    CF.locked = S.sbMode ? (!S.session || S.sbNote === 'down') : S.static ? !issues
+      : (S.status !== 'ready' && S.status !== 'empty') || S.me.canWrite === false || !!S.readOnly;
+    CF.cards.forEach(c => fillMeasureSelect(c, M));
     let cOpts = '';
     FAMILIES.forEach(f => { const cs = M.constructs.filter(c => famOf(c) === f.id); if (cs.length) cOpts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>'; });
     fill($('#f-construct'), cOpts, 'New topic', 'Choose a topic…');
@@ -2400,7 +2610,10 @@ V.contribute = {
     if (S.edit && !(M.mById.has(S.edit.measureId) && (!S.edit.entryId || S.raw.entries.has(S.edit.entryId)))) { S.edit = null; toast('The record you were editing is no longer on the site.'); }
     const E = S.edit, ee = E && E.entryId ? S.raw.entries.get(E.entryId) : null;
     if (E) {
-      $('#f-measure').value = E.measureId;
+      // An edit changes one link, so the form keeps a single signal card.
+      while (CF.cards.length > 1) { const x = CF.cards.pop(), r = cfRoot(x); if (r) r.remove(); }
+      cfLayout();
+      cfEl(cf0(), 'measure').value = E.measureId;
       if (ee) { $('#f-construct').value = ee.constructId; $('#f-source').value = ee.sourceId || ''; }
       const es = ee && ee.sourceId ? M.sById.get(ee.sourceId) : null;
       $('#ct-edit').innerHTML = '<div class="callout"><b>Editing: ' + esc(editTitle(E)) + '</b><span>' +
@@ -2408,20 +2621,22 @@ V.contribute = {
         (isSbAdmin() ? 'You\'re an admin, so the change goes live as soon as you save it. ' : 'An admin reviews the edit before it goes live. ') +
         'To link a different signal, topic or paper, cancel and suggest a new link.</span></div>';
     }
-    $('#ct-h').textContent = E ? 'Suggest an edit' : 'Suggest a link';
+    $('#ct-h').textContent = E ? 'Suggest an edit' : 'Suggest links from a paper';
     $('#ct-edit').hidden = !E; $('#f-reason-wrap').hidden = !E; $('#f-cancel').hidden = !E;
-    $('#f-entry-part').hidden = !!(E && !E.entryId);
-    $('#f-construct').closest('.field').hidden = !!(E && !E.entryId);
+    const sigOnly = !!(E && !E.entryId);
+    $('#ct-shared').hidden = sigOnly;
+    $$('#ct-form .ct-st').forEach(h => { h.hidden = !!E; });
+    CF.cards.forEach(c => { cfEl(c, 'entry-part').hidden = sigOnly; });
     if (S.prefill) {
-      if (S.prefill.m && M.mById.has(S.prefill.m)) $('#f-measure').value = S.prefill.m;
+      if (S.prefill.m && M.mById.has(S.prefill.m)) cfEl(cf0(), 'measure').value = S.prefill.m;
       if (S.prefill.c && M.cById.has(S.prefill.c)) $('#f-construct').value = S.prefill.c;
       S.prefill = null;
     }
-    $('#f-newm').hidden = $('#f-measure').value !== '__new';
+    CF.cards.forEach(c => { cfEl(c, 'newm').hidden = cfVal(c, 'measure') !== '__new'; plVisibility(c); });
     $('#f-newc').hidden = $('#f-construct').value !== '__new';
     $('#f-news').hidden = $('#f-source').value !== '__new';
-    plVisibility();
     dupCheck();
+    const lockAll = () => $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = CF.locked; });
     if (S.sbMode) {
       const signed = !!S.session, down = S.sbNote === 'down';
       $('#ct-gate').innerHTML = down
@@ -2431,9 +2646,9 @@ V.contribute = {
             ? 'You\'re an admin, so what you send goes on the site straight away, with no review. Each addition is listed under Activity on the Admin page.'
             : 'Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. New here? Signing in creates your account.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
-      $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
-      if (E) { ['f-measure', 'f-construct', 'f-source'].forEach(id => { $('#' + id).disabled = true; }); $('#f-cancel').disabled = false; }
-      $('#f-submit').textContent = isSbAdmin() ? (E ? 'Save edit' : 'Add to the site') : (E ? 'Send edit for review' : 'Send suggestion');
+      lockAll();
+      if (E) { [cfEl(cf0(), 'measure'), $('#f-construct'), $('#f-source')].forEach(x => { if (x) x.disabled = true; }); $('#f-cancel').disabled = false; }
+      updateSubmitLabel(); cfSummaries();
       const admin = isSbAdmin();
       $('#ct-qh').textContent = admin ? 'Review queue' : 'Your suggestions';
       $('#ct-role').textContent = admin ? 'You can accept or reject suggestions' : '';
@@ -2443,20 +2658,19 @@ V.contribute = {
       return;
     }
     if (S.static) {
-      const issues = S.static.repo ? String(S.static.repo).replace(/\/$/, '') + '/issues' : '';
       $('#ct-gate').innerHTML = '<div class="callout"><b>Suggestions are added automatically</b><span>Fill in the form and press the button. It opens a pre-filled GitHub issue; press <b>Create</b> there and your link is checked and added to the site within a few minutes. If something is missing, a reply on the issue says what to fix. You need a free GitHub account.</span></div>';
-      $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !issues; });
+      lockAll(); cfSummaries();
       $('#f-submit').textContent = 'Open a GitHub issue';
       $('#ct-role').textContent = '';
       $('#ct-queue').innerHTML = '<div class="empty"><b>How it works</b><span>' + (issues ? 'A script on GitHub checks each suggestion for a signal, a topic, a paper, page numbers and a paraphrase, then adds it to the site and closes the issue. <a href="' + esc(issues + '?q=is%3Aissue') + '" target="_blank" rel="noopener">See all suggestions ↗</a>' : 'No repository is configured for suggestions.') + '</span></div>';
       $('#ct-qh').textContent = 'Suggestions';
       return;
     }
-    let gate = '', block = false;
-    if (S.status !== 'ready' && S.status !== 'empty') { gate = '<div class="callout"><b>Submissions are off until the knowledge base connects.</b></div>'; block = true; }
-    else if (S.me.canWrite === false || S.readOnly) { gate = '<div class="callout"><b>You can read this knowledge base but not add to it.</b><span>Ask the owner for Contributor access, then reload.</span></div>'; block = true; }
+    let gate = '';
+    if (S.status !== 'ready' && S.status !== 'empty') gate = '<div class="callout"><b>Submissions are off until the knowledge base connects.</b></div>';
+    else if (S.me.canWrite === false || S.readOnly) gate = '<div class="callout"><b>You can read this knowledge base but not add to it.</b><span>Ask the owner for Contributor access, then reload.</span></div>';
     $('#ct-gate').innerHTML = gate;
-    $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = block; });
+    lockAll(); cfSummaries();
     $('#ct-role').textContent = S.me.canEdit ? 'You can accept or decline submissions' : 'Curators (editors) review submissions';
     const q = $('#ct-queue');
     const pend = M.subs.filter(s => s.status === 'pending'), done = M.subs.filter(s => s.status !== 'pending').slice(0, 12);
@@ -2484,7 +2698,13 @@ function subHTML(s, M) {
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   if (S.sbMode) {
-    return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) + '</div>' +
+    // Links sent together from one paper: say which one this is, and let an admin accept the rest at once.
+    const sib = s.batchId ? M.subs.filter(x => x.batchId === s.batchId).sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0)) : [];
+    const pendSib = sib.filter(x => x.status === 'pending');
+    if (S.me.canEdit && st === 'pending' && pendSib.length > 1 && pendSib[0] === s)
+      act += '<div class="btns"><button class="btn sm" data-act="accept-batch" data-batch="' + esc(s.batchId) + '">Accept all ' + pendSib.length + ' waiting links from this paper</button></div>';
+    return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) +
+      (sib.length > 1 ? '<span class="chip" title="Sent together from one paper">Link ' + (sib.indexOf(s) + 1) + ' of ' + sib.length + ' from one paper</span>' : '') + '</div>' +
       '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + guideNotesHTML(s.guide) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
@@ -2510,6 +2730,19 @@ function errText(e) {
   if (code === 'revoked' || code === 'not_granted') return 'Access to the shared database was withdrawn. Reload the page.';
   return 'Could not save the change. Check your connection and try again.';
 }
+/* The link one signal card describes, with the paper and topic chosen above the cards. */
+function cardPayload(c, i, shared) {
+  const m = cfVal(c, 'measure');
+  return Object.assign({
+    seq: i,
+    measureId: m === '__new' ? null : m,
+    newMeasure: m === '__new' ? {name: cfVal(c, 'm-name'), signal: cfVal(c, 'm-signal') || 'time', spec: cfVal(c, 'm-spec')} : null
+  }, shared, {
+    pages: cfVal(c, 'pages'), claim: cfVal(c, 'claim'), claimType: CLAIM[cfVal(c, 'ctype')] ? cfVal(c, 'ctype') : 'attributed',
+    evidence: EVID[cfVal(c, 'evid')] ? cfVal(c, 'evid') : 'human-eeg',
+    paradigm: cfVal(c, 'paradigm'), population: cfVal(c, 'pop'), behaviour: cfVal(c, 'beh'), cites: cfVal(c, 'cites'), guide: guideLines(c)
+  }, placePayload(c));
+}
 async function submitEntry(ev) {
   ev.preventDefault();
   const msg = $('#f-msg');
@@ -2517,54 +2750,64 @@ async function submitEntry(ev) {
   const setMsg = (t, err) => { msg.textContent = t; msg.className = 'fmsg' + (err ? ' err' : ''); };
   if (S.edit) return submitEdit(setMsg);
   if (!S.db && !S.static) return setMsg('The knowledge base is not connected.', true);
-  const mSel = v('f-measure'), cSel = v('f-construct'), sSel = v('f-source');
-  const probs = [];
-  if (!mSel) probs.push('choose a measure');
-  if (mSel === '__new' && !v('f-m-name')) probs.push('name the new measure');
-  if (!cSel) probs.push('choose a construct');
-  if (cSel === '__new' && !v('f-c-name')) probs.push('name the new construct');
+  const cSel = v('f-construct'), sSel = v('f-source'), multi = CF.cards.length > 1;
+  const probs = [], bad = [], seen = {};
   if (!sSel) probs.push('choose a source');
   if (sSel === '__new' && !v('f-cite')) probs.push('give the full citation');
-  if (!v('f-claim')) probs.push('describe what the source says');
-  if (!CLAIM[v('f-ctype')]) probs.push('choose a claim type');
-  const band = $('#f-place') && !$('#f-place').hidden && !$('#pl-band-part').hidden ? parseBand() : null;
-  if (band && band.error) probs.push('fix the frequency range (two numbers from 0 to 1000 Hz, the first one lower)');
-  if (probs.length) return setMsg('To submit, ' + probs.join(', ') + '.', true);
-  const place = placePayload();
+  if (!cSel) probs.push('choose a topic');
+  if (cSel === '__new' && !v('f-c-name')) probs.push('name the new topic');
+  CF.cards.forEach((c, i) => {
+    const p = [], m = cfVal(c, 'measure');
+    if (!m) p.push('choose the signal');
+    else if (m === '__new' && !cfVal(c, 'm-name')) p.push('name the new signal');
+    if (!cfVal(c, 'claim')) p.push('describe what the source says');
+    if (!CLAIM[cfVal(c, 'ctype')]) p.push('choose a claim type');
+    const band = bandShown(c) ? parseBand(c) : null;
+    if (band && band.error) p.push('fix the frequency range (two numbers from 0 to 1000 Hz, the first one lower)');
+    const key = m === '__new' ? 'new:' + normTxt(cfVal(c, 'm-name')) : m;
+    if (m && key !== 'new:') { if (seen[key] !== undefined) p.push('it is the same signal as signal ' + (seen[key] + 1) + ', so combine the two'); else seen[key] = i; }
+    if (p.length) { probs.push((multi ? 'signal ' + (i + 1) + ': ' : '') + p.join(', ')); bad.push(c); }
+  });
+  CF.cards.forEach(c => { const r = cfRoot(c); if (r) r.classList.toggle('bad', bad.includes(c)); });
+  if (probs.length) {
+    if (bad.length && CF.cards.length > 2 && !bad.some(c => c.k === CF.open)) openSigCard(bad[0]);
+    return setMsg('To submit, ' + probs.join('; ') + '.', true);
+  }
+  const shared = {
+    constructId: cSel === '__new' ? null : cSel,
+    newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
+    sourceId: sSel === '__new' ? null : sSel,
+    reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null
+  };
+  const payloads = CF.cards.map((c, i) => cardPayload(c, i, shared)), n = payloads.length;
+  const cleared = () => { $('#ct-form').reset(); $('#f-newc').hidden = true; $('#f-news').hidden = true; cfReset(); dupCheck(); TOUR.flags.sent = true; };
   if (S.sbMode) {
     if (!S.session) return setMsg('Sign in first, then send your suggestion.', true);
-    const payload = Object.assign({
-      measureId: mSel === '__new' ? null : mSel,
-      newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
-      constructId: cSel === '__new' ? null : cSel,
-      newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
-      sourceId: sSel === '__new' ? null : sSel,
-      reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
-      pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
-      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites'), guide: guideLines()
-    }, place);
     // A likely duplicate needs a second press, so it is sent only on purpose.
     if (S.dupStrong && S.armed !== 'dup-send') { armKey('dup-send'); return setMsg('This looks like something already on the site (see the yellow note above). Press Send again to send it anyway.', true); }
     S.armed = null;
     const btn = $('#f-submit');
     btn.disabled = true; setMsg('Sending…');
     try {
-      const ins = await S.sb.from('submissions').insert({payload: payload}).select('id');
+      // All the signals go in one request, so the admins get one email for them.
+      const ins = await S.sb.from('submissions').insert(payloads.map(p => ({payload: p}))).select('id');
       if (ins.error) throw ins.error;
-      const status = await subStatus(ins.data && ins.data[0] && ins.data[0].id);
-      $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck(); $('#f-guide').open = false;
-      TOUR.flags.sent = true;
-      if (status === 'accepted') {
-        setMsg('Added. It is on the site now.');
-        toast('Added to the site');
+      const st = await Promise.all((ins.data || []).map(r => subStatus(r.id)));
+      const added = st.filter(x => x === 'accepted').length, left = n - added;
+      cleared();
+      if (added === n) {
+        setMsg(n > 1 ? 'Added ' + n + ' links. They are on the site now.' : 'Added. It is on the site now.');
+        toast(n > 1 ? 'Added ' + n + ' links to the site' : 'Added to the site');
         await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
       } else if (isSbAdmin()) {
-        setMsg('Saved, but it could not be added to the site automatically, so it is waiting in the review queue. The other admins have been emailed.');
+        setMsg((added ? 'Added ' + added + ' of ' + n + '. ' + (left > 1 ? 'The other ' + left : 'The other one') : 'Saved, but ' + (left > 1 ? 'they' : 'it')) +
+          ' could not be added to the site automatically, so ' + (left > 1 ? 'they are' : 'it is') + ' waiting in the review queue. The other admins have been emailed.');
         toast('Saved for review');
-        await loadSubs();
+        await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
       } else {
-        setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
-        toast('Suggestion sent');
+        setMsg(n > 1 ? 'Sent ' + n + ' suggestions. The admins have been emailed, and you\'ll get one email once all of them have been reviewed.'
+          : 'Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
+        toast(n > 1 ? n + ' suggestions sent' : 'Suggestion sent');
         await loadSubs();
       }
     } catch (e) { setMsg(sbErr(e), true); }
@@ -2572,37 +2815,30 @@ async function submitEntry(ev) {
     return;
   }
   if (S.static) {
+    // GitHub issues take one link each, so this copy of the form keeps a single signal card.
     if (!S.static.repo) return setMsg('No repository is configured for suggestions.', true);
-    const M = model();
-    const mName = mSel === '__new' ? v('f-m-name') + ' (new signal)' : ((M.mById.get(mSel) || {}).name || mSel);
+    const M = model(), c = cf0(), p = payloads[0], mSel = cfVal(c, 'measure');
+    const mName = mSel === '__new' ? cfVal(c, 'm-name') + ' (new signal)' : ((M.mById.get(mSel) || {}).name || mSel);
     const cName = cSel === '__new' ? v('f-c-name') + ' (new topic)' : ((M.cById.get(cSel) || {}).name || cSel);
     const sName = sSel === '__new' ? v('f-cite') + (v('f-doi') ? ' ' + v('f-doi') : '') : ((M.sById.get(sSel) || {}).cite || sSel);
     const ln = (k, x) => x ? '**' + k + ':** ' + x : '';
     const body = [
       ln('EEG signal', mName),
-      mSel === '__new' ? ln('Signal type', (SIG[v('f-m-signal')] || SIG.time).plain) : '',
-      mSel === '__new' ? ln('How the paper specifies it', v('f-m-spec')) : '',
+      mSel === '__new' ? ln('Signal type', (SIG[cfVal(c, 'm-signal')] || SIG.time).plain) : '',
+      mSel === '__new' ? ln('How the paper specifies it', cfVal(c, 'm-spec')) : '',
       ln('Topic', cName),
       cSel === '__new' ? ln('Topic area', (FAM[v('f-c-family')] || FAM.other).label) : '',
-      ln('Paper', sName), ln('Pages', v('f-pages')),
-      ln('What the paper says (paraphrase)', v('f-claim')),
-      ln('Link strength', (CLAIM[v('f-ctype')] || CLAIM.attributed).label),
-      ln('Kind of evidence', (EVID[v('f-evid')] || EVID['human-eeg']).label),
-      ln('Task', v('f-paradigm')), ln('Participants', v('f-pop')), ln('Behavioural outcome', v('f-beh')),
-      ln('Original studies the paper cites', v('f-cites')),
-      ln('Electrodes', placeText(place).sites), ln('Frequency range', placeText(place).band)
+      ln('Paper', sName), ln('Pages', p.pages),
+      ln('What the paper says (paraphrase)', p.claim),
+      ln('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label),
+      ln('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label),
+      ln('Task', p.paradigm), ln('Participants', p.population), ln('Behavioural outcome', p.behaviour),
+      ln('Original studies the paper cites', p.cites),
+      ln('Electrodes', placeText(p).sites), ln('Frequency range', placeText(p).band)
     ].filter(Boolean).join('\n\n') + '\n\n_Sent from the Contribute form on the site._';
     // An exact copy of the form for the script that adds suggestions automatically (hidden when the issue is shown).
-    const form = Object.assign({
-      measureId: mSel === '__new' ? null : mSel,
-      newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
-      constructId: cSel === '__new' ? null : cSel,
-      newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
-      sourceId: sSel === '__new' ? null : sSel,
-      reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
-      pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
-      paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
-    }, place);
+    const form = Object.assign({}, p);
+    delete form.seq; delete form.guide;
     const fullBody = body + '\n\n<!-- contribution\n' + JSON.stringify(form).replace(/--/g, '\\u002d\\u002d') + '\n-->';
     const url = String(S.static.repo).replace(/\/$/, '') + '/issues/new?title=' + encodeURIComponent('Suggested link: ' + mName + ' → ' + cName) + '&body=' + encodeURIComponent(fullBody);
     try { window.open(url, '_blank', 'noopener'); } catch (e) {}
@@ -2611,28 +2847,39 @@ async function submitEntry(ev) {
     msg.innerHTML = 'Your suggestion is ready on GitHub. If no new tab opened, <a href="' + esc(url) + '" target="_blank" rel="noopener">open it here ↗</a>, then press <b>Create</b> there. It is added to the site within a few minutes.';
     return;
   }
-  const doc = Object.assign({}, place, {
-    status: 'pending', submittedAt: new Date().toISOString(), submittedBy: S.me.id || null,
-    measureId: mSel === '__new' ? null : mSel,
-    newMeasure: mSel === '__new' ? {name: v('f-m-name'), signal: v('f-m-signal') || 'time', spec: v('f-m-spec')} : null,
-    constructId: cSel === '__new' ? null : cSel,
-    newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
-    sourceId: sSel === '__new' ? null : sSel,
-    reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
-    pages: v('f-pages'), claim: v('f-claim'), claimType: CLAIM[v('f-ctype')] ? v('f-ctype') : 'attributed', evidence: EVID[v('f-evid')] ? v('f-evid') : 'human-eeg',
-    paradigm: v('f-paradigm'), population: v('f-pop'), behaviour: v('f-beh'), cites: v('f-cites')
-  });
   const btn = $('#f-submit');
   btn.disabled = true; setMsg('Submitting…');
   try {
-    await S.db.collection('submissions').add(doc);
-    $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer();
-    setMsg('Submitted. It is now in the review queue.');
-    toast('Submitted for review'); TOUR.flags.sent = true;
+    for (const p of payloads) {
+      const doc = Object.assign({}, p, {status: 'pending', submittedAt: new Date().toISOString(), submittedBy: S.me.id || null});
+      delete doc.seq; delete doc.guide;
+      await S.db.collection('submissions').add(doc);
+    }
+    cleared();
+    setMsg(n > 1 ? 'Submitted ' + n + ' links. They are now in the review queue.' : 'Submitted. It is now in the review queue.');
+    toast('Submitted for review');
   } catch (e) {
     if (e && e.code === 'invalid_argument') { S.readOnly = true; scheduleUpdate(); }
     setMsg(errText(e), true);
   } finally { btn.disabled = false; }
+}
+/* Accepts every waiting link that was sent together from one paper. */
+async function acceptBatch(batch) {
+  if (!S.sbMode || !S.sb || S.busy || !batch) return;
+  const ids = model().subs.filter(s => s.batchId === batch && s.status === 'pending').sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0)).map(s => s.id);
+  if (!ids.length) return;
+  S.busy = true;
+  let ok = 0, err = '';
+  try {
+    for (const id of ids) {
+      const r = await S.sb.rpc('accept_submission', {p_id: id});
+      if (r.error) { err = sbErr(r.error); break; }
+      ok++;
+    }
+  } catch (e) { err = sbErr(e); }
+  S.busy = false;
+  toast(err ? 'Accepted ' + ok + ' of ' + ids.length + '. ' + err : 'Accepted ' + plural(ok, 'link') + '. ' + (ok > 1 ? 'They are' : 'It is') + ' on the site now.');
+  await Promise.all([loadRecords(), loadSubs(), S.me.canEdit ? loadAdmin() : null]);
 }
 async function acceptSub(id) {
   if (S.sbMode) return sbCall('accept_submission', {p_id: id}, 'Accepted. It is now on the site.', true);
@@ -2710,7 +2957,9 @@ async function sbCall(fn, args, okMsg, reload) {
   finally { S.busy = false; scheduleUpdate(); }
 }
 function subsListHTML(M, admin) {
-  const pend = M.subs.filter(s => s.status === 'pending'), done = M.subs.filter(s => s.status !== 'pending').slice(0, 15);
+  // Newest first; links sent together stay together, in the order they had on the form.
+  const order = (a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')) || String(a.batchId || '').localeCompare(String(b.batchId || '')) || (Number(a.seq) || 0) - (Number(b.seq) || 0);
+  const pend = M.subs.filter(s => s.status === 'pending').sort(order), done = M.subs.filter(s => s.status !== 'pending').sort(order).slice(0, 15);
   let h = pend.length ? pend.map(s => subHTML(s, M)).join('')
     : '<div class="empty"><b>' + (admin ? 'No suggestions waiting.' : 'Nothing waiting for review.') + '</b><span>' + (admin ? 'New suggestions also arrive by email.' : 'Suggestions you send appear here.') + '</span></div>';
   if (done.length) h += '<details><summary>Recently reviewed (' + done.length + ')</summary><div class="queue">' + done.map(s => subHTML(s, M)).join('') + '</div></details>';
@@ -3602,25 +3851,27 @@ const TRACKS = {
     steps: () => [
       {brief: true, title: 'Add a paper', next: 'Let’s go',
         text: () => 'Read a paper that links a brain signal to what people think or do? Add it here. ' + (isSbAdmin() ? 'You’re an admin, so it goes on the site straight away.' : 'An admin checks it before it appears.'),
-        list: ['Pick the brain signal and the topic', 'Mark the sensors on the head', 'Say which paper it comes from', 'Write what it found, and how firmly']}
+        list: ['Pick the paper and the topic', 'Pick the brain signal and mark the sensors on the head', 'Write what it found, and how firmly', 'Add more signals from the same paper, if it has them']}
     ].concat(viaMore('contribute', 'Contribute'), [
       {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
         task: 'Sign in, or just look around', text: 'You need an account to send a paper. You can still follow along without one.',
         done: () => !!S.session || TOUR.practice, extra: [['tour-practice', 'Just look around', 'alt']]},
-      {route: 'contribute', target: '#f-measure', place: ['bottom', 'right', 'top'], task: 'Pick the brain signal the paper recorded',
-        text: 'Not in the list? Choose “+ New signal…” at the bottom and type its name.', done: () => !!$('#f-measure').value},
-      {route: 'contribute', target: '#f-construct', place: ['bottom', 'left', 'top'], task: 'Pick what the signal tells us about',
+      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.field') : null, place: ['bottom', 'right', 'top'], task: 'Pick the paper',
+        text: 'A new paper? Choose “+ Other paper…” and paste its DOI; the citation fills itself in.', done: () => !!$('#f-source').value && typedPause(1200)},
+      {route: 'contribute', target: '#f-construct', place: ['bottom', 'left', 'top'], task: 'Pick what the paper studies',
         text: 'For example attention or memory. Not in the list? Choose “+ New topic…”.', done: () => !!$('#f-construct').value},
-      {route: 'contribute', target: '#pl-sites-part', place: SIDE, task: 'Click where the paper put the sensors', skip: 'The paper doesn’t say',
-        text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
-        done: () => PL.sites.length > 0},
-      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Pick the paper',
-        text: 'Add the page too if you can check it; it lets anyone find the claim. A new paper? Choose “+ Other paper…” and paste its DOI; the citation fills itself in.', done: () => !!$('#f-source').value && typedPause(1200)},
-      {route: 'contribute', target: '#f-claim', place: ['bottom', 'top'], task: 'Write what the paper found',
-        text: 'One or two short sentences, in your own words.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
-      {route: 'contribute', target: '#f-ctype', place: ['bottom', 'top'], task: 'Choose the claim type',
-        text: 'How firmly does the paper link the signal to the topic? “Stated by the paper” is the most common choice.', done: () => !!CLAIM[$('#f-ctype').value]},
-      {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
+      {route: 'contribute', target: () => cfEl(cf0(), 'measure'), place: ['bottom', 'right', 'top'], task: 'Pick the brain signal the paper recorded',
+        text: 'Not in the list? Choose “+ New signal…” at the bottom and type its name.', done: () => !!cfVal(cf0(), 'measure')},
+      {route: 'contribute', target: () => cfEl(cf0(), 'sites-part'), place: SIDE, task: 'Click where the paper put the sensors', skip: 'The paper doesn’t say',
+        text: () => (cf0() && cf0().usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
+        done: () => !!cf0() && cf0().sites.length > 0},
+      {route: 'contribute', target: () => cfEl(cf0(), 'claim'), place: ['bottom', 'top'], task: 'Write what the paper found',
+        text: 'One or two short sentences, in your own words. Add the page above it too, if you can check it.', done: () => cfVal(cf0(), 'claim').length >= 15 && typedPause(2500)},
+      {route: 'contribute', target: () => cfEl(cf0(), 'ctype'), place: ['bottom', 'top'], task: 'Choose the claim type',
+        text: 'How firmly does the paper link the signal to the topic? “Stated by the paper” is the most common choice.', done: () => !!CLAIM[cfVal(cf0(), 'ctype')]},
+      {route: 'contribute', target: '#sig-add', place: ['top', 'bottom'], next: 'Got it',
+        text: 'Does the paper link more than one signal to this topic? Add each one here, beside the first, instead of starting again.'},
+      {route: 'contribute', target: () => cfEl(cf0(), 'guide'), place: ['top', 'bottom'], next: 'Got it',
         text: 'Optional: if the paper explains how to record the signal, add it here. It becomes part of the guide.'},
       {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: () => isSbAdmin() ? 'Add it to the site' : 'Send it', skip: 'Finish without sending',
         text: () => isSbAdmin() ? 'You’re an admin, so it goes on the site straight away. Only add real findings, not tests.' : 'An admin checks it first. Only send real findings, not tests.',
@@ -3917,8 +4168,9 @@ const HINTS = [
   {id: 'topic-warn', route: 'constructs', target: '#cv-detail .callout.warn', text: 'These signals are linked to more than one topic, so on their own they can’t tell you which one changed.'},
   {id: 'signals-type', route: 'measures', target: '#mf-sig', text: 'Show only one kind of signal.'},
   {id: 'plan-form', route: 'planner', target: '#pl-form', text: 'Answer the 3 questions. The list updates as you go.'},
-  {id: 'ct-head', route: 'contribute', target: '#pl-head', text: 'Click the head to mark where the sensors go.'},
-  {id: 'ct-guide', route: 'contribute', target: '#f-guide', text: 'Add the paper’s how-to tips to the signal’s guide.'}
+  {id: 'ct-head', route: 'contribute', target: '.sig-main .pl-head', text: 'Click the head to mark where the sensors go.'},
+  {id: 'ct-more', route: 'contribute', target: '#sig-add', text: 'Same paper, more signals for this topic? Add them here instead of starting again.'},
+  {id: 'ct-guide', route: 'contribute', target: '.sig-main .gnotes', text: 'Add the paper’s how-to tips to the signal’s guide.'}
 ];
 const hintsOn = () => store('eegkb.hints') === '1';
 function hintSeen() {
@@ -4090,11 +4342,15 @@ function onAct(t) {
     case 'import-kb': importStarter(); break;
     case 'rv-accept': reviewDecide('accept'); break;
     case 'rv-reject': reviewDecide('reject'); break;
-    case 'pl-toggle': if (!PL.suppressClick && !($('#f-claim') && $('#f-claim').disabled)) togglePl(t.getAttribute('data-site')); break;
-    case 'pl-remove': PL.sites = PL.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(); break;
-    case 'pl-token': if (!PL.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
+    case 'pl-toggle': { const c = cfOf(t); if (c && !CF.suppressClick && !CF.locked) togglePl(c, t.getAttribute('data-site')); break; }
+    case 'pl-remove': { const c = cfOf(t); if (c && !CF.locked) { c.sites = c.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(c); } break; }
+    case 'pl-token': if (!CF.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
+    case 'sig-add': addSigCard(); break;
+    case 'sig-open': openSigCard(cfOf(t)); break;
+    case 'sig-remove': removeSigCard(cfOf(t)); break;
+    case 'accept-batch': acceptBatch(t.getAttribute('data-batch')); break;
     case 'doi-fill': clearTimeout(doiT); doiFill(false); break;
-    case 'pl-usual': if (!($('#f-claim') && $('#f-claim').disabled)) { PL.sites = PL.usual.slice(); renderPlacer(); } break;
+    case 'pl-usual': { const c = cfOf(t); if (c && !CF.locked) { c.sites = c.usual.slice(); renderPlacer(c); } break; }
     case 'gd-el': S.gdEl = S.gdEl === t.getAttribute('data-site') ? null : t.getAttribute('data-site'); gdElPaint(); TOUR.flags.el = true; break;
     case 'tour-menu': toggleTourMenu(); break;
     case 'tour-start': tourStart(t.getAttribute('data-track')); break;
@@ -4349,12 +4605,12 @@ async function refreshStatus() {
 }
 function subRow(r) {
   return Object.assign({}, r.payload || {}, {id: r.id, status: r.status, submittedAt: r.created_at, submitterEmail: r.submitter_email,
-    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id || (r.payload || {}).entryId || null, dupHints: arr(r.dup_hints)});
+    reviewerEmail: r.reviewer_email, reviewNote: r.review_note, entryId: r.entry_id || (r.payload || {}).entryId || null, dupHints: arr(r.dup_hints), batchId: r.batch_id || null});
 }
 async function loadSubs() {
   if (!S.sb || !S.session) { S.raw.submissions = new Map(); invalidate(); scheduleUpdate(); return; }
   try {
-    const res = await S.sb.from('submissions').select('id,created_at,submitter_email,status,payload,review_note,reviewer_email,reviewed_at,entry_id,dup_hints')
+    const res = await S.sb.from('submissions').select('id,created_at,submitter_email,status,payload,review_note,reviewer_email,reviewed_at,entry_id,dup_hints,batch_id')
       .order('created_at', {ascending: false}).limit(200);
     if (!res.error && res.data) { S.raw.submissions = new Map(res.data.map(r => [r.id, subRow(r)])); S.loaded.submissions = true; }
   } catch (e) { console.warn('submissions', e); }
