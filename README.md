@@ -41,7 +41,7 @@ The papers themselves are not included in this repository.
 
 Use the **Contribute** page on the site.
 
-- **Current setup: sign-in and admin review** (see [SETUP.md](SETUP.md)). Contributors sign in with an emailed code and send the suggestion. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Admins can also delete links (with undo), add other admins and step down from the Admin page. The records live in a Supabase database; `data/kb.json` is the backup the site falls back to if the database cannot be reached.
+- **Current setup: sign-in and admin review** (see [SETUP.md](SETUP.md)). Contributors sign in with an emailed code and send the suggestion. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Links and edits from admins and the owner skip review and go on the site straight away. Admins can also delete links (with undo), add other admins and step down from the Admin page. The records live in a Supabase database; `data/kb.json` is the backup the site falls back to if the database cannot be reached.
 - **Earlier setup, now switched off:** suggestions went in as GitHub issues and a GitHub Action ([`.github/workflows/add-contribution.yml`](.github/workflows/add-contribution.yml)) added them to `data/kb.json` without review. It is disabled in **Actions → Add contributions**. It only matters again if sign-in is switched off (by emptying the two Supabase values in `config.js`); in that case, re-enable it there.
 
 ### The GitHub automation (only when sign-in is off)

@@ -4,6 +4,7 @@ Until this is set up, the site runs from `data/kb.json` and the Contribute page 
 
 - Contributors sign in with their email (a code is emailed to them; no password) and send suggestions from the Contribute page.
 - Every admin gets an email for each suggestion, with **Accept** and **Reject** buttons. Each button opens a page on the site where they confirm. Accepted links appear on the site immediately.
+- Links and edits sent by an admin or the owner skip review and go on the site straight away; they are listed under **Activity** on the Admin page. If one cannot be added (for example, its signal was deleted in the meantime), it goes to the other admins for review instead.
 - Admins can also review suggestions, delete links (with undo), add other admins and step down from the **Admin** page (under More).
 - The last remaining admin cannot step down, so someone can always review suggestions.
 

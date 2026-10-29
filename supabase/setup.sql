@@ -497,9 +497,22 @@ declare
   s jsonb := public._sub_summary(new.payload);
   v_edit boolean := coalesce(new.payload->>'kind', '') = 'edit';
   v_details text;
+  v_fail text;
 begin
   perform public._log('submitted', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'kind', s->>'kind'),
                       new.submitted_by, new.submitter_email);
+  -- Admins and the owner add straight to the site, with no review. If that fails (for example, the chosen
+  -- signal was removed in the meantime), nothing is half-added and the suggestion goes to review instead.
+  if public.is_admin() then
+    begin
+      perform public._accept(new.id, new.submitted_by, new.submitter_email);
+      return new;
+    exception when others then
+      v_fail := sqlerrm;
+      perform public._log('auto_add_failed', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'reason', v_fail),
+                          new.submitted_by, new.submitter_email);
+    end;
+  end if;
   if v_edit then
     v_details :=
          '<p><b>EEG signal:</b> ' || public._esc(s->>'signal')
@@ -522,6 +535,10 @@ begin
            else '' end
       || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(new.submitter_email, 'unknown'))
       || ' · link strength: ' || public._esc(s->>'claimType') || ' · evidence: ' || public._esc(s->>'evidence') || '</p>';
+  end if;
+  if v_fail is not null then
+    v_details := '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px">Sent by an admin, but it could not be added to the site automatically: '
+      || public._esc(v_fail) || '</p>' || v_details;
   end if;
   for a in select user_id, email from public.admins loop
     v_token := encode(gen_random_bytes(24), 'hex');
@@ -680,12 +697,16 @@ begin
   delete from public.review_tokens where submission_id = s.id;
 
   sm := public._sub_summary(p);
-  perform public._log('accepted', jsonb_build_object('submission', s.id, 'entry', eid, 'signal', sm->>'signal', 'topic', sm->>'topic'), p_actor, p_email);
-  perform public._send_email(s.submitter_email, 'Your suggestion was accepted',
-    public._email_page('Your suggestion was accepted',
-      '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic')
-      || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
-      || '">Open the knowledge base</a></p>'));
+  perform public._log('accepted', jsonb_build_object('submission', s.id, 'entry', eid, 'signal', sm->>'signal', 'topic', sm->>'topic',
+    'direct', s.submitted_by is not distinct from p_actor), p_actor, p_email);
+  -- An admin adding their own link needs no "accepted" email.
+  if s.submitted_by is distinct from p_actor then
+    perform public._send_email(s.submitter_email, 'Your suggestion was accepted',
+      public._email_page('Your suggestion was accepted',
+        '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic')
+        || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
+        || '">Open the knowledge base</a></p>'));
+  end if;
   return eid;
 end $$;
 
@@ -763,13 +784,17 @@ begin
 
   sm := public._sub_summary(p);
   perform public._log('edited', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'entry', eid, 'measure', mid,
-    'before', jsonb_build_object('entries', case when e_new is distinct from e_old then e_old end, 'measures', case when m_new is distinct from m_old then m_old end)),
+    'before', jsonb_build_object('entries', case when e_new is distinct from e_old then e_old end, 'measures', case when m_new is distinct from m_old then m_old end),
+    'direct', s.submitted_by is not distinct from p_actor),
     p_actor, p_email);
-  perform public._send_email(s.submitter_email, 'Your suggested edit was accepted',
-    public._email_page('Your suggested edit was accepted',
-      '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic')
-      || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
-      || '">Open the knowledge base</a></p>'));
+  -- An admin making their own edit needs no "accepted" email.
+  if s.submitted_by is distinct from p_actor then
+    perform public._send_email(s.submitter_email, 'Your suggested edit was accepted',
+      public._email_page('Your suggested edit was accepted',
+        '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic')
+        || '</b> is now on the site. Thank you.</p><p><a href="' || (select value from public.settings where key = 'site_url')
+        || '">Open the knowledge base</a></p>'));
+  end if;
   return coalesce(eid, mid);
 end $$;
 

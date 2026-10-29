@@ -2164,15 +2164,32 @@ async function submitEdit(setMsg) {
   const btn = $('#f-submit');
   btn.disabled = true; setMsg('Sending…');
   try {
-    const {error} = await S.sb.from('submissions').insert({payload: payload});
-    if (error) throw error;
+    const ins = await S.sb.from('submissions').insert({payload: payload}).select('id');
+    if (ins.error) throw ins.error;
+    const status = await subStatus(ins.data && ins.data[0] && ins.data[0].id);
     S.edit = null;
     $('#ct-form').reset(); resetPlacer(); $('#f-guide').open = false;
-    setMsg('Sent. The admins have been emailed, and you\'ll get an email when they have reviewed your edit.');
-    toast('Edit sent');
-    await loadSubs();
+    if (status === 'accepted') {
+      setMsg('Saved. The change is on the site now.');
+      toast('Edit saved');
+      await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
+    } else if (isSbAdmin()) {
+      setMsg('Saved, but the change could not be made automatically, so it is waiting in the review queue. The other admins have been emailed.');
+      toast('Saved for review');
+      await loadSubs();
+    } else {
+      setMsg('Sent. The admins have been emailed, and you\'ll get an email when they have reviewed your edit.');
+      toast('Edit sent');
+      await loadSubs();
+    }
   } catch (e) { setMsg(sbErr(e), true); }
   finally { btn.disabled = false; scheduleUpdate(); }
+}
+/* The status a submission ended up with. Admins' suggestions and edits are added by the database as they arrive. */
+async function subStatus(id) {
+  if (!id) return '';
+  try { const r = await S.sb.from('submissions').select('status').eq('id', id); return r.data && r.data[0] ? r.data[0].status : ''; }
+  catch (e) { return ''; }
 }
 
 /* ---------- DOI lookup: fills in a new paper's citation from Crossref ---------- */
@@ -2257,7 +2274,7 @@ async function doiFill(auto) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest a link: one EEG signal, one topic, and the paper and page that connect them. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
       '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest a link</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="frow"><div class="field"><label for="f-measure">EEG signal<span class="req">required</span></label><select id="f-measure"></select></div>' +
@@ -2350,7 +2367,8 @@ V.contribute = {
       const es = ee && ee.sourceId ? M.sById.get(ee.sourceId) : null;
       $('#ct-edit').innerHTML = '<div class="callout"><b>Editing: ' + esc(editTitle(E)) + '</b><span>' +
         (ee ? 'Correct what is wrong or missing' + (es ? ' in this link to ' + esc(es.short) : '') + ', including the electrodes on the head. ' : 'Add or correct the electrodes on the head and the frequency range for this signal. ') +
-        'An admin reviews the edit before it goes live. To link a different signal, topic or paper, cancel and suggest a new link.</span></div>';
+        (isSbAdmin() ? 'You\'re an admin, so the change goes live as soon as you save it. ' : 'An admin reviews the edit before it goes live. ') +
+        'To link a different signal, topic or paper, cancel and suggest a new link.</span></div>';
     }
     $('#ct-h').textContent = E ? 'Suggest an edit' : 'Suggest a link';
     $('#ct-edit').hidden = !E; $('#f-reason-wrap').hidden = !E; $('#f-cancel').hidden = !E;
@@ -2371,11 +2389,13 @@ V.contribute = {
       $('#ct-gate').innerHTML = down
         ? '<div class="callout warn"><b>Suggestions are paused</b><span>The live database could not be reached, so the site is showing a saved copy of the data. Try again later.</span></div>'
         : signed
-          ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.</span></div>'
+          ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>' + (isSbAdmin()
+            ? 'You\'re an admin, so what you send goes on the site straight away, with no review. Each addition is listed under Activity on the Admin page.'
+            : 'Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. The site is invite-only: new people need an invitation from an admin first.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
       if (E) { ['f-measure', 'f-construct', 'f-source'].forEach(id => { $('#' + id).disabled = true; }); $('#f-cancel').disabled = false; }
-      $('#f-submit').textContent = E ? 'Send edit for review' : 'Send suggestion';
+      $('#f-submit').textContent = isSbAdmin() ? (E ? 'Save edit' : 'Add to the site') : (E ? 'Send edit for review' : 'Send suggestion');
       const admin = isSbAdmin();
       $('#ct-qh').textContent = admin ? 'Review queue' : 'Your suggestions';
       $('#ct-role').textContent = admin ? 'You can accept or reject suggestions' : '';
@@ -2491,12 +2511,24 @@ async function submitEntry(ev) {
     const btn = $('#f-submit');
     btn.disabled = true; setMsg('Sending…');
     try {
-      const {error} = await S.sb.from('submissions').insert({payload: payload});
-      if (error) throw error;
+      const ins = await S.sb.from('submissions').insert({payload: payload}).select('id');
+      if (ins.error) throw ins.error;
+      const status = await subStatus(ins.data && ins.data[0] && ins.data[0].id);
       $('#ct-form').reset(); $('#f-newm').hidden = true; $('#f-newc').hidden = true; $('#f-news').hidden = true; resetPlacer(); dupCheck(); $('#f-guide').open = false;
-      setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
-      toast('Suggestion sent'); TOUR.flags.sent = true;
-      await loadSubs();
+      TOUR.flags.sent = true;
+      if (status === 'accepted') {
+        setMsg('Added. It is on the site now.');
+        toast('Added to the site');
+        await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
+      } else if (isSbAdmin()) {
+        setMsg('Saved, but it could not be added to the site automatically, so it is waiting in the review queue. The other admins have been emailed.');
+        toast('Saved for review');
+        await loadSubs();
+      } else {
+        setMsg('Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
+        toast('Suggestion sent');
+        await loadSubs();
+      }
     } catch (e) { setMsg(sbErr(e), true); }
     finally { btn.disabled = false; scheduleUpdate(); }
     return;
@@ -2809,9 +2841,10 @@ function actLabel(a) {
   const label = d.label ? ' “' + esc(String(d.label).length > 70 ? String(d.label).slice(0, 68) + '…' : d.label) + '”' : '';
   switch (a.action) {
     case 'submitted': return who + (d.kind === 'edit' ? ' suggested an edit to' : ' suggested') + pair;
-    case 'accepted': return who + ' accepted' + pair;
+    case 'accepted': return who + (d.direct ? ' added' : ' accepted') + pair;
+    case 'auto_add_failed': return who + '’s addition of' + pair + ' could not go on the site automatically, so it went to review' + (d.reason ? ' (' + esc(d.reason) + ')' : '');
     case 'rejected': return who + (d.kind === 'edit' ? ' rejected an edit to' : ' rejected') + pair + (d.note ? ' (' + esc(d.note) + ')' : '');
-    case 'edited': return who + ' accepted an edit to' + pair;
+    case 'edited': return who + (d.direct ? ' edited' : ' accepted an edit to') + pair;
     case 'edit_undone': return who + ' undid an edit to' + pair;
     case 'deleted': return who + ' deleted a ' + kindLabel(d.collection) + label;
     case 'restored': return who + ' restored a ' + kindLabel(d.collection) + label;
@@ -2912,7 +2945,10 @@ V.admin = {
             '<br><span class="sub">joined ' + esc(fmtDate(u.created_at)) + (u.last_sign_in_at ? ' · last signed in ' + esc(fmtDate(u.last_sign_in_at)) : '') + ' · ' + plural(Number(u.suggestions) || 0, 'suggestion') + '</span></span></li>').join('') + '</ul>'
           : '<p class="small muted">' + (AC.length ? 'No account matches “' + esc(aq) + '”.' : 'No accounts yet.') + '</p>') + '</section>';
     }
-    h += '<section class="panel"><h3>Activity</h3>' + (A.activity.length ? '<ul class="adm-list">' + A.activity.map(a => {
+    // An admin's own addition shows once, as "added", rather than as "suggested" and then "accepted".
+    const direct = new Set(A.activity.filter(a => (a.action === 'accepted' || a.action === 'edited') && (a.detail || {}).direct).map(a => String(a.detail.submission)));
+    const acts = A.activity.filter(a => !(a.action === 'submitted' && direct.has(String((a.detail || {}).submission))));
+    h += '<section class="panel"><h3>Activity</h3>' + (acts.length ? '<ul class="adm-list">' + acts.map(a => {
         const d = a.detail || {};
         const canUndo = (a.action === 'deleted' && d.collection && S.raw[d.collection] && !S.raw[d.collection].has(d.id)) ||
           (a.action === 'edited' && !A.activity.some(x => x.action === 'edit_undone' && String((x.detail || {}).activity) === String(a.id)));
@@ -3516,7 +3552,7 @@ const TRACKS = {
     start: () => { if (S.edit) cancelEdit(); },
     steps: () => [
       {brief: true, title: 'Add a paper', next: 'Let’s go',
-        text: 'Read a paper that links a brain signal to what people think or do? Add it here. An admin checks it before it appears.',
+        text: () => 'Read a paper that links a brain signal to what people think or do? Add it here. ' + (isSbAdmin() ? 'You’re an admin, so it goes on the site straight away.' : 'An admin checks it before it appears.'),
         list: ['Pick the brain signal and the topic', 'Mark the sensors on the head', 'Say which paper and page', 'Write what it found, in your own words']}
     ].concat(viaMore('contribute', 'Contribute'), [
       {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
@@ -3535,12 +3571,14 @@ const TRACKS = {
         text: 'One or two short sentences, in your own words.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
       {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
         text: 'Optional: if the paper explains how to record the signal, add it here. It becomes part of the guide.'},
-      {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: 'Send it', skip: 'Finish without sending',
-        text: 'An admin checks it first. Only send real findings, not tests.',
+      {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: () => isSbAdmin() ? 'Add it to the site' : 'Send it', skip: 'Finish without sending',
+        text: () => isSbAdmin() ? 'You’re an admin, so it goes on the site straight away. Only add real findings, not tests.' : 'An admin checks it first. Only send real findings, not tests.',
         wait: () => $('#f-msg') && $('#f-msg').classList.contains('err') ? 'Fix what the message next to the button asks for.' : '',
         done: () => !!TOUR.flags.sent}
     ]),
-    end: () => ({title: 'All done', text: TOUR.flags.sent ? 'Your paper is with the admins. You’ll get an email when it has been checked.' : 'You know every part of the form. When you add a real paper, an admin checks it before it appears.'})},
+    end: () => ({title: 'All done', text: isSbAdmin()
+      ? (TOUR.flags.sent ? 'Your paper is on the site now.' : 'You know every part of the form. As an admin, what you add goes on the site straight away.')
+      : (TOUR.flags.sent ? 'Your paper is with the admins. You’ll get an email when it has been checked.' : 'You know every part of the form. When you add a real paper, an admin checks it before it appears.')})},
   tour: {title: 'Quick tour', blurb: 'What each button in the top bar does', len: '30 s',
     steps: () => [
       {target: () => S.route === 'overview' ? $('#hq') : $('#q'), place: ['bottom', 'top'], next: 'Next', text: 'Start here. Type what you want to study to find its guide.'},
