@@ -1337,41 +1337,33 @@ function scalp(m, size, labels) {
 
 /* ---------- where the studies of a topic put their electrodes: a heat map ---------- */
 const FAR = 0.6;          // head-map distance at which two sets of electrodes count as far apart (about two positions)
-const HM_SIGMA = 0.13;    // how far one electrode spreads on the heat map
-const HM_NEAR = 0.2;      // "near here" for the count under the pointer
-const HM_GRID = 72;
-const HM = {studies: []};
+const HM_SIGMA = 0.07;    // how far one electrode spreads on the heat map: about a quarter of the gap between neighbouring positions
+const HM_NEAR = 0.12;     // "at this spot" for the count under the pointer
+const HM_GRID = 112;
+const HM = {list: []};
 /* The electrodes of a link or a signal as head-map points: standard sites, then electrodes placed by position. */
 const elecPts = x => sitesOf(x).filter(n => SITES_EXT[n]).map(n => Object.assign(siteMap(n), {label: n})).concat(pointsOf(x));
-/* Each paper's electrodes for a topic, counting a paper once however many of its links name the topic. A link that
-   does not give its own electrodes uses its signal's usual ones. */
-function topicStudies(M, cid) {
+/* The links to a topic, each with the electrodes it names; a link that names none uses its signal's usual electrodes.
+   Each counts once on the heat map, so a paper that links two signals to the topic counts twice; two links from one
+   paper for the same signal count once. */
+function topicLinks(M, cid) {
   const by = new Map();
   (M.byC.get(cid) || []).forEach(e => {
     const m = M.mById.get(e.measureId);
     if (!m) return;
-    const own = elecPts(e), pts = own.length ? own : elecPts(m), key = e.sourceId || 'link:' + e.id;
-    if (!by.has(key)) by.set(key, {key: key, s: e.sourceId ? M.sById.get(e.sourceId) : null, items: [], pts: []});
-    const g = by.get(key);
-    g.items.push({e: e, m: m, pts: pts, own: own.length > 0});
-    pts.forEach(p => { if (!g.pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 0.02)) g.pts.push(p); });
+    const own = elecPts(e), key = (e.sourceId || 'link:' + e.id) + '|' + m.id;
+    if (!by.has(key)) by.set(key, {key: key, sid: e.sourceId || '', s: e.sourceId ? M.sById.get(e.sourceId) : null, m: m, es: [], pts: [], own: false});
+    const u = by.get(key);
+    u.es.push(e);
+    if (own.length && !u.own) { u.own = true; u.pts = []; }
+    if (own.length || !u.own) (own.length ? own : elecPts(m)).forEach(p => { if (!u.pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 0.02)) u.pts.push(p); });
   });
   return Array.from(by.values());
 }
-/* How many studies have an electrode at a spot, blurred so neighbouring electrodes add up into patches. Each study
-   counts at most once anywhere, so the value runs from 0 to the number of studies. */
-function heatAt(list, x, y) {
-  let v = 0;
-  list.forEach(s => {
-    let b = 0;
-    s.pts.forEach(p => { const k = Math.exp(-((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y)) / (2 * HM_SIGMA * HM_SIGMA)); if (k > b) b = k; });
-    v += b;
-  });
-  return v;
-}
 const nearCount = (list, p) => list.filter(s => s.pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) <= HM_NEAR)).length;
-/* The heat colours: one warm hue from pale to deep, which fades into the page where no study put an electrode. Dark mode
-   runs the other way, from dark to bright, so "more studies" always stands out from the background. */
+/* The heat colours: one warm hue from light to deep. The colour follows the share of links that name a spot, so a spot
+   named by twice as many links is twice as far along the scale. Dark mode runs from dark to bright instead, so more
+   links always stand out from the background. */
 function oklch(L, C, h) {
   const a = C * Math.cos(h * Math.PI / 180), b = C * Math.sin(h * Math.PI / 180);
   const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3), m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3), s = Math.pow(L - 0.0894841775 * a - 1.291485548 * b, 3);
@@ -1382,21 +1374,30 @@ function darkTheme() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim(), m = v.match(/^#([0-9a-f]{6})$/i);
   return !!m && parseInt(m[1].slice(0, 2), 16) + parseInt(m[1].slice(2, 4), 16) + parseInt(m[1].slice(4, 6), 16) < 300;
 }
-const heatColor = (t, dark) => dark ? oklch(0.34 + 0.5 * t, 0.07 + 0.11 * Math.min(1, t * 1.6), 38) : oklch(0.95 - 0.52 * t, 0.04 + 0.14 * Math.min(1, t * 1.6), 33);
+const heatColor = (t, dark) => dark ? oklch(0.42 + 0.44 * t, 0.08 + 0.09 * Math.min(1, t * 1.5), 40) : oklch(0.88 - 0.48 * t, 0.06 + 0.13 * Math.min(1, t * 1.5), 30);
 const heatCss = (t, dark) => 'rgb(' + heatColor(t, dark).join(',') + ')';
-/* The heat map as a picture: each cell coloured by the share of studies with an electrode nearby. */
+/* The heat map as a picture. Each link adds its share (1 of all the links) around the electrodes it names, counting
+   once however many of its electrodes are near, so the colour at a spot is the share of links that put an electrode
+   there. The shape of each spot comes from the nearest electrode alone, so spots stay small and keep their edges. */
 function heatImage(list, dark) {
   const n = list.length, cv = document.createElement('canvas');
   cv.width = cv.height = HM_GRID;
   const ctx = cv.getContext && cv.getContext('2d');
   if (!ctx || !n) return '';
-  const img = ctx.createImageData(HM_GRID, HM_GRID), step = 2 * LIM / HM_GRID;
+  const img = ctx.createImageData(HM_GRID, HM_GRID), step = 2 * LIM / HM_GRID, s2 = 2 * HM_SIGMA * HM_SIGMA, cut = 16 * HM_SIGMA * HM_SIGMA;
   for (let j = 0; j < HM_GRID; j++) for (let i = 0; i < HM_GRID; i++) {
     const x = -LIM + (i + 0.5) * step, y = LIM - (j + 0.5) * step, r = Math.hypot(x, y);
     if (r > LIM + step) continue;
+    let sum = 0, top = 0;
+    for (const u of list) {
+      let b = 0;
+      for (const p of u.pts) { const d2 = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y); if (d2 < cut) { const k = Math.exp(-d2 / s2); if (k > b) b = k; } }
+      sum += b; if (b > top) top = b;
+    }
+    if (top < 0.1) continue;
     // Past the outline of the head the colour fades, so electrodes there still show without a glow around the head.
-    const t = Math.min(1, heatAt(list, x, y) / n), o = (j * HM_GRID + i) * 4, c = heatColor(t, dark), fade = 1 - 0.5 * Math.min(1, Math.max(0, (r - 100 / RING) / 0.2));
-    img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = Math.round(255 * fade * Math.min(1, t / 0.12));
+    const o = (j * HM_GRID + i) * 4, c = heatColor(Math.min(1, sum / n), dark), fade = 1 - 0.5 * Math.min(1, Math.max(0, (r - 100 / RING) / 0.2));
+    img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = Math.round(255 * fade * Math.min(1, (top - 0.1) / 0.45));
   }
   ctx.putImageData(img, 0, 0);
   try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
@@ -1426,51 +1427,52 @@ function topNames(list, max) {
 }
 const andList = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a.join('');
 const areaWords = n => { const a = AREAS.find(x => n.indexOf(x[0]) === 0 && /^(z|\d{1,2})$/.test(n.slice(x[0].length))); return a ? a[2] : ''; };
+/* The colour scale, from the share one link gives (1 of n) to all of them. */
 function heatLegend(n, dark) {
-  const stops = [0.08, 0.3, 0.55, 0.8, 1].map(t => heatCss(t, dark)).join(',');
-  return '<div class="hm-key"><span>' + (n > 1 ? '1 study' : 'Fewer') + '</span><i style="background:linear-gradient(90deg,' + stops + ')"></i><span>' + (n > 1 ? 'all ' + n : '1 study') + '</span></div>';
+  const lo = n > 1 ? 1 / n : 1, stops = [0, 0.25, 0.5, 0.75, 1].map(f => heatCss(lo + (1 - lo) * f, dark)).join(',');
+  return n > 1 ? '<div class="hm-key"><span>1 of ' + n + '</span><i style="background:linear-gradient(90deg,' + stops + ')"></i><span>all ' + n + '</span></div>' : '';
 }
-function studyCard(s, i) {
-  const names = uniq(s.items.map(it => it.m.name)), usual = s.items.every(it => !it.own);
-  const href = s.s ? paperHref(s.s.doi) : '', title = s.s ? s.s.short : 'A paper';
-  const el = s.pts.map(p => p.label && SITES_EXT[p.label] ? p.label : pointLabel(p));
-  return '<li class="hm-study" data-hm="' + i + '" tabindex="0" aria-label="' + esc(title + ': electrodes at ' + el.join(', ')) + '">' + miniHead(s.pts, 64) +
-    '<div class="hm-st">' + (href ? '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc((s.s.cite || '') + ' (opens the paper)') + '">' + esc(title) + ' ↗</a>'
-      : s.s ? '<button class="ref" data-act="open-source" data-id="' + esc(s.s.id) + '">' + esc(title) + '</button>' : '<span>' + esc(title) + '</span>') +
-    '<span class="small">' + esc(names.join(', ')) + '</span><span class="small muted">' + esc(el.slice(0, 6).join(', ') + (el.length > 6 ? ' and ' + (el.length - 6) + ' more' : '')) + '</span>' +
-    (usual ? '<span class="hm-tag" title="The paper\'s own electrodes are not recorded on the site, so the signal\'s usual electrodes stand in">Usual electrodes of the signal</span>' : '') + '</div></li>';
+function linkCard(u, i) {
+  const href = u.s ? paperHref(u.s.doi) : '', pages = uniq(u.es.map(e => e.pages).filter(Boolean)).join('; ');
+  const title = (u.s ? u.s.short : 'A paper') + (pages ? ', p. ' + pages : ''), el = u.pts.map(p => p.label && SITES_EXT[p.label] ? p.label : pointLabel(p));
+  return '<li class="hm-study" data-hm="' + i + '" tabindex="0" aria-label="' + esc(title + ', ' + u.m.name + ': electrodes at ' + el.join(', ')) + '">' + miniHead(u.pts, 64) +
+    '<div class="hm-st">' + (href ? '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc((u.s.cite || '') + ' (opens the paper)') + '">' + esc(title) + ' ↗</a>'
+      : u.s ? '<button class="ref" data-act="open-source" data-id="' + esc(u.s.id) + '">' + esc(title) + '</button>' : '<span>' + esc(title) + '</span>') +
+    '<span class="small">' + esc(u.m.name) + '</span><span class="small muted">' + esc(el.slice(0, 6).join(', ') + (el.length > 6 ? ' and ' + (el.length - 6) + ' more' : '')) + '</span>' +
+    (u.own ? '' : '<span class="hm-tag" title="The paper\'s own electrodes are not recorded on the site, so the signal\'s usual electrodes stand in">Usual electrodes of the signal</span>') + '</div></li>';
 }
-/* The topic page section: the heat map, and each study's own placement beside it. */
+/* The topic page section: the heat map, and the placement each link names beside it. */
 function topicHeatHTML(c, M) {
-  const studies = topicStudies(M, c.id), list = studies.filter(s => s.pts.length), n = list.length, dark = darkTheme();
-  HM.studies = list;
-  const head = '<div class="sec hm"><h3>Where studies put the electrodes' + (n ? '<span class="count">' + plural(n, 'study', 'studies') + '</span>' : '') + '</h3>';
+  const all = topicLinks(M, c.id), list = all.filter(u => u.pts.length), n = list.length, dark = darkTheme();
+  HM.list = list;
+  const head = '<div class="sec hm"><h3>Where studies put the electrodes' + (n ? '<span class="count">' + plural(n, 'link') + '</span>' : '') + '</h3>';
   if (!n) return head + '<p class="small muted">None of the papers on this topic give electrode positions yet.</p></div>';
-  const top = topNames(list), usual = list.filter(s => s.items.every(it => !it.own)).length, none = studies.length - n;
-  const label = 'Heat map of electrode positions across ' + plural(n, 'study', 'studies') + ' of ' + c.name + '. Most used: ' + top.map(t => t.n + ' (' + plural(t.k, 'study', 'studies') + ')').join(', ') + '.';
-  return head + '<p class="small muted">' + (n > 1 ? 'The stronger the colour, the more of these ' + n + ' studies put an electrode there.' : 'One study so far; the map fills in as papers are added.') +
-      (usual ? ' For ' + (usual === n ? (n > 1 ? 'all of them' : 'it') : plural(usual, 'study', 'studies')) + ', the site has only the usual electrodes of the signal, not the paper\'s own.' : '') + '</p>' +
+  const top = topNames(list), usual = list.filter(u => !u.own).length, none = all.length - n, papers = uniq(list.map(u => u.sid || u.key)).length;
+  const label = 'Heat map of electrode positions across ' + plural(n, 'link') + ' to ' + c.name + '. Most named: ' + top.map(t => t.n + ' (' + t.k + ' of ' + n + ')').join(', ') + '.';
+  return head + '<p class="small muted">' + (n > 1 ? 'Colour shows the share of these ' + n + ' links (from ' + plural(papers, 'paper') + ') that put an electrode at each spot: a spot named by twice as many links is twice as far along the scale.'
+        : 'One link so far; the map fills in as more are added.') +
+      (usual ? ' For ' + (usual === n ? (n > 1 ? 'all of them' : 'it') : usual + ' of them') + ', the site has only the usual electrodes of the signal, not the paper\'s own.' : '') + '</p>' +
     '<div class="hm-grid"><figure class="hm-fig">' + heatSVG(list, 'hmt', label) + heatLegend(n, dark) +
-      '<figcaption class="hm-read" id="hm-read" aria-live="polite">Most used: ' + esc(andList(top.slice(0, 3).map(t => t.n + ' (' + t.k + ' of ' + n + ')'))) + '. Point at the map for any spot.</figcaption></figure>' +
-    '<div class="hm-side"><span class="eyebrow">Each study</span><ul class="hm-studies">' + list.map(studyCard).join('') + '</ul></div></div>' +
-    (none ? '<p class="small muted">' + plural(none, 'other paper') + ' on this topic ' + (none === 1 ? 'does' : 'do') + ' not give electrode positions.</p>' : '') + '</div>';
+      '<figcaption class="hm-read" id="hm-read" aria-live="polite">Most named: ' + esc(andList(top.slice(0, 3).map(t => t.n + ' (' + t.k + ' of ' + n + ')'))) + '. Point at the map for any spot.</figcaption></figure>' +
+    '<div class="hm-side"><span class="eyebrow">Each link</span><ul class="hm-studies">' + list.map(linkCard).join('') + '</ul></div></div>' +
+    (none ? '<p class="small muted">' + plural(none, 'other link') + ' to this topic ' + (none === 1 ? 'gives' : 'give') + ' no electrode positions.</p>' : '') + '</div>';
 }
-/* Pointing at the topic heat map reads out how many studies used that spot; a study's card shows its electrodes on the map. */
+/* Pointing at the topic heat map reads out how many links name that spot; a link's card shows its electrodes on the map. */
 function hmHover(ev) {
   const svg = ev.target.closest && ev.target.closest('#cv-detail .hm-svg');
   const out = $('#hm-read');
-  if (!svg || !out || !HM.studies.length) return;
+  if (!svg || !out || !HM.list.length) return;
   const m = svg.getScreenCTM();
   if (!m) return;
   const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
-  const q = pt.matrixTransform(m.inverse()), p = {x: q.x / RING, y: -q.y / RING}, n = HM.studies.length;
+  const q = pt.matrixTransform(m.inverse()), p = {x: q.x / RING, y: -q.y / RING}, n = HM.list.length;
   if (!onHead(p)) return;
-  const k = nearCount(HM.studies, p);
-  out.textContent = (/^(between|near)/.test(nearSite(p)) ? nearSite(p).charAt(0).toUpperCase() + nearSite(p).slice(1) : 'At ' + nearSite(p)) + ': ' +
-    (k ? k + ' of ' + n + (n === 1 ? ' study' : ' studies') + (k === 1 ? ' puts' : ' put') + ' an electrode here.' : 'no study puts an electrode here.');
+  const k = nearCount(HM.list, p), w = nearSite(p);
+  out.textContent = (/^(between|near)/.test(w) ? w.charAt(0).toUpperCase() + w.slice(1) : 'At ' + w) + ': ' +
+    (k ? k + ' of ' + n + (n === 1 ? ' link' : ' links') + (k === 1 ? ' puts' : ' put') + ' an electrode here.' : 'no link puts an electrode here.');
 }
 function hmShow(i) {
-  const g = $('#cv-detail .hm-over'), s = HM.studies[i];
+  const g = $('#cv-detail .hm-over'), s = HM.list[i];
   $$('#cv-detail .hm-study').forEach(li => li.classList.toggle('on', Number(li.getAttribute('data-hm')) === i));
   if (!g) return;
   g.innerHTML = s ? s.pts.map(p => '<circle cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="8"/>').join('') : '';
@@ -2333,11 +2335,12 @@ function placeCheck(c) {
   const mine = c.mode === 'free' ? c.points.map(p => ({x: p.x, y: p.y})) : c.sites.filter(n => SITES_EXT[n]).map(siteMap);
   if (!mine.length) return null;
   const M = model(), mid = cfVal(c, 'measure'), m = mid && mid !== '__new' ? M.mById.get(mid) : null;
-  const all = topicStudies(M, cid).filter(s => s.key !== sid && s.pts.length);
+  // Links from other papers only: this paper's own links are not a second opinion.
+  const all = topicLinks(M, cid).filter(u => u.sid !== sid && u.pts.length);
   // The fairest comparison is other studies of the topic that record the same signal; then where the signal is usually
-  // recorded; and only for a signal with neither, every study of the topic.
-  const same = m ? all.map(s => Object.assign({}, s, {pts: [].concat.apply([], s.items.filter(it => it.m.id === mid).map(it => it.pts))})).filter(s => s.pts.length) : [];
-  const usual = m && !same.length && elecPts(m).length ? [{key: 'usual', pts: elecPts(m), items: []}] : [];
+  // recorded; and only for a signal with neither, every link to the topic.
+  const same = m ? all.filter(u => u.m.id === mid) : [];
+  const usual = m && !same.length && elecPts(m).length ? [{key: 'usual', sid: '', pts: elecPts(m)}] : [];
   const basis = same.length ? 'same' : usual.length ? 'usual' : 'topic', ref = same.length ? same : usual.length ? usual : all;
   const near = s => mine.some(a => s.pts.some(p => Math.hypot(a.x - p.x, a.y - p.y) <= FAR)), ok = ref.filter(near).length;
   if (!ref.length || ok * 2 >= ref.length) return null;
@@ -2352,7 +2355,7 @@ function placeWarn(c) {
   S.placeWarn = CF.cards.some(x => x.warn);
   box.hidden = !w;
   if (!w) { box.innerHTML = ''; return; }
-  const topic = (model().cById.get($('#f-construct').value) || {}).name || 'this topic', n = w.ref.length;
+  const topic = (model().cById.get($('#f-construct').value) || {}).name || 'this topic', n = uniq(w.ref.map(u => u.sid || u.key)).length;
   const where = names => andList(names) + (areaWords(names[0]) ? ' (' + areaWords(names[0]) + ')' : '');
   const rings = w.mine.map(p => '<circle cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="12"/>').join('');
   const usual = w.basis === 'usual', same = w.basis === 'same';
