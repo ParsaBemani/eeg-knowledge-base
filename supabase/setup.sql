@@ -107,8 +107,9 @@ create table if not exists public.blocked_emails (
 );
 alter table public.blocked_emails enable row level security;
 
--- The site is invite-only: a new account needs an invitation from an admin. Only a hash of each
--- invitation link's token is stored; the link itself exists only in the email.
+-- Optional invitations: anyone can create an account, and an invitation emails someone a link that
+-- opens the sign-in window with their address filled in. Only a hash of each link's token is stored;
+-- the link itself exists only in the email.
 create table if not exists public.account_invites (
   email text primary key check (email = lower(email)),
   token_hash text not null unique,
@@ -118,6 +119,16 @@ create table if not exists public.account_invites (
   expires_at timestamptz not null default now() + interval '30 days'
 );
 alter table public.account_invites enable row level security;
+
+-- Which automatic emails each admin gets: suggestions waiting for review, and links or edits other admins
+-- add straight to the site. Keyed by email, so it can be set before someone has an account. No row means both on.
+create table if not exists public.email_prefs (
+  email text primary key check (email = lower(email)),
+  review boolean not null default true,
+  added boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+alter table public.email_prefs enable row level security;
 
 -- Full copies of the data taken before large changes, kept privately (no one can read them through the site).
 create table if not exists public.kb_snapshots (
@@ -218,6 +229,20 @@ returns text language sql immutable set search_path = '' as $$
   select '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#14202A;max-width:600px">'
       || '<h2 style="font-size:19px;margin:0 0 12px">' || public._esc(p_title) || '</h2>' || p_body
       || '<p style="color:#6F7D8A;font-size:12.5px;margin-top:24px">EEG Construct–Measure Knowledge Base</p></div>';
+$$;
+
+-- Whether an admin wants one kind of automatic email ('review' or 'added'). No saved choice means yes.
+create or replace function public._wants_email(p_email text, p_kind text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select case p_kind when 'review' then review when 'added' then added end
+                   from public.email_prefs where email = lower(p_email)), true);
+$$;
+
+-- The line at the foot of every automatic email to admins.
+create or replace function public._prefs_note() returns text
+language sql immutable set search_path = '' as $$
+  select '<p style="color:#6F7D8A;font-size:12.5px">You get this email because you are an admin of the site. '
+      || 'To stop it, open the Admin page and change your email preferences.</p>';
 $$;
 
 -- Electrode names a suggestion may use (10–20 style, e.g. Fz, C3, PO8, M1), without duplicates, at most 30.
@@ -425,25 +450,28 @@ begin
   end if;
   if v_mid is not null and v_cid is not null then
     for r in
-      select coalesce(s.doc->>'short', 'a paper') as short, coalesce(e.doc->>'pages', '?') as pages, (e.doc->>'sourceId') = v_sid as same_paper
+      select coalesce(s.doc->>'short', 'a paper') as short,
+             case when coalesce(e.doc->>'pages', '') <> '' then ', p. ' || (e.doc->>'pages') else '' end as pages,
+             (e.doc->>'sourceId') = v_sid as same_paper
       from public.kb_records e left join public.kb_records s on s.collection = 'sources' and s.id = e.doc->>'sourceId'
       where e.collection = 'entries' and e.doc->>'measureId' = v_mid and e.doc->>'constructId' = v_cid
       order by 3 desc nulls last limit 4
     loop
       v_out := v_out || to_jsonb(case when r.same_paper
-        then 'This exact link (same signal, topic and paper) is already on the site: ' || r.short || ', p. ' || r.pages || '.'
-        else 'This signal and topic are already linked by ' || r.short || ', p. ' || r.pages || '.' end);
+        then 'This exact link (same signal, topic and paper) is already on the site: ' || r.short || r.pages || '.'
+        else 'This signal and topic are already linked by ' || r.short || r.pages || '.' end);
     end loop;
   end if;
   if v_mid is not null and v_sid is not null then
     for r in
-      select c.doc->>'name' as topic, coalesce(e.doc->>'pages', '?') as pages
+      select c.doc->>'name' as topic,
+             case when coalesce(e.doc->>'pages', '') <> '' then ' (p. ' || (e.doc->>'pages') || ')' else '' end as pages
       from public.kb_records e join public.kb_records c on c.collection = 'constructs' and c.id = e.doc->>'constructId'
       where e.collection = 'entries' and e.doc->>'measureId' = v_mid and e.doc->>'sourceId' = v_sid
         and (e.doc->>'constructId') is distinct from v_cid
       limit 3
     loop
-      v_out := v_out || to_jsonb('The same paper already links this signal to "' || r.topic || '" (p. ' || r.pages || '). Check that it is not the same idea.');
+      v_out := v_out || to_jsonb('The same paper already links this signal to "' || r.topic || '"' || r.pages || '. Check that it is not the same idea.');
     end loop;
   end if;
   return v_out;
@@ -477,6 +505,17 @@ begin
       end if;
     elsif not exists (select 1 from public.kb_records where collection = 'measures' and id = new.payload->>'measureId') then
       raise exception 'That EEG signal is no longer on the site.';
+    end if;
+  else
+    -- A new link needs its source and a claim type. Page numbers are optional (a book may not be at hand).
+    if coalesce(new.payload->>'sourceId', '') = '' and trim(coalesce(new.payload->'reference'->>'cite', '')) = '' then
+      raise exception 'Choose the source (the paper) this link comes from.';
+    end if;
+    if coalesce(new.payload->>'claimType', '') not in ('attributed', 'inferred', 'causal', 'hypothesis', 'debated') then
+      raise exception 'Choose a claim type.';
+    end if;
+    if trim(coalesce(new.payload->>'claim', '')) = '' then
+      raise exception 'Describe what the source says.';
     end if;
   end if;
   new.dup_hints := public._dup_hints(new.payload);
@@ -524,7 +563,8 @@ begin
   else
     v_details :=
          '<p><b>EEG signal:</b> ' || public._esc(s->>'signal') || '<br><b>Topic:</b> ' || public._esc(s->>'topic')
-      || '<br><b>Paper:</b> ' || public._esc(s->>'paper') || '<br><b>Page(s):</b> ' || public._esc(s->>'pages')
+      || '<br><b>Paper:</b> ' || public._esc(s->>'paper')
+      || '<br><b>Page(s):</b> ' || case when s->>'pages' <> '' then public._esc(s->>'pages') else 'not given' end
       || case when s->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(s->>'sites') else '' end
       || case when s->>'band' <> '' then '<br><b>Frequency range:</b> ' || public._esc(s->>'band') else '' end || '</p>'
       || '<p><b>What the paper says:</b> ' || public._esc(s->>'claim') || '</p>'
@@ -540,7 +580,8 @@ begin
     v_details := '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px">Sent by an admin, but it could not be added to the site automatically: '
       || public._esc(v_fail) || '</p>' || v_details;
   end if;
-  for a in select user_id, email from public.admins loop
+  -- Only admins get this email, and only those who have not switched it off in their email preferences.
+  for a in select user_id, email from public.admins where public._wants_email(email, 'review') loop
     v_token := encode(gen_random_bytes(24), 'hex');
     insert into public.review_tokens (token_hash, submission_id, admin_id, admin_email)
     values (encode(digest(v_token, 'sha256'), 'hex'), new.id, a.user_id, a.email);
@@ -552,7 +593,8 @@ begin
         || '<a href="' || v_link || '&decision=accept" style="background:#0A6A6A;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Accept</a> &nbsp; '
         || '<a href="' || v_link || '&decision=reject" style="background:#fff;color:#AE3D0C;border:1px solid #AE3D0C;padding:9px 17px;border-radius:6px;text-decoration:none;font-weight:bold">Reject</a></p>'
         || '<p style="color:#475665;font-size:13.5px">Each button opens a page on the site where you confirm your choice. '
-        || 'The buttons work once and expire after 14 days. You can also review every suggestion on the Admin page.</p>'));
+        || 'The buttons work once and expire after 14 days. You can also review every suggestion on the Admin page.</p>'
+        || public._prefs_note()));
   end loop;
   return new;
 end $$;
@@ -564,6 +606,21 @@ create trigger submissions_after_insert after insert on public.submissions
 -- ---------------------------------------------------------------------------
 -- Accepting and rejecting
 -- ---------------------------------------------------------------------------
+
+-- Emails the other admins about a link or edit an admin put straight on the site, except those who
+-- switched this email off in their email preferences.
+create or replace function public._tell_admins_added(p_actor uuid, p_subject text, p_title text, p_details text)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  a record;
+  v_site text := (select value from public.settings where key = 'site_url');
+begin
+  for a in select email from public.admins where user_id is distinct from p_actor and public._wants_email(email, 'added') loop
+    perform public._send_email(a.email, p_subject, public._email_page(p_title, p_details
+      || '<p><a href="' || v_site || '">Open the knowledge base</a>. Every addition is also listed under Activity on the Admin page.</p>'
+      || public._prefs_note()));
+  end loop;
+end $$;
 
 create or replace function public._accept(p_sub uuid, p_actor uuid, p_email text) returns text
 language plpgsql security definer set search_path = public as $$
@@ -699,8 +756,17 @@ begin
   sm := public._sub_summary(p);
   perform public._log('accepted', jsonb_build_object('submission', s.id, 'entry', eid, 'signal', sm->>'signal', 'topic', sm->>'topic',
     'direct', s.submitted_by is not distinct from p_actor), p_actor, p_email);
-  -- An admin adding their own link needs no "accepted" email.
-  if s.submitted_by is distinct from p_actor then
+  if s.submitted_by is not distinct from p_actor then
+    -- An admin's own link: no "accepted" email, and the other admins hear about it unless they switched that off.
+    perform public._tell_admins_added(p_actor, 'Added to the site: ' || (sm->>'signal') || ' → ' || (sm->>'topic'), 'A link was added to the site',
+      '<p><b>EEG signal:</b> ' || public._esc(sm->>'signal') || '<br><b>Topic:</b> ' || public._esc(sm->>'topic')
+      || '<br><b>Paper:</b> ' || public._esc(sm->>'paper')
+      || case when sm->>'pages' <> '' then '<br><b>Page(s):</b> ' || public._esc(sm->>'pages') else '' end
+      || case when sm->>'sites' <> '' then '<br><b>Electrodes:</b> ' || public._esc(sm->>'sites') else '' end || '</p>'
+      || '<p><b>What the paper says:</b> ' || public._esc(sm->>'claim') || '</p>'
+      || '<p style="color:#475665;font-size:13.5px">Added by ' || public._esc(coalesce(p_email, 'an admin')) || '</p>');
+  elsif not exists (select 1 from public.admins where user_id = s.submitted_by) then
+    -- Only people who are not admins get an email about the outcome of their suggestion.
     perform public._send_email(s.submitter_email, 'Your suggestion was accepted',
       public._email_page('Your suggestion was accepted',
         '<p>Your link between <b>' || public._esc(sm->>'signal') || '</b> and <b>' || public._esc(sm->>'topic')
@@ -720,6 +786,7 @@ declare
   eid text; mid text; k text;
   e_old jsonb; e_new jsonb; m_old jsonb; m_new jsonb;
   sm jsonb;
+  v_changes text;
   v_today text := to_char(now(), 'YYYY-MM-DD');
 begin
   select * into s from public.submissions where id = p_sub;
@@ -735,6 +802,8 @@ begin
   end if;
   select doc into m_old from public.kb_records where collection = 'measures' and id = mid;
   if not found then raise exception 'The EEG signal this edit changes is no longer on the site.'; end if;
+  -- What changes, before → after, read while the old values are still on the site (for the other admins' email).
+  v_changes := public._edit_html(p);
 
   -- The link: only these fields, cleaned the same way as new suggestions.
   e_new := e_old;
@@ -746,8 +815,8 @@ begin
     end loop;
     if ch->>'claimType' in ('attributed', 'inferred', 'causal', 'hypothesis', 'debated') then e_new := e_new || jsonb_build_object('claimType', ch->>'claimType'); end if;
     if ch->>'evidence' in ('human-eeg', 'stimulation', 'intracranial', 'review') then e_new := e_new || jsonb_build_object('evidence', ch->>'evidence'); end if;
-    if coalesce(e_new->>'claim', '') = '' or coalesce(e_new->>'pages', '') = '' then
-      raise exception 'A link needs page numbers and a description of what the paper says.';
+    if coalesce(e_new->>'claim', '') = '' then
+      raise exception 'A link needs a description of what the paper says.';
     end if;
   end if;
 
@@ -787,8 +856,15 @@ begin
     'before', jsonb_build_object('entries', case when e_new is distinct from e_old then e_old end, 'measures', case when m_new is distinct from m_old then m_old end),
     'direct', s.submitted_by is not distinct from p_actor),
     p_actor, p_email);
-  -- An admin making their own edit needs no "accepted" email.
-  if s.submitted_by is distinct from p_actor then
+  if s.submitted_by is not distinct from p_actor then
+    -- An admin's own edit: no "accepted" email, and the other admins hear about it unless they switched that off.
+    perform public._tell_admins_added(p_actor, 'Edited on the site: ' || (sm->>'signal') || ' → ' || (sm->>'topic'), 'A link was edited',
+      '<p><b>EEG signal:</b> ' || public._esc(sm->>'signal')
+      || case when eid is not null then '<br><b>Topic:</b> ' || public._esc(sm->>'topic') || '<br><b>Paper:</b> ' || public._esc(sm->>'paper') else '' end || '</p>'
+      || '<p><b>Changes</b> (before → after):<br>' || coalesce(v_changes, 'none') || '</p>'
+      || '<p style="color:#475665;font-size:13.5px">Edited by ' || public._esc(coalesce(p_email, 'an admin')) || '</p>');
+  elsif not exists (select 1 from public.admins where user_id = s.submitted_by) then
+    -- Only people who are not admins get an email about the outcome of their suggestion.
     perform public._send_email(s.submitter_email, 'Your suggested edit was accepted',
       public._email_page('Your suggested edit was accepted',
         '<p>Your edit to <b>' || public._esc(sm->>'signal') || '</b> → <b>' || public._esc(sm->>'topic')
@@ -814,6 +890,8 @@ begin
   delete from public.review_tokens where submission_id = s.id;
   sm := public._sub_summary(s.payload);
   perform public._log('rejected', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'note', v_note, 'kind', sm->>'kind'), p_actor, p_email);
+  -- Only people who are not admins get an email about the outcome of their suggestion.
+  if exists (select 1 from public.admins where user_id = s.submitted_by) then return; end if;
   perform public._send_email(s.submitter_email,
     case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
     public._email_page(case when sm->>'kind' = 'edit' then 'Your suggested edit was not made' else 'Your suggestion was not accepted' end,
@@ -1033,7 +1111,33 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- Invitations: the only way for someone new to create an account
+-- Email preferences: each admin chooses which automatic emails they get
+-- ---------------------------------------------------------------------------
+
+create or replace function public.my_email_prefs() returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_email text := public._user_email(auth.uid());
+begin
+  if v_email is null then raise exception 'Sign in first.'; end if;
+  return jsonb_build_object('review', public._wants_email(v_email, 'review'), 'added', public._wants_email(v_email, 'added'));
+end $$;
+
+create or replace function public.set_email_prefs(p_review boolean, p_added boolean) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_email text := public._user_email(auth.uid());
+begin
+  if v_email is null then raise exception 'Sign in first.'; end if;
+  if not public.is_admin() then raise exception 'Only admins get these emails.'; end if;
+  insert into public.email_prefs (email, review, added, updated_at)
+    values (v_email, coalesce(p_review, true), coalesce(p_added, true), now())
+    on conflict (email) do update set review = excluded.review, added = excluded.added, updated_at = now();
+  return jsonb_build_object('review', coalesce(p_review, true), 'added', coalesce(p_added, true));
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- Invitations: optional emails that help someone new create an account
 -- ---------------------------------------------------------------------------
 
 -- Emails an invitation link that lets this address create an account (for 30 days).
@@ -1088,8 +1192,8 @@ language sql stable security definer set search_path = public, extensions as $$
     jsonb_build_object('ok', false));
 $$;
 
--- No new account without an invitation (an admin invite, or being the owner, also counts).
--- Blocked emails cannot create an account, or change an account to that email.
+-- Anyone can create an account by signing in with their email. Blocked emails cannot create an
+-- account, or change an account to that email.
 create or replace function public._block_signup() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
@@ -1097,12 +1201,6 @@ declare
 begin
   if v_email is not null and exists (select 1 from public.blocked_emails where email = v_email) then
     raise exception 'This email is blocked from the EEG Knowledge Base.';
-  end if;
-  if tg_op = 'INSERT' and not (
-       exists (select 1 from public.account_invites where email = v_email and expires_at > now())
-    or exists (select 1 from public.admin_invites where lower(email) = v_email)
-    or exists (select 1 from public.owners where email = v_email)) then
-    raise exception 'The EEG Knowledge Base is invite-only. Ask an admin for an invitation.';
   end if;
   return new;
 end $$;
@@ -1237,6 +1335,10 @@ grant execute on function public.is_owner(), public.remove_admin(text), public.b
 revoke execute on function public.invite_user(text), public.cancel_account_invite(text) from public, anon;
 grant execute on function public.invite_user(text), public.cancel_account_invite(text) to authenticated;
 grant execute on function public.invite_info(text) to anon, authenticated;
+-- Email preferences: each signed-in admin reads and sets their own.
+revoke execute on function public.my_email_prefs(), public.set_email_prefs(boolean, boolean) from public, anon;
+grant execute on function public.my_email_prefs(), public.set_email_prefs(boolean, boolean) to authenticated;
+revoke all on public.email_prefs from anon, authenticated;
 revoke all on public.account_invites from anon, authenticated;
 grant select (email, invited_by_email, invited_at, expires_at) on public.account_invites to authenticated;
 

@@ -4,6 +4,8 @@ Until this is set up, the site runs from `data/kb.json` and the Contribute page 
 
 - Contributors sign in with their email (a code is emailed to them; no password) and send suggestions from the Contribute page.
 - Every admin gets an email for each suggestion, with **Accept** and **Reject** buttons. Each button opens a page on the site where they confirm. Accepted links appear on the site immediately.
+- Each admin chooses which automatic emails they get under **Email preferences** on the Admin page: suggestions waiting for review, and links or edits other admins add. People who are not admins only get an email when their own suggestion is accepted or rejected.
+- A link needs its source (the paper) and a claim type. Page numbers are optional, for sources such as books whose pages can't be checked.
 - Links and edits sent by an admin or the owner skip review and go on the site straight away; they are listed under **Activity** on the Admin page. If one cannot be added (for example, its signal was deleted in the meantime), it goes to the other admins for review instead.
 - Admins can also review suggestions, delete links (with undo), add other admins and step down from the **Admin** page (under More).
 - The last remaining admin cannot step down, so someone can always review suggestions.
@@ -60,7 +62,7 @@ insert into public.admin_invites (email) values ('owner@example.com') on conflic
 These values stay inside your Supabase project; they are never stored in this repository.
 The owner cannot be removed or blocked from the site, and cannot step down; to change the owner, edit the `owners` table here.
 
-The site is invite-only: no one can create an account without an invitation. The lines above already invite the first admin and the owner; everyone else is invited from the Admin page (**Invite people**), which emails them a link that works for 30 days.
+Anyone can create an account by signing in with their email; only blocked emails are refused. The lines above make the first admin and the owner admins the first time they sign in. Admins can also send invitations from the Admin page (**Invite people**): an email with a link that opens the sign-in window with the person's address filled in, which works for 30 days.
 
 ## 5. Configure sign-in emails
 

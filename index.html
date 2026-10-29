@@ -237,6 +237,9 @@ button.chip:hover{border-color:var(--ink-3);color:var(--ink)}
 .gd-general{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;background:var(--panel-2);max-width:76ch}
 .gd-ruler{display:flex;flex-direction:column;gap:8px;max-width:520px}
 .gd-open{align-self:flex-start;margin-top:4px}
+.mcites{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:2px 0 0}
+.mcites .eyebrow{margin:0}
+a.cite{font:500 12.5px/1.4 var(--f-mono);color:var(--accent);text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
 .gnotes{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;background:var(--panel-2)}
 .gnotes > summary{cursor:pointer;font-weight:700;font-size:14px}
 .gnotes .gn-body{display:flex;flex-direction:column;gap:10px;margin-top:10px}
@@ -597,6 +600,16 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .adm-btns{display:flex;gap:6px;flex-wrap:wrap}
 #si-invite{margin:0}
 #acc-q{width:100%;margin-bottom:6px}
+.ep-panel{padding-top:14px;padding-bottom:14px}
+.ep-panel h3{margin-bottom:8px}
+details.ep > summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:5px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2)}
+details.ep > summary::-webkit-details-marker{display:none}
+details.ep > summary::after{content:"";width:6px;height:6px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+details.ep[open] > summary::after{transform:translateY(2px) rotate(-135deg)}
+.ep-body{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.ep-opt{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;cursor:pointer}
+.ep-opt input{margin-top:2px;width:16px;height:16px;flex:none;accent-color:var(--accent)}
+.ep-opt .sub{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
 .adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .adm-row input{flex:1 1 220px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0}
 .btn.danger{color:var(--warn);border-color:var(--warn)}
@@ -837,7 +850,7 @@ body.no-pet .ax{display:none}
     </div>
     <form id="si-form1" class="si-step" novalidate>
       <div id="si-invite" class="callout" hidden></div>
-      <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password. New here? The site is invite-only, so you need an invitation email from an admin first.</p>
+      <p class="muted small">Enter your email. We'll send you a sign-in code; there's no password. New here? The same code creates your account.</p>
       <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email" maxlength="200"></div>
       <div class="btns"><button class="btn primary" type="submit" id="si-send">Email me a code</button><button class="btn ghost" type="button" data-act="close-signin">Cancel</button></div>
     </form>
@@ -1083,11 +1096,36 @@ function refText(refs) {
   const M = model();
   return arr(refs).filter(r => r && r.s).map(r => { const s = M.sById.get(r.s); return (s ? s.short : r.s) + (r.p ? ', p. ' + r.p : ''); }).join('; ');
 }
-function doiLink(doi) {
+/* Where a paper can be read: its DOI page, or the link given instead of a DOI. */
+function paperHref(doi) {
   const d = String(doi || '').trim();
-  if (/^10\.\S+\/\S+$/.test(d)) return '<a href="https://doi.org/' + esc(encodeURI(d)) + '" target="_blank" rel="noopener">doi.org/' + esc(d) + ' ↗</a>';
-  if (/^https?:\/\/\S+$/i.test(d)) return '<a href="' + esc(d) + '" target="_blank" rel="noopener">link ↗</a>';
+  if (/^10\.\S+\/\S+$/.test(d)) return 'https://doi.org/' + encodeURI(d);
+  if (/^https?:\/\/\S+$/i.test(d)) return d;
   return '';
+}
+function doiLink(doi) {
+  const h = paperHref(doi);
+  if (!h) return '';
+  return '<a href="' + esc(h) + '" target="_blank" rel="noopener">' + (/^10\./.test(String(doi).trim()) ? 'doi.org/' + esc(String(doi).trim()) : 'link') + ' ↗</a>';
+}
+/* The papers behind some links, as in-text citations that open the paper itself, or its entry on the site when there is no DOI or link. */
+function citeLinks(M, es) {
+  const by = new Map();
+  es.forEach(e => {
+    const key = e.sourceId || (e.reference && e.reference.cite) || '';
+    if (!key) return;
+    if (!by.has(key)) by.set(key, {s: e.sourceId ? M.sById.get(e.sourceId) : null, ref: e.reference || null, pages: []});
+    const g = by.get(key);
+    if (e.pages && !g.pages.includes(e.pages)) g.pages.push(e.pages);
+  });
+  if (!by.size) return '';
+  const items = Array.from(by.values()).map(g => {
+    const label = (g.s ? g.s.short : (g.ref && g.ref.cite) || 'Unknown source') + (g.pages.length ? ', p. ' + g.pages.join('; ') : '');
+    const href = paperHref(g.s ? g.s.doi : g.ref && g.ref.doi), title = (g.s && g.s.cite) || (g.ref && g.ref.cite) || '';
+    if (href) return '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc(title + ' (opens the paper)') + '">' + esc(label) + ' ↗</a>';
+    return g.s ? '<button class="ref" data-act="open-source" data-id="' + esc(g.s.id) + '" title="' + esc(title) + '">' + esc(label) + '</button>' : '<span>' + esc(label) + '</span>';
+  });
+  return '<p class="mcites"><span class="eyebrow">' + (items.length > 1 ? 'Sources' : 'Source') + '</span>' + items.join('') + '</p>';
 }
 
 /* ---------- drawings ---------- */
@@ -1349,7 +1387,7 @@ function constructDetail(c, M) {
     const best = mes.slice().sort((a, b) => (CLAIM[b.claimType] || CLAIM.attributed).rank - (CLAIM[a.claimType] || CLAIM.attributed).rank)[0];
     const np = uniq(mes.map(e => e.sourceId).filter(Boolean)).length;
     h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + (np > 1 ? '<span class="chip" title="Papers that make this link">' + np + ' papers</span>' : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
-      '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button></div>' +
+      '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button>' + citeLinks(M, mes) + '</div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
   h += '</div>';
@@ -2134,8 +2172,8 @@ function editPayload() {
   const E = S.edit, b = E.base, v = id => ($('#' + id).value || '').trim(), ch = {};
   if (E.entryId) EDIT_FIELDS.slice(0, 8).forEach(f => {
     let val = v(f[2]);
-    if (f[0] === 'claimType' && !CLAIM[val]) val = 'attributed';
-    if (f[0] === 'evidence' && !EVID[val]) val = 'human-eeg';
+    if (f[0] === 'claimType' && !CLAIM[val]) val = b.claimType;
+    if (f[0] === 'evidence' && !EVID[val]) val = b.evidence;
     if (val !== b[f[0]]) ch[f[0]] = val;
   });
   if (!same(PL.sites, b.sites)) ch.sites = PL.sites.slice();
@@ -2160,7 +2198,7 @@ async function submitEdit(setMsg) {
   if (band && band.error) return setMsg('Fix the frequency range: two numbers from 0 to 1000 Hz, the first one lower.', true);
   const payload = editPayload();
   if (!Object.keys(payload.changes).length) return setMsg('Nothing has changed yet. Change a field or the electrodes on the head, then send.', true);
-  if (payload.changes.claim === '' || payload.changes.pages === '') return setMsg('A link needs page numbers and a description of what the paper says.', true);
+  if (payload.changes.claim === '') return setMsg('A link needs a description of what the paper says.', true);
   const btn = $('#f-submit');
   btn.disabled = true; setMsg('Sending…');
   try {
@@ -2303,14 +2341,14 @@ V.contribute = {
             '<div id="f-band-prev"></div></div>' +
         '</div>' +
         '<div id="f-entry-part"><div class="frow"><div class="field"><label for="f-source">Source<span class="req">required</span></label><select id="f-source"></select></div>' +
-          '<div class="field"><label for="f-pages">Page(s)<span class="req">required</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034"></div></div>' +
+          '<div class="field"><label for="f-pages">Page(s)<span class="req">optional</span></label><input id="f-pages" maxlength="40" placeholder="e.g., 2034; leave empty if you can\'t check"></div></div>' +
         '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
           '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" maxlength="300" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
             '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
           '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
           '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
         '<div class="field"><label for="f-claim">What the source says (paraphrase)<span class="req">required</span></label><textarea id="f-claim" rows="3" maxlength="700" placeholder="One or two sentences in your own words, not a quotation."></textarea></div>' +
-        '<div class="frow"><div class="field"><label for="f-ctype">Claim type</label><select id="f-ctype">' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
+        '<div class="frow"><div class="field"><label for="f-ctype">Claim type<span class="req">required</span></label><select id="f-ctype"><option value="">Choose how firmly…</option>' + Object.keys(CLAIM).map(k => '<option value="' + k + '">' + esc(CLAIM[k].label) + '</option>').join('') + '</select></div>' +
           '<div class="field"><label for="f-evid">Kind of evidence</label><select id="f-evid">' + Object.keys(EVID).map(k => '<option value="' + k + '">' + esc(EVID[k].label) + '</option>').join('') + '</select></div></div>' +
         '<div class="frow"><div class="field"><label for="f-paradigm">Paradigm or task</label><input id="f-paradigm" maxlength="200"></div>' +
           '<div class="field"><label for="f-pop">Population</label><input id="f-pop" maxlength="200"></div></div>' +
@@ -2392,7 +2430,7 @@ V.contribute = {
           ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>' + (isSbAdmin()
             ? 'You\'re an admin, so what you send goes on the site straight away, with no review. Each addition is listed under Activity on the Admin page.'
             : 'Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
-          : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. The site is invite-only: new people need an invitation from an admin first.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
+          : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. New here? Signing in creates your account.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = !signed || down; });
       if (E) { ['f-measure', 'f-construct', 'f-source'].forEach(id => { $('#' + id).disabled = true; }); $('#f-cancel').disabled = false; }
       $('#f-submit').textContent = isSbAdmin() ? (E ? 'Save edit' : 'Add to the site') : (E ? 'Send edit for review' : 'Send suggestion');
@@ -2487,8 +2525,8 @@ async function submitEntry(ev) {
   if (cSel === '__new' && !v('f-c-name')) probs.push('name the new construct');
   if (!sSel) probs.push('choose a source');
   if (sSel === '__new' && !v('f-cite')) probs.push('give the full citation');
-  if (!v('f-pages')) probs.push('add page numbers');
   if (!v('f-claim')) probs.push('describe what the source says');
+  if (!CLAIM[v('f-ctype')]) probs.push('choose a claim type');
   const band = $('#f-place') && !$('#f-place').hidden && !$('#pl-band-part').hidden ? parseBand() : null;
   if (band && band.error) probs.push('fix the frequency range (two numbers from 0 to 1000 Hz, the first one lower)');
   if (probs.length) return setMsg('To submit, ' + probs.join(', ') + '.', true);
@@ -2650,10 +2688,14 @@ async function declineSub(id) {
 /* ---------- Supabase mode: sign-in, Admin page, email review links ---------- */
 function sbConfigured() { const c = window.KB_STATIC; return !!(c && c.supabaseUrl && c.supabaseAnonKey); }
 function sbErr(e) {
-  const m = e && (e.message || e.error_description || e.msg);
-  if (m && /database error saving new user|blocked from the EEG|invite-only/i.test(m)) return 'This email can\'t sign in here yet. The site is invite-only: ask an admin to invite you, then use the link in your invitation email.';
-  if (m && /banned/i.test(m)) return 'This email has been blocked from signing in to this site.';
-  return m ? String(m) : 'Something went wrong. Check your connection and try again.';
+  const m = e && (e.message || e.error_description || e.msg), code = e && (e.code || e.error_code);
+  if (m && /banned|blocked from the EEG/i.test(m)) return 'This email has been blocked from signing in to this site.';
+  if ((m && /database error saving new user|unexpected_failure/i.test(m)) || code === 'unexpected_failure')
+    return 'We could not create your account just now. Please try again in a minute; if it keeps happening, contact the site\'s admins.';
+  if (!m) return 'Something went wrong. Check your connection and try again.';
+  // An error with no words in it (for example "[]" or "{}") gets a plain message instead.
+  if (/^[\s[\]{}"']*$/.test(String(m))) return 'Something went wrong on our side. Please try again in a minute.';
+  return String(m);
 }
 async function sbCall(fn, args, okMsg, reload) {
   if (!S.sb || S.busy) return null;
@@ -2749,7 +2791,7 @@ async function handleInvite() {
     box.innerHTML = '<b>Welcome! You were invited to join.</b><span>Press <b>Email me a code</b>, then enter the code to finish creating your account.</span>';
   } else {
     box.className = 'callout warn';
-    box.innerHTML = '<b>This invitation link no longer works.</b><span>It may have expired or already been used. If you already have an account, sign in below; otherwise ask an admin for a new invitation.</span>';
+    box.innerHTML = '<b>This invitation link no longer works.</b><span>It may have expired or already been used. You don\'t need it: enter your email below and we\'ll send you a code, which signs you in or creates your account.</span>';
   }
   box.hidden = false;
 }
@@ -2899,6 +2941,7 @@ V.admin = {
     const only = A.admins.length <= 1, armed = S.armed === 'step-down', owners = A.owners || [], B = A.blocked || [];
     const isOwnerEmail = em => owners.includes(String(em || '').toLowerCase());
     const armedBlock = String(S.armed || '').indexOf('block:') === 0;
+    const epOpen = !!(body.querySelector('details.ep') || {}).open;
     let h = '';
     if (S.sbNote === 'empty') h += '<div class="callout warn"><b>The live database is empty</b><span>The site is showing the starter data from ' + esc(S.static ? S.static.data : 'data/kb.json') + '. Import it so admins can review and delete links.</span><div class="btns"><button class="btn primary sm" data-act="import-kb">Import the starter data</button></div></div>';
     if (S.sbNote === 'down') h += '<div class="callout warn"><b>The live database could not be reached</b><span>Changes are not possible until it is back. If the project was paused, restore it in the Supabase dashboard.</span></div>';
@@ -2906,7 +2949,7 @@ V.admin = {
     h += '<section class="panel"><h3>Suggestions waiting<span class="count">' + pend.length + '</span></h3><div class="queue">' + subsListHTML(M, true) + '</div></section>';
     const INV = A.accountInvites || [];
     h += '<section class="panel"><h3>Invite people<span class="count">' + INV.length + '</span></h3>' +
-      '<p class="small muted">The site is invite-only: someone new can create an account only after an admin invites their email. They get an email with a link, which works for 30 days.</p>' +
+      '<p class="small muted">Anyone can create an account by signing in with their email. An invitation is optional: it emails someone a link that opens the sign-in window with their address filled in, and it works for 30 days.</p>' +
       '<form class="adm-row" id="adm-invite" novalidate><input id="inv-email" type="email" placeholder="Their email" aria-label="Email to invite" maxlength="200"><button class="btn primary sm" type="submit">Send invitation</button></form>' +
       (INV.length ? '<div class="eyebrow">Waiting for them to sign up</div><ul class="adm-list">' + INV.map(i => {
         const gone = new Date(i.expires_at) < new Date();
@@ -2917,6 +2960,12 @@ V.admin = {
     if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
     h += '</div><div class="adm-col">';
+    const P = A.prefs;
+    h += '<section class="panel ep-panel"><h3>Email preferences</h3>' + (P ? '<details class="ep"' + (epOpen ? ' open' : '') + '><summary>' + esc(prefsSummary(P)) + '</summary><div class="ep-body">' +
+        '<label class="ep-opt"><input type="checkbox" id="ep-review"' + (P.review ? ' checked' : '') + '><span><b>Suggestions waiting for review</b><span class="sub">When someone who is not an admin sends a link or an edit. The email has Accept and Reject buttons.</span></span></label>' +
+        '<label class="ep-opt"><input type="checkbox" id="ep-added"' + (P.added ? ' checked' : '') + '><span><b>New contributions from other admins</b><span class="sub">When another admin adds a link or makes an edit, which goes on the site without review.</span></span></label>' +
+        '<p class="small muted">Changes save straight away. People who are not admins only get an email when their own suggestion is accepted or rejected.</p></div></details>'
+      : '<p class="small muted">' + (P === false ? 'Your email preferences could not be loaded. Reload the page to try again.' : 'Loading…') + '</p>') + '</section>';
     h += '<section class="panel"><h3>Admins<span class="count">' + A.admins.length + '</span></h3><ul class="adm-list">' +
       A.admins.map(a => {
         const own = isOwnerEmail(a.email), key = 'remove-admin/' + a.email, armedR = S.armed === key;
@@ -3049,7 +3098,7 @@ V.data = {
         hrow('Entries whose measure is not on this index', 'Should be 0; the same check as the last row of your original spreadsheet.', M.orphanM.length, M.orphanM.length ? 'warn' : 'ok') +
         hrow('Entries whose construct is not in the construct list', 'Should be 0.', M.orphanC.length, M.orphanC.length ? 'warn' : 'ok') +
         hrow('Entries without a source record', 'Should be 0. Every entry should point to a source.', M.orphanS.length, M.orphanS.length ? 'warn' : 'ok') +
-        hrow('Entries without page numbers', 'Should be 0.', noPage.length, noPage.length ? 'warn' : 'ok') +
+        hrow('Entries without page numbers', 'Allowed, for example when a book\'s pages could not be checked, but a page number lets readers check the claim.', noPage.length, noPage.length ? 'info' : 'ok') +
         hrow('Measures the sources do not fully specify', 'The sources give no time window, band or electrode names for these. Define them before analysis.', incomplete.length, incomplete.length ? 'info' : 'ok',
           list(incomplete, m => '<li><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>: ' + esc(specMissing(m).join(', ')) + '</li>')) +
         hrow('Measures with electrode sites interpreted from a region', 'The source names a region (for example, occipitotemporal); the electrodes shown are an interpretation.', inferredSites.length, 'info', list(inferredSites, mLink)) +
@@ -3553,7 +3602,7 @@ const TRACKS = {
     steps: () => [
       {brief: true, title: 'Add a paper', next: 'Let’s go',
         text: () => 'Read a paper that links a brain signal to what people think or do? Add it here. ' + (isSbAdmin() ? 'You’re an admin, so it goes on the site straight away.' : 'An admin checks it before it appears.'),
-        list: ['Pick the brain signal and the topic', 'Mark the sensors on the head', 'Say which paper and page', 'Write what it found, in your own words']}
+        list: ['Pick the brain signal and the topic', 'Mark the sensors on the head', 'Say which paper it comes from', 'Write what it found, and how firmly']}
     ].concat(viaMore('contribute', 'Contribute'), [
       {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
         task: 'Sign in, or just look around', text: 'You need an account to send a paper. You can still follow along without one.',
@@ -3565,10 +3614,12 @@ const TRACKS = {
       {route: 'contribute', target: '#pl-sites-part', place: SIDE, task: 'Click where the paper put the sensors', skip: 'The paper doesn’t say',
         text: () => (PL.usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
         done: () => PL.sites.length > 0},
-      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Pick the paper and type the page',
-        text: 'The page number lets anyone check it. A new paper? Choose “+ Other paper…” and paste its DOI; the citation fills itself in.', done: () => !!$('#f-source').value && !!$('#f-pages').value.trim() && typedPause(1200)},
+      {route: 'contribute', target: () => $('#f-source') ? $('#f-source').closest('.frow') : null, place: ['bottom', 'top'], task: 'Pick the paper',
+        text: 'Add the page too if you can check it; it lets anyone find the claim. A new paper? Choose “+ Other paper…” and paste its DOI; the citation fills itself in.', done: () => !!$('#f-source').value && typedPause(1200)},
       {route: 'contribute', target: '#f-claim', place: ['bottom', 'top'], task: 'Write what the paper found',
         text: 'One or two short sentences, in your own words.', done: () => $('#f-claim').value.trim().length >= 15 && typedPause(2500)},
+      {route: 'contribute', target: '#f-ctype', place: ['bottom', 'top'], task: 'Choose the claim type',
+        text: 'How firmly does the paper link the signal to the topic? “Stated by the paper” is the most common choice.', done: () => !!CLAIM[$('#f-ctype').value]},
       {route: 'contribute', target: '#f-guide', place: ['top', 'bottom'], next: 'Got it',
         text: 'Optional: if the paper explains how to record the signal, add it here. It becomes part of the guide.'},
       {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: () => isSbAdmin() ? 'Add it to the site' : 'Send it', skip: 'Finish without sending',
@@ -3586,7 +3637,7 @@ const TRACKS = {
       {target: '.tabs [data-route="measures"]', place: ['bottom'], next: 'Next', text: 'EEG signals: every brain signal on the site, each with a step-by-step guide.'},
       {target: '.tabs [data-route="learn"]', place: ['bottom'], next: 'Next', text: 'EEG basics: a 5-minute introduction to EEG, in plain words.'},
       {target: '#more-btn', place: ['bottom', 'left'], next: 'Next', text: 'More: plan a study, see the papers, or add a paper.'},
-      {when: () => !$('#acct').hidden, target: '#acct', place: ['bottom', 'left'], next: 'Next', text: 'Sign in here to add papers. You need an invitation first.'},
+      {when: () => !$('#acct').hidden, target: '#acct', place: ['bottom', 'left'], next: 'Next', text: 'Sign in here to add papers. Anyone can create an account with their email.'},
       {target: '#tour-btn', place: ['bottom', 'left'], next: 'Finish', text: 'Come back here any time for a tutorial, or to turn on page hints.'}
     ],
     end: () => ({title: 'That’s everything', text: 'Ready to try it for real? The next tutorial uses your own question.', next: 'measure'})}
@@ -4113,6 +4164,7 @@ function bind() {
     else if (t.id === 'mf-src') { S.mf.source = t.value; render(); }
     else if (t.id === 'mf-sort') { S.mf.sort = t.value; render(); }
     else if (t.id === 'pl-c') { S.plan.c = t.value; TOUR.flags.plc = true; render(); }
+    else if (t.id === 'ep-review' || t.id === 'ep-added') saveEmailPrefs();
     else if (t.id === 'tm-hints') setHints(t.checked);
     else if (t.id === 'tm-pet') setPet(t.checked);
     else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
@@ -4318,12 +4370,29 @@ async function loadAdmin() {
       S.sb.from('owners').select('email'),
       S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []}),
       S.me.isOwner ? S.sb.rpc('list_accounts') : Promise.resolve({data: []}),
-      S.sb.from('account_invites').select('email,invited_by_email,invited_at,expires_at').order('invited_at', {ascending: false})
+      S.sb.from('account_invites').select('email,invited_by_email,invited_at,expires_at').order('invited_at', {ascending: false}),
+      S.sb.rpc('my_email_prefs')
     ]);
     S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [],
-      accounts: res[5].data || [], accountInvites: res[6].data || [], loaded: true};
+      accounts: res[5].data || [], accountInvites: res[6].data || [], prefs: !res[7].error && res[7].data ? res[7].data : false, loaded: true};
   } catch (e) { console.warn('admin', e); }
   scheduleUpdate();
+}
+function prefsSummary(p) {
+  return p.review && p.added ? 'You get both kinds of emails' : p.review ? 'Only suggestions waiting for review' : p.added ? 'Only new contributions from other admins' : 'You get no emails from the site';
+}
+async function saveEmailPrefs() {
+  const r = $('#ep-review'), a = $('#ep-added');
+  if (!r || !a || !S.sb) return;
+  const want = {review: r.checked, added: a.checked};
+  r.disabled = a.disabled = true;
+  try {
+    const res = await S.sb.rpc('set_email_prefs', {p_review: want.review, p_added: want.added});
+    if (res.error) throw res.error;
+    S.adm.prefs = res.data || want;
+    toast('Email preferences saved');
+  } catch (e) { toast(sbErr(e)); }
+  finally { scheduleUpdate(); }
 }
 async function connect() {
   if (window.KB_STATIC && window.KB_STATIC.data) return connectStatic(window.KB_STATIC);
