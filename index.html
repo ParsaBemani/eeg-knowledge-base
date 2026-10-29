@@ -353,6 +353,38 @@ details.more-d[open] > summary{margin-bottom:10px}
 .scalp .lb{font:600 16px var(--f-mono);fill:var(--ink);paint-order:stroke;stroke:var(--panel-2);stroke-width:4px}
 .scalp .qm{font:600 54px var(--f-display);fill:var(--ink-3)}
 .scalp .lat{stroke:currentColor;stroke-width:2.5;stroke-dasharray:6 5;fill:none}
+/* Topic heat map: where the studies put their electrodes (darker = more studies), with each study's placement beside it. */
+.hm-grid{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:760px){.hm-grid{grid-template-columns:1fr}.hm-fig{max-width:320px}}
+.hm-fig{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.hm-svg{display:block;width:100%;height:auto}
+.hm-svg .hd,.hm-svg .ear,.hm-svg .nose{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:2.5}
+.hm-svg .hd-line{fill:none;stroke:var(--ink-3);stroke-width:2.5;pointer-events:none}
+.hm-svg image{pointer-events:none}
+.hm-ref circle{fill:var(--ink-3);opacity:.6}
+.hm-ref text{font:600 7px var(--f-mono);fill:var(--ink-2);text-anchor:middle;paint-order:stroke;stroke:var(--panel-2);stroke-width:2.2px}
+.hm-over circle{fill:none;stroke:var(--ink);stroke-width:2.6}
+.hm-key{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.hm-key i{flex:1;height:10px;border-radius:5px;border:1px solid var(--rule)}
+.hm-read{font-size:13px;color:var(--ink-2);margin:0;min-height:2.7em}
+.hm-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hm-studies{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.hm-study{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:start;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel)}
+.hm-study.on,.hm-study:focus-visible{border-color:var(--ink-3);box-shadow:0 0 0 2px var(--grid);outline:none}
+.hm-st{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.hm-st .cite,.hm-st .ref{align-self:flex-start;font-weight:700}
+.hm-tag{align-self:flex-start;font-size:11.5px;padding:1px 7px;border-radius:999px;background:var(--panel-2);border:1px solid var(--rule);color:var(--ink-3);margin-top:2px}
+.hm-mini{display:block}
+.hm-mini .hd,.hm-mini .ear,.hm-mini .nose{fill:var(--panel-2);stroke:var(--ink-3);stroke-width:5}
+.hm-mini .el{fill:var(--accent);stroke:var(--panel);stroke-width:3}
+/* Electrodes far from the other studies of the topic: a note with the other studies' heat map and the contributor's electrodes as rings. */
+.pl-warn{display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;align-items:start;margin-top:10px;padding:10px 12px;border:1px solid var(--warn);border-left-width:4px;border-radius:8px;background:var(--warn-soft)}
+.pl-warn .pw-t{display:flex;flex-direction:column;gap:5px;font-size:13.5px;min-width:0}
+.pl-warn .pw-t b{color:var(--warn);font-size:14px}
+.pl-warn .pw-t b::before{content:"!";display:inline-grid;place-items:center;width:17px;height:17px;margin-right:6px;border-radius:50%;background:var(--warn);color:var(--panel);font-size:12px;vertical-align:1px}
+.pl-warn .hm-ref text{display:none}
+.pl-warn .hm-over circle{stroke-width:5}
+@media (max-width:480px){.pl-warn{grid-template-columns:1fr}.pl-warn .pw-fig{max-width:150px}}
 
 .ruler{display:block;width:100%;height:auto}
 .ruler .ax,.ruler .tk{stroke:var(--ink-3);stroke-width:1}
@@ -1302,6 +1334,147 @@ function scalp(m, size, labels) {
   if (!on.size && !pts.length) s += '<text class="qm" x="0" y="19" text-anchor="middle">?</text>';
   return s + '</svg>';
 }
+
+/* ---------- where the studies of a topic put their electrodes: a heat map ---------- */
+const FAR = 0.6;          // head-map distance at which two sets of electrodes count as far apart (about two positions)
+const HM_SIGMA = 0.13;    // how far one electrode spreads on the heat map
+const HM_NEAR = 0.2;      // "near here" for the count under the pointer
+const HM_GRID = 72;
+const HM = {studies: []};
+/* The electrodes of a link or a signal as head-map points: standard sites, then electrodes placed by position. */
+const elecPts = x => sitesOf(x).filter(n => SITES_EXT[n]).map(n => Object.assign(siteMap(n), {label: n})).concat(pointsOf(x));
+/* Each paper's electrodes for a topic, counting a paper once however many of its links name the topic. A link that
+   does not give its own electrodes uses its signal's usual ones. */
+function topicStudies(M, cid) {
+  const by = new Map();
+  (M.byC.get(cid) || []).forEach(e => {
+    const m = M.mById.get(e.measureId);
+    if (!m) return;
+    const own = elecPts(e), pts = own.length ? own : elecPts(m), key = e.sourceId || 'link:' + e.id;
+    if (!by.has(key)) by.set(key, {key: key, s: e.sourceId ? M.sById.get(e.sourceId) : null, items: [], pts: []});
+    const g = by.get(key);
+    g.items.push({e: e, m: m, pts: pts, own: own.length > 0});
+    pts.forEach(p => { if (!g.pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 0.02)) g.pts.push(p); });
+  });
+  return Array.from(by.values());
+}
+/* How many studies have an electrode at a spot, blurred so neighbouring electrodes add up into patches. Each study
+   counts at most once anywhere, so the value runs from 0 to the number of studies. */
+function heatAt(list, x, y) {
+  let v = 0;
+  list.forEach(s => {
+    let b = 0;
+    s.pts.forEach(p => { const k = Math.exp(-((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y)) / (2 * HM_SIGMA * HM_SIGMA)); if (k > b) b = k; });
+    v += b;
+  });
+  return v;
+}
+const nearCount = (list, p) => list.filter(s => s.pts.some(q => Math.hypot(q.x - p.x, q.y - p.y) <= HM_NEAR)).length;
+/* The heat colours: one warm hue from pale to deep, which fades into the page where no study put an electrode. Dark mode
+   runs the other way, from dark to bright, so "more studies" always stands out from the background. */
+function oklch(L, C, h) {
+  const a = C * Math.cos(h * Math.PI / 180), b = C * Math.sin(h * Math.PI / 180);
+  const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3), m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3), s = Math.pow(L - 0.0894841775 * a - 1.291485548 * b, 3);
+  const f = v => { v = Math.max(0, Math.min(1, v)); return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055)); };
+  return [f(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s), f(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s), f(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)];
+}
+function darkTheme() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim(), m = v.match(/^#([0-9a-f]{6})$/i);
+  return !!m && parseInt(m[1].slice(0, 2), 16) + parseInt(m[1].slice(2, 4), 16) + parseInt(m[1].slice(4, 6), 16) < 300;
+}
+const heatColor = (t, dark) => dark ? oklch(0.34 + 0.5 * t, 0.07 + 0.11 * Math.min(1, t * 1.6), 38) : oklch(0.95 - 0.52 * t, 0.04 + 0.14 * Math.min(1, t * 1.6), 33);
+const heatCss = (t, dark) => 'rgb(' + heatColor(t, dark).join(',') + ')';
+/* The heat map as a picture: each cell coloured by the share of studies with an electrode nearby. */
+function heatImage(list, dark) {
+  const n = list.length, cv = document.createElement('canvas');
+  cv.width = cv.height = HM_GRID;
+  const ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx || !n) return '';
+  const img = ctx.createImageData(HM_GRID, HM_GRID), step = 2 * LIM / HM_GRID;
+  for (let j = 0; j < HM_GRID; j++) for (let i = 0; i < HM_GRID; i++) {
+    const x = -LIM + (i + 0.5) * step, y = LIM - (j + 0.5) * step, r = Math.hypot(x, y);
+    if (r > LIM + step) continue;
+    // Past the outline of the head the colour fades, so electrodes there still show without a glow around the head.
+    const t = Math.min(1, heatAt(list, x, y) / n), o = (j * HM_GRID + i) * 4, c = heatColor(t, dark), fade = 1 - 0.5 * Math.min(1, Math.max(0, (r - 100 / RING) / 0.2));
+    img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = Math.round(255 * fade * Math.min(1, t / 0.12));
+  }
+  ctx.putImageData(img, 0, 0);
+  try { return cv.toDataURL('image/png'); } catch (e) { return ''; }
+}
+/* A head with the heat map under the outline, the standard positions for reference, and a layer for one study's electrodes. */
+function heatSVG(list, id, label) {
+  const R = (LIM * RING).toFixed(1), src = heatImage(list, darkTheme());
+  let s = '<svg class="hm-svg" viewBox="-128 -126 256 252" role="img" aria-label="' + esc(label) + '"><defs><clipPath id="' + id + '-clip"><circle r="' + R + '"/></clipPath></defs>' +
+    '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>' +
+    (src ? '<image href="' + src + '" x="-' + R + '" y="-' + R + '" width="' + (2 * LIM * RING).toFixed(1) + '" height="' + (2 * LIM * RING).toFixed(1) + '" preserveAspectRatio="none" clip-path="url(#' + id + '-clip)"/>' : '') +
+    '<circle class="hd-line" cx="0" cy="0" r="100"/><g class="hm-ref" aria-hidden="true">';
+  Object.keys(SITES).forEach(n => { const p = SITES[n]; s += '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="1.8"/><text x="' + p[0] + '" y="' + (-p[1] - 4.2) + '">' + n + '</text>'; });
+  return s + '</g><g class="hm-over" aria-hidden="true"></g></svg>';
+}
+/* A small head with one study's electrodes. */
+function miniHead(pts, size) {
+  let s = '<svg class="hm-mini" viewBox="-128 -126 256 252" width="' + size + '" height="' + size + '" aria-hidden="true">' +
+    '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>';
+  pts.forEach(p => { s += '<circle class="el" cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="11"/>'; });
+  return s + '</svg>';
+}
+/* The standard positions a set of studies used most, most-used first. */
+function topNames(list, max) {
+  const cnt = new Map();
+  list.forEach(s => uniq(s.pts.map(nearestFixed)).forEach(n => cnt.set(n, (cnt.get(n) || 0) + 1)));
+  return Array.from(cnt.entries()).sort((a, b) => b[1] - a[1]).slice(0, max || 4).map(x => ({n: x[0], k: x[1]}));
+}
+const andList = a => a.length > 1 ? a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1] : a.join('');
+const areaWords = n => { const a = AREAS.find(x => n.indexOf(x[0]) === 0 && /^(z|\d{1,2})$/.test(n.slice(x[0].length))); return a ? a[2] : ''; };
+function heatLegend(n, dark) {
+  const stops = [0.08, 0.3, 0.55, 0.8, 1].map(t => heatCss(t, dark)).join(',');
+  return '<div class="hm-key"><span>' + (n > 1 ? '1 study' : 'Fewer') + '</span><i style="background:linear-gradient(90deg,' + stops + ')"></i><span>' + (n > 1 ? 'all ' + n : '1 study') + '</span></div>';
+}
+function studyCard(s, i) {
+  const names = uniq(s.items.map(it => it.m.name)), usual = s.items.every(it => !it.own);
+  const href = s.s ? paperHref(s.s.doi) : '', title = s.s ? s.s.short : 'A paper';
+  const el = s.pts.map(p => p.label && SITES_EXT[p.label] ? p.label : pointLabel(p));
+  return '<li class="hm-study" data-hm="' + i + '" tabindex="0" aria-label="' + esc(title + ': electrodes at ' + el.join(', ')) + '">' + miniHead(s.pts, 64) +
+    '<div class="hm-st">' + (href ? '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc((s.s.cite || '') + ' (opens the paper)') + '">' + esc(title) + ' ↗</a>'
+      : s.s ? '<button class="ref" data-act="open-source" data-id="' + esc(s.s.id) + '">' + esc(title) + '</button>' : '<span>' + esc(title) + '</span>') +
+    '<span class="small">' + esc(names.join(', ')) + '</span><span class="small muted">' + esc(el.slice(0, 6).join(', ') + (el.length > 6 ? ' and ' + (el.length - 6) + ' more' : '')) + '</span>' +
+    (usual ? '<span class="hm-tag" title="The paper\'s own electrodes are not recorded on the site, so the signal\'s usual electrodes stand in">Usual electrodes of the signal</span>' : '') + '</div></li>';
+}
+/* The topic page section: the heat map, and each study's own placement beside it. */
+function topicHeatHTML(c, M) {
+  const studies = topicStudies(M, c.id), list = studies.filter(s => s.pts.length), n = list.length, dark = darkTheme();
+  HM.studies = list;
+  const head = '<div class="sec hm"><h3>Where studies put the electrodes' + (n ? '<span class="count">' + plural(n, 'study', 'studies') + '</span>' : '') + '</h3>';
+  if (!n) return head + '<p class="small muted">None of the papers on this topic give electrode positions yet.</p></div>';
+  const top = topNames(list), usual = list.filter(s => s.items.every(it => !it.own)).length, none = studies.length - n;
+  const label = 'Heat map of electrode positions across ' + plural(n, 'study', 'studies') + ' of ' + c.name + '. Most used: ' + top.map(t => t.n + ' (' + plural(t.k, 'study', 'studies') + ')').join(', ') + '.';
+  return head + '<p class="small muted">' + (n > 1 ? 'The stronger the colour, the more of these ' + n + ' studies put an electrode there.' : 'One study so far; the map fills in as papers are added.') +
+      (usual ? ' For ' + (usual === n ? (n > 1 ? 'all of them' : 'it') : plural(usual, 'study', 'studies')) + ', the site has only the usual electrodes of the signal, not the paper\'s own.' : '') + '</p>' +
+    '<div class="hm-grid"><figure class="hm-fig">' + heatSVG(list, 'hmt', label) + heatLegend(n, dark) +
+      '<figcaption class="hm-read" id="hm-read" aria-live="polite">Most used: ' + esc(andList(top.slice(0, 3).map(t => t.n + ' (' + t.k + ' of ' + n + ')'))) + '. Point at the map for any spot.</figcaption></figure>' +
+    '<div class="hm-side"><span class="eyebrow">Each study</span><ul class="hm-studies">' + list.map(studyCard).join('') + '</ul></div></div>' +
+    (none ? '<p class="small muted">' + plural(none, 'other paper') + ' on this topic ' + (none === 1 ? 'does' : 'do') + ' not give electrode positions.</p>' : '') + '</div>';
+}
+/* Pointing at the topic heat map reads out how many studies used that spot; a study's card shows its electrodes on the map. */
+function hmHover(ev) {
+  const svg = ev.target.closest && ev.target.closest('#cv-detail .hm-svg');
+  const out = $('#hm-read');
+  if (!svg || !out || !HM.studies.length) return;
+  const m = svg.getScreenCTM();
+  if (!m) return;
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  const q = pt.matrixTransform(m.inverse()), p = {x: q.x / RING, y: -q.y / RING}, n = HM.studies.length;
+  if (!onHead(p)) return;
+  const k = nearCount(HM.studies, p);
+  out.textContent = (/^(between|near)/.test(nearSite(p)) ? nearSite(p).charAt(0).toUpperCase() + nearSite(p).slice(1) : 'At ' + nearSite(p)) + ': ' +
+    (k ? k + ' of ' + n + (n === 1 ? ' study' : ' studies') + (k === 1 ? ' puts' : ' put') + ' an electrode here.' : 'no study puts an electrode here.');
+}
+function hmShow(i) {
+  const g = $('#cv-detail .hm-over'), s = HM.studies[i];
+  $$('#cv-detail .hm-study').forEach(li => li.classList.toggle('on', Number(li.getAttribute('data-hm')) === i));
+  if (!g) return;
+  g.innerHTML = s ? s.pts.map(p => '<circle cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="8"/>').join('') : '';
+}
 function ruler(m, compact) {
   const k = sigK(m);
   const W = compact ? 240 : 440, H = compact ? 42 : 50, pad = 12, ax = H - 15, span = W - 2 * pad;
@@ -1542,7 +1715,7 @@ function constructDetail(c, M) {
       '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button>' + citeLinks(M, mes) + '</div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
-  h += '</div>';
+  h += '</div>' + topicHeatHTML(c, M);
   const shared = ms.map(m => ({m: m, others: consFor(M, m.id).filter(x => x.id !== c.id)})).filter(x => x.others.length);
   if (shared.length) {
     h += '<div class="callout warn"><b>Heads up: ' + (shared.length === 1 ? esc(short(shared[0].m)) + ' is' : shared.length + ' of these signals are') + ' also linked to other topics</b><span>A change in ' + (shared.length === 1 ? 'it' : 'them') + ' does not prove ' + esc(c.name.toLowerCase()) + ' on its own. A good design includes a condition that rules the other topics out.</span></div>';
@@ -2092,7 +2265,7 @@ function sigCardHTML(k) {
             '<ul class="pl-list" id="' + id('pl-list') + '" aria-live="polite"></ul>' +
             addFormHTML(k) +
             fld('sites-note', 'Location in the paper\'s words (optional)', inp('sites-note', 200, 'e.g. referenced to the left mastoid, or "posterior sites"')) +
-          '</div></div></div>' +
+          '</div></div><div class="pl-warn" id="' + id('place-warn') + '" role="status" hidden></div></div>' +
         '<div id="' + id('band-part') + '"><span class="eyebrow">Frequency range</span>' +
           '<div class="frow">' + fld('band-lo', 'From (Hz)', num('band-lo', 'e.g. 4')) + fld('band-hi', 'To (Hz)', num('band-hi', 'e.g. 8')) +
             fld('band-label', 'Band name (optional)', inp('band-label', 30, 'e.g. theta')) + '</div>' +
@@ -2149,7 +2322,48 @@ function renderPlacer(c) {
     }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
   }
   plHighlight(c, c.hover);
+  placeWarn(c);
   cfSummaries();
+}
+/* Electrodes far from where the other studies of the topic put theirs get a note asking for a second look, and sending
+   then needs a second press. Sent anyway, they count in the topic's heat map like any others. */
+function placeCheck(c) {
+  const cid = ($('#f-construct') || {}).value, sid = ($('#f-source') || {}).value;
+  if (S.edit || !cid || cid === '__new') return null;
+  const mine = c.mode === 'free' ? c.points.map(p => ({x: p.x, y: p.y})) : c.sites.filter(n => SITES_EXT[n]).map(siteMap);
+  if (!mine.length) return null;
+  const M = model(), mid = cfVal(c, 'measure'), m = mid && mid !== '__new' ? M.mById.get(mid) : null;
+  const all = topicStudies(M, cid).filter(s => s.key !== sid && s.pts.length);
+  // The fairest comparison is other studies of the topic that record the same signal; then where the signal is usually
+  // recorded; and only for a signal with neither, every study of the topic.
+  const same = m ? all.map(s => Object.assign({}, s, {pts: [].concat.apply([], s.items.filter(it => it.m.id === mid).map(it => it.pts))})).filter(s => s.pts.length) : [];
+  const usual = m && !same.length && elecPts(m).length ? [{key: 'usual', pts: elecPts(m), items: []}] : [];
+  const basis = same.length ? 'same' : usual.length ? 'usual' : 'topic', ref = same.length ? same : usual.length ? usual : all;
+  const near = s => mine.some(a => s.pts.some(p => Math.hypot(a.x - p.x, a.y - p.y) <= FAR)), ok = ref.filter(near).length;
+  if (!ref.length || ok * 2 >= ref.length) return null;
+  // Where the studies that disagree put theirs: the positions most of them share, or all of them if each is used once.
+  const top = topNames(ref.filter(s => !near(s)), 4), most = top.length ? top[0].k : 0;
+  return {ref: ref, basis: basis, ok: ok, mine: mine, others: top.filter(t => most < 2 || t.k === most).map(t => t.n), yours: uniq(mine.map(nearestFixed)).slice(0, 4)};
+}
+function placeWarn(c) {
+  const box = cfEl(c, 'place-warn');
+  if (!box) return;
+  const w = c.warn = placeCheck(c);
+  S.placeWarn = CF.cards.some(x => x.warn);
+  box.hidden = !w;
+  if (!w) { box.innerHTML = ''; return; }
+  const topic = (model().cById.get($('#f-construct').value) || {}).name || 'this topic', n = w.ref.length;
+  const where = names => andList(names) + (areaWords(names[0]) ? ' (' + areaWords(names[0]) + ')' : '');
+  const rings = w.mine.map(p => '<circle cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="12"/>').join('');
+  const usual = w.basis === 'usual', same = w.basis === 'same';
+  box.innerHTML = '<div class="pw-fig">' + heatSVG(w.ref, 'hmw' + c.k, (usual ? 'Where this signal is usually recorded' : 'Where the other studies put the electrodes') + ', with yours as rings').replace('<g class="hm-over" aria-hidden="true"></g>', '<g class="hm-over" aria-hidden="true">' + rings + '</g>') + '</div>' +
+    '<div class="pw-t"><b>Double-check these electrodes</b><span>' +
+      (usual ? 'No other study of ' + esc(topic) + ' records this signal yet, and it is usually recorded around '
+        : n === 1 ? 'The other study of ' + esc(topic) + (same ? ' that records this signal' : '') + ' put them around '
+        : (w.ok ? 'Most other studies of ' : 'The other studies of ') + esc(topic) + (same ? ' that record this signal' : '') + ' put them around ') +
+      esc(where(w.others)) + '. Yours are around ' + esc(where(w.yours)) + '.</span>' +
+      '<span>If that is what the paper says, keep them: you can still send them, and they are added to the topic\'s heat map with the others.</span>' +
+      '<span class="small muted">The map shows ' + (usual ? 'the signal\'s usual electrodes' : 'where ' + (n === 1 ? 'that study' : 'those ' + n + ' studies') + ' put the electrodes') + '; the rings are yours.</span></div>';
 }
 /* One electrode placed freely, numbered as in the list beside the head. */
 const fpHTML = (p, i) => '<g class="fp" data-pt="' + i + '" transform="translate(' + (p.x * RING).toFixed(1) + ' ' + (-p.y * RING).toFixed(1) + ')" role="button" tabindex="0" aria-label="' +
@@ -2620,6 +2834,8 @@ function dupCheck() {
   const M = model(), v = id => ($('#' + id) && $('#' + id).value || '').trim();
   const show = (b, html) => { if (b) { b.innerHTML = html || ''; b.hidden = !html; } };
   S.dupStrong = false;
+  // The electrode check depends on the topic, the paper and the signal, so it is redone here too.
+  CF.cards.forEach(placeWarn);
   if (S.edit) { show($('#f-c-dup'), ''); show($('#f-s-dup'), ''); CF.cards.forEach(c => { show(cfEl(c, 'm-dup'), ''); show(cfEl(c, 'link-dup'), ''); }); return; }
   const cSel = v('f-construct'), sSel = v('f-source');
   const also = x => x.via && normTxt(x.via) !== normTxt(x.it.name || x.it.short) ? ' <span class="muted">(matches “' + esc(x.via) + '”)</span>' : '';
@@ -3109,11 +3325,11 @@ function subHTML(s, M) {
       act += '<div class="btns"><button class="btn sm" data-act="accept-batch" data-batch="' + esc(s.batchId) + '">Accept all ' + pendSib.length + ' waiting links from this paper</button></div>';
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) +
       (sib.length > 1 ? '<span class="chip" title="Sent together from one paper">Link ' + (sib.indexOf(s) + 1) + ' of ' + sib.length + ' from one paper</span>' : '') + '</div>' +
-      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + guideNotesHTML(s.guide) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
+      '<dl class="en-kv">' + row('Claim', s.claim) + row('Paper', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Electrode check', placeCheckText(s)) + row('Frequency range', placeText(s).band) + row('Population', s.population) + row('Primary studies', s.cites) + guideNotesHTML(s.guide) + row('Reason', s.reviewNote) + '</dl>' + (st === 'pending' ? dupHintsHTML(s.dupHints) : '') +
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + st + '">' + st + '</span><b>' + esc(mName) + '</b><span aria-hidden="true">→</span><b>' + esc(cName) + '</b>' + claimChip(s.claimType) + '</div>' +
-    '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Frequency range', placeText(s).band) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
+    '<dl class="en-kv">' + row('Claim', s.claim) + row('Source', src ? src.short : (s.reference && s.reference.cite)) + row('Pages', s.pages) + row('Electrodes', placeText(s).sites) + row('Electrode check', placeCheckText(s)) + row('Frequency range', placeText(s).band) + row('Paradigm', s.paradigm) + row('Population', s.population) + row('Behavioural outcome', s.behaviour) + row('Primary studies', s.cites) + row('Decline reason', s.reviewNote) + '</dl>' +
     '<span class="qmeta">Submitted by <span data-uid="' + esc(s.submittedBy || '') + '">' + (s.submittedBy ? 'someone' : 'unknown') + '</span> · ' + esc(fmtDate(s.submittedAt)) + '</span>' + act + '</article>';
 }
 async function fillNames(root) {
@@ -3145,7 +3361,13 @@ function cardPayload(c, i, shared) {
     pages: cfVal(c, 'pages'), claim: cfVal(c, 'claim'), claimType: CLAIM[cfVal(c, 'ctype')] ? cfVal(c, 'ctype') : 'attributed',
     evidence: EVID[cfVal(c, 'evid')] ? cfVal(c, 'evid') : 'human-eeg',
     paradigm: cfVal(c, 'paradigm'), population: cfVal(c, 'pop'), behaviour: cfVal(c, 'beh'), cites: cfVal(c, 'cites'), guide: guideLines(c)
-  }, placePayload(c));
+  }, placePayload(c), c.warn ? {placeCheck: {far: true, basis: c.warn.basis, others: andList(c.warn.others)}} : {});
+}
+/* For the admins: the contributor was told the electrodes are far from where other studies put theirs, and sent them anyway. */
+function placeCheckText(p) {
+  const w = p && p.placeCheck;
+  return w && w.far === true ? (w.basis === 'usual' ? 'Far from where this signal is usually recorded' : 'Far from where other studies of this topic put theirs') +
+    (w.others ? ' (around ' + String(w.others).slice(0, 120) + ')' : '') + '. The contributor was asked to double-check and sent them anyway.' : '';
 }
 async function submitEntry(ev) {
   ev.preventDefault();
@@ -3187,8 +3409,15 @@ async function submitEntry(ev) {
   const cleared = () => { $('#ct-form').reset(); $('#f-newc').hidden = true; $('#f-news').hidden = true; cfReset(); dupCheck(); TOUR.flags.sent = true; };
   if (S.sbMode) {
     if (!S.session) return setMsg('Sign in first, then send your suggestion.', true);
-    // A likely duplicate needs a second press, so it is sent only on purpose.
-    if (S.dupStrong && S.armed !== 'dup-send') { armKey('dup-send'); return setMsg('This looks like something already on the site (see the yellow note above). Press Send again to send it anyway.', true); }
+    // A likely duplicate, or electrodes far from where other studies put theirs, needs a second press, so it is sent only on purpose.
+    if ((S.dupStrong || S.placeWarn) && S.armed !== 'dup-send') {
+      armKey('dup-send');
+      const far = CF.cards.filter(c => c.warn);
+      if (far.length && CF.cards.length > 2 && !far.some(c => c.k === CF.open)) openSigCard(far[0]);
+      return setMsg((S.dupStrong ? 'This looks like something already on the site (see the yellow note above). ' : '') +
+        (S.placeWarn ? (S.dupStrong ? 'Also, some' : 'Some') + ' electrodes are far from where other studies of this topic put theirs (see the orange note' + (far.length > 1 || CF.cards.length > 1 ? ' on ' + andList(far.map(c => 'signal ' + (CF.cards.indexOf(c) + 1))) : '') + '). Check them against the paper. ' : '') +
+        'Press Send again to send it anyway.', true);
+    }
     S.armed = null;
     const btn = $('#f-submit');
     btn.disabled = true; setMsg('Sending…');
@@ -3238,7 +3467,7 @@ async function submitEntry(ev) {
       ln('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label),
       ln('Task', p.paradigm), ln('Participants', p.population), ln('Behavioural outcome', p.behaviour),
       ln('Original studies the paper cites', p.cites),
-      ln('Electrodes', placeText(p).sites), ln('Frequency range', placeText(p).band)
+      ln('Electrodes', placeText(p).sites), ln('Electrode check', placeCheckText(p)), ln('Frequency range', placeText(p).band)
     ].filter(Boolean).join('\n\n') + '\n\n_Sent from the Contribute form on the site._';
     // An exact copy of the form for the script that adds suggestions automatically (hidden when the issue is shown).
     const form = Object.assign({}, p);
@@ -3684,7 +3913,7 @@ V.review = {
         row('Paper', s.paper) + row('Page(s)', s.pages) + row('What the paper says', s.claim) +
         row('Link strength', (CLAIM[p.claimType] || CLAIM.attributed).label) + row('Kind of evidence', (EVID[p.evidence] || EVID['human-eeg']).label) +
         row('New signal: how the paper specifies it', p.newMeasure && p.newMeasure.spec) + row('New topic: area', p.newConstruct && (FAM[p.newConstruct.family] || FAM.other).label) +
-        row('Electrodes', placeText(p).sites) + row('Frequency range', placeText(p).band) +
+        row('Electrodes', placeText(p).sites) + row('Electrode check', placeCheckText(p)) + row('Frequency range', placeText(p).band) +
         row('Population', p.population) + row('Task', p.paradigm) + row('Original studies cited', p.cites) + guideNotesHTML(p.guide) + '</dl>' + dupHintsHTML(R.data.dup_hints)) +
         '<div class="rv-actions"><div class="btns"><button class="btn primary' + (R.decision === 'accept' ? ' pick' : '') + '" data-act="rv-accept"' + (R.busy ? ' disabled' : '') + '>Accept</button>' +
         '<button class="btn danger' + (R.decision === 'reject' ? ' pick' : '') + '" data-act="rv-reject"' + (R.busy ? ' disabled' : '') + '>Reject</button></div>' +
@@ -4855,6 +5084,13 @@ function bind() {
   ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input'].forEach(t => document.addEventListener(t, () => { TOUR.lastAct = Date.now(); }, {capture: true, passive: true}));
   document.addEventListener('pointerdown', plPointerDown);
   document.addEventListener('pointermove', plPointerMove, {passive: false});
+  // The topic heat map: the count under the pointer, and one study's electrodes while its card is pointed at or focused.
+  document.addEventListener('pointermove', hmHover, {passive: true});
+  const hmPick = ev => { const li = ev.target.closest && ev.target.closest('#cv-detail .hm-study'); if (li) hmShow(Number(li.getAttribute('data-hm'))); };
+  document.addEventListener('mouseover', hmPick);
+  document.addEventListener('focusin', hmPick);
+  document.addEventListener('mouseout', ev => { const li = ev.target.closest && ev.target.closest('#cv-detail .hm-study'); if (li && !(ev.relatedTarget && li.contains(ev.relatedTarget))) hmShow(-1); });
+  document.addEventListener('focusout', ev => { if (ev.target.closest && ev.target.closest('#cv-detail .hm-study')) hmShow(-1); });
   document.addEventListener('pointerup', plPointerUp);
   document.addEventListener('pointercancel', plPointerUp);
   $('#si-form1').addEventListener('submit', sendCode);

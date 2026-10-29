@@ -616,6 +616,14 @@ begin
       || '<p style="color:#475665;font-size:13.5px">Suggested by ' || public._esc(coalesce(r.submitter_email, 'unknown')) || '</p>';
   else
     v_out := public._link_html(r.payload)
+      -- The form warned the contributor that these electrodes are far from where other studies of the topic put theirs.
+      || case when r.payload->'placeCheck'->>'far' = 'true'
+           then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Electrodes far from other studies</b><br>'
+             || case when r.payload->'placeCheck'->>'basis' = 'usual' then 'These electrodes are far from where this signal is usually recorded'
+                     else 'These electrodes are far from where other studies of this topic put theirs' end
+             || coalesce(' (around ' || public._esc(nullif(left(r.payload->'placeCheck'->>'others', 120), '')) || ')', '')
+             || '. The contributor was asked to double-check them against the paper and sent them anyway.</p>'
+           else '' end
       || coalesce('<p><b>Notes for the measurement guide</b>' || public._guide_html(r.payload->'guide') || '</p>', '')
       || case when jsonb_array_length(coalesce(r.dup_hints, '[]'::jsonb)) > 0
            then '<p style="background:#FBEFE8;border-left:3px solid #AE3D0C;padding:8px 12px"><b>Possible duplicates</b><br>'
