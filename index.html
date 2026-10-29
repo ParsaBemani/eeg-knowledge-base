@@ -696,6 +696,60 @@ details.ep[open] > summary::after{transform:translateY(2px) rotate(-135deg)}
 .pl-list .ds{color:var(--ink-2);font-size:13px}
 .pl-usual{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .pl-usual .btn{white-space:normal;text-align:left}
+/* Free placement: electrodes anywhere on the head, with the coordinates under the pointer shown beside it. */
+.pl-top{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+.pl-mode{display:inline-flex;border:1px solid var(--rule);border-radius:999px;padding:2px;background:var(--panel-2)}
+.pl-mode button{border:0;background:none;border-radius:999px;padding:5px 12px;font:600 12.5px var(--f-body);color:var(--ink-2);cursor:pointer}
+.pl-mode button.on{background:var(--panel);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.pl-mode button:disabled{cursor:not-allowed;opacity:.6}
+.pl-mode button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pl-mode-note{margin:0}
+.pl-head .pl-free{display:none}
+.pl-head.free .pl-free{display:inline}
+.pl-head.free .pl-fixed{display:none}
+.pl-head .fp-hit{fill:transparent;cursor:crosshair}
+.pl-head .fg{fill:var(--ink-3);opacity:.5;pointer-events:none}
+.pl-head .fg.big{opacity:.75}
+.pl-head .fgl{font:600 7px var(--f-mono);fill:var(--ink-3);text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--panel);stroke-width:2.2px}
+.pl-head.noguide .fp-guides{display:none}
+.pl-head .fp-usual circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.6;stroke-dasharray:3 2.2;pointer-events:none}
+.pl-head .fp{cursor:grab}
+.pl-head .fp circle{fill:var(--accent);stroke:var(--panel);stroke-width:1.6}
+.pl-head .fp text{font:700 7px var(--f-mono);fill:var(--accent-ink);text-anchor:middle;pointer-events:none}
+.pl-head .fp:focus{outline:none}
+.pl-head .fp.sel circle,.pl-head .fp:focus-visible circle{stroke:var(--ink);stroke-width:2.4}
+.pl-head .fp.hl circle{stroke:var(--hl);stroke-width:4}
+.pl-head .fp.drag{cursor:grabbing}
+.pl-head .fp.off circle{fill:var(--warn);opacity:.6}
+.pl-head .pl-cross{pointer-events:none}
+.pl-head .pl-cross line{stroke:var(--accent);stroke-width:1.3}
+.pl-head .pl-cross circle{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.6;stroke-dasharray:2.5 2}
+.pl-guides{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3);margin-top:6px;cursor:pointer}
+.pl-guides input{accent-color:var(--accent)}
+.pl-read{border:1px solid var(--rule);border-radius:10px;background:var(--panel-2);padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-height:104px}
+.pl-read .rd-xy{display:flex;gap:18px;font:500 13px var(--f-mono);color:var(--ink-2)}
+.pl-read .rd-xy b{font:700 20px var(--f-mono);color:var(--ink);font-variant-numeric:tabular-nums}
+.pl-read .rd-near{font-weight:700;font-size:14px}
+.pl-read .rd-note{font-size:12.5px;color:var(--accent)}
+.pl-read .rd-3d{font:12px var(--f-mono);color:var(--ink-3)}
+.pl-read .rd-idle{margin:0;font-size:13px;color:var(--ink-2)}
+@media (max-width:760px){.pl-read.live{position:fixed;left:12px;right:12px;bottom:12px;z-index:85;min-height:0;background:var(--panel);box-shadow:var(--shadow)}}
+.pl-ghost.bare{width:0;height:0;margin:0;background:none;box-shadow:none}
+.pl-ghost.off:not(.bare){background:var(--ink-3)}
+.pl-ghost span{position:absolute;left:50%;bottom:calc(100% + 16px);transform:translateX(-50%);white-space:nowrap;font:700 12px var(--f-mono);background:var(--ink);color:var(--panel);padding:3px 8px;border-radius:6px}
+.pl-ghost span:empty{display:none}
+.pl-add{border:1px solid var(--rule);border-radius:10px;padding:0 12px;background:var(--panel)}
+.pl-add > summary{cursor:pointer;font-weight:700;font-size:13.5px;padding:9px 0}
+.pa-body{display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
+.pa-row{display:flex;flex-direction:column;gap:5px;min-width:0}
+.pa-row > label,.pa-l{font-size:13px;font-weight:700}
+.pa-in{display:flex;gap:6px;flex-wrap:wrap}
+.pa-in input{flex:1 1 56px}
+.pa-in input[list]{flex:1 1 150px}
+.pa-row input,.pa-row select{padding:7px 9px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2);min-width:0;font-size:13.5px}
+.pa-row select{max-width:100%}
+.pa-hint{margin:0;font-size:12px;color:var(--ink-3)}
+.pa-body .fmsg:empty{display:none}
 
 /* Tutorial: a ring and a small pointer bubble show one thing at a time; most steps wait until the reader has done it. */
 .tourw{position:relative;flex:none}
@@ -988,6 +1042,60 @@ const SITES = {
   O1:[-29,-88], Oz:[0,-92], O2:[29,-88],
   M1:[-112,-36], M2:[112,-36]
 };
+/* More positions of the 10–10 system (64-channel caps and the like) on the same drawing. Free placement uses them to
+   name a spot and to place an electrode by name; the standard-positions picker keeps the shorter list above. */
+const SITES_EXT = Object.assign({
+  AFz:[0,69], AF3:[-34,71], AF4:[34,71], AF7:[-54,74], AF8:[54,74],
+  F1:[-20,47], F2:[20,47], F5:[-57,52], F6:[57,52], F9:[-93,68], F10:[93,68],
+  FC1:[-21,23], FC2:[21,23], FC5:[-65,26], FC6:[65,26], FT7:[-87,28], FT8:[87,28], FT9:[-109,36], FT10:[109,36],
+  C1:[-23,0], C2:[23,0], C5:[-69,0], C6:[69,0], T9:[-115,0], T10:[115,0],
+  CP1:[-21,-23], CP2:[21,-23], CP5:[-65,-26], CP6:[65,-26], TP7:[-87,-28], TP8:[87,-28], TP9:[-109,-36], TP10:[109,-36],
+  P1:[-20,-47], P2:[20,-47], P5:[-57,-52], P6:[57,-52], P9:[-93,-68], P10:[93,-68],
+  PO3:[-34,-71], PO4:[34,-71], PO9:[-68,-93], PO10:[68,-93], Nz:[0,115], Iz:[0,-115], A1:[-118,-10], A2:[118,-10]
+}, SITES);
+const SITE_ALIAS = {T3: 'T7', T4: 'T8', T5: 'P7', T6: 'P8'};
+/* Head-map coordinates: Cz is (0, 0), x grows toward the right ear and y toward the nose, and the ring through Fpz, T8,
+   Oz and T7 (92 units on the drawing) has radius 1. A direction in 3D maps onto it by its angle from the top of the
+   head, 72° being the ring, so the head map is the same picture the electrodes are drawn on. Electrodes can sit up to
+   1.3 from Cz (about 94° from the top), which takes in the ears and the mastoids. */
+const RING = 92, LIM = 1.3, SNAP = 0.05, MAX_PTS = 64;
+const r2 = v => Math.round(v * 100) / 100 || 0;
+const fmtC = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(2);
+const isNum = v => typeof v === 'number' && isFinite(v);
+const siteMap = n => { const s = SITES_EXT[n]; return s ? {x: r2(s[0] / RING), y: r2(s[1] / RING)} : null; };
+const onHead = p => Math.hypot(p.x, p.y) <= LIM;
+function mapTo3d(p) {
+  const th = Math.hypot(p.x, p.y) * 72 * Math.PI / 180, a = Math.atan2(p.y, p.x);
+  return {x: Math.sin(th) * Math.cos(a), y: Math.sin(th) * Math.sin(a), z: Math.cos(th)};
+}
+function mapFrom3d(x, y, z) {
+  const n = Math.hypot(x, y, z);
+  if (!n) return null;
+  const th = Math.acos(Math.max(-1, Math.min(1, z / n))) * 180 / Math.PI, a = Math.atan2(y, x);
+  return {x: r2(th / 72 * Math.cos(a)), y: r2(th / 72 * Math.sin(a))};
+}
+const siteDist = (p, names) => names.map(n => ({n: n, d: Math.hypot(p.x - SITES_EXT[n][0] / RING, p.y - SITES_EXT[n][1] / RING)})).sort((a, b) => a.d - b.d);
+/* Where a spot is, in words: a standard position (10–10 names included) when it sits on one, otherwise between or
+   near the positions labelled on the head, such as "between O1 and PO7". */
+function nearSite(p) {
+  const all = siteDist(p, Object.keys(SITES_EXT));
+  if (all[0].d < 0.02) return all[0].n;
+  const d = siteDist(p, Object.keys(SITES));
+  return d[1].d <= d[0].d * 1.6 && d[0].d + d[1].d <= 0.62 ? 'between ' + d[0].n + ' and ' + d[1].n : 'near ' + d[0].n;
+}
+/* A spot very close to a standard position is held to it, so the electrodes of a 64-channel cap can be marked by clicking. */
+function snapPt(p) {
+  const d = siteDist(p, Object.keys(SITES_EXT))[0];
+  return d.d < SNAP ? siteMap(d.n) : {x: r2(p.x), y: r2(p.y)};
+}
+const nearestFixed = p => siteDist(p, Object.keys(SITES))[0].n;
+/* Electrodes placed freely, as saved with a signal or a link: {x, y, label}. In the form, a point whose label is worked
+   out from where it sits is marked auto, so its label follows it when it moves. */
+const pointsOf = m => arr(m && m.points).filter(p => p && isNum(p.x) && isNum(p.y)).map(p => ({x: p.x, y: p.y, label: String(p.label || '').slice(0, 40)}));
+const pointLabel = p => (p.auto || !p.label) ? nearSite(p) : p.label;
+const pointText = p => pointLabel(p) + ' (' + fmtC(p.x) + ', ' + fmtC(p.y) + ')';
+/* Every electrode of a signal or a link in words: its standard sites, then the electrodes placed freely. */
+const elecNames = m => sitesOf(m).concat(pointsOf(m).map(pointLabel));
 const POP = {adults:'Adults', children:'Children', infants:'Infants', clinical:'Clinical sample'};
 const PARA = {either:'Not sure yet', passive:'No task (passive)', active:'Yes, a task'};
 
@@ -1022,7 +1130,7 @@ function specMissing(m) {
   const miss = [], s = sigOf(m);
   if (s === 'time' && !winOf(m)) miss.push('time window');
   if ((s === 'freq' || s === 'phase') && !bandsOf(m).length) miss.push('frequency band');
-  if (!sitesOf(m).length) miss.push('standard (10–20) electrode sites');
+  if (!sitesOf(m).length && !pointsOf(m).length) miss.push('standard (10–20) electrode sites');
   return miss;
 }
 function winText(m) {
@@ -1046,7 +1154,8 @@ function whereWhen(m) {
   const b = bandsOf(m);
   if (b.length) parts.push(b.map(bandText).join(', '));
   else if (winOf(m)) parts.push(winText(m));
-  if (sitesOf(m).length) parts.push('at ' + sitesOf(m).slice(0, 4).join(', ') + (sitesOf(m).length > 4 ? '…' : ''));
+  const el = elecNames(m);
+  if (el.length) parts.push((sitesOf(m).length ? 'at ' : 'electrodes ') + el.slice(0, 4).join(', ') + (el.length > 4 ? '…' : ''));
   return parts.join(' · ') || 'Timing and location not given in the papers';
 }
 function claimChip(t) { const k = CLAIM[t] ? t : 'attributed'; return '<span class="chip cl-' + k + '" title="' + esc(CLAIM[k].tip) + '">' + esc(CLAIM[k].label) + '</span>'; }
@@ -1171,8 +1280,8 @@ function citeLinks(M, es) {
 /* ---------- drawings ---------- */
 function scalp(m, size, labels) {
   const k = sigK(m);
-  const on = new Set(sitesOf(m).filter(s => SITES[s]));
-  const label = on.size ? 'Electrode sites: ' + Array.from(on).join(', ') : 'Electrode sites not specified';
+  const on = new Set(sitesOf(m).filter(s => SITES[s])), pts = pointsOf(m);
+  const label = on.size || pts.length ? 'Electrode sites: ' + Array.from(on).concat(pts.map(pointLabel)).join(', ') : 'Electrode sites not specified';
   let s = '<svg class="scalp ' + k + '" viewBox="-128 -126 256 252" width="' + size + '" height="' + size + '" role="img" aria-label="' + esc(label) + '">';
   s += '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>';
   if (m.lateralized && labels) {
@@ -1186,8 +1295,11 @@ function scalp(m, size, labels) {
     const p = SITES[n];
     s += '<circle class="el' + (o ? ' on' : '') + '" data-site="' + n + '" cx="' + p[0] + '" cy="' + (-p[1]) + '" r="' + (o ? 9.5 : 4.2) + '"/>';
   }
+  // Electrodes placed freely; a short label (a cap's own name, such as AF3 or E57) is written beside it.
+  pts.forEach((p, i) => { s += '<circle class="el on pt" data-site="pt:' + i + '" cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="8.5"/>'; });
   if (labels) on.forEach(n => { const p = SITES[n]; s += '<text class="lb" x="' + p[0] + '" y="' + (-p[1] - 14) + '" text-anchor="middle">' + n + '</text>'; });
-  if (!on.size) s += '<text class="qm" x="0" y="19" text-anchor="middle">?</text>';
+  if (labels) pts.forEach(p => { const l = pointLabel(p); if (l.length <= 5) s += '<text class="lb" x="' + (p.x * RING).toFixed(1) + '" y="' + (-p.y * RING - 13).toFixed(1) + '" text-anchor="middle">' + esc(l) + '</text>'; });
+  if (!on.size && !pts.length) s += '<text class="qm" x="0" y="19" text-anchor="middle">?</text>';
   return s + '</svg>';
 }
 function ruler(m, compact) {
@@ -1478,7 +1590,7 @@ V.measures = {
     const ql = f.q.trim().toLowerCase();
     let ms = M.measures.filter(m => {
       if (f.signal !== 'all' && sigOf(m) !== f.signal) return false;
-      if (f.site && !sitesOf(m).includes(f.site)) return false;
+      if (f.site && !elecNames(m).includes(f.site)) return false;
       if (f.source !== 'all' && !srcIdsForM(M, m.id).includes(f.source)) return false;
       if (f.family !== 'all' && !consFor(M, m.id).some(c => famOf(c) === f.family)) return false;
       if (ql) {
@@ -1773,7 +1885,7 @@ function preregText(m, M) {
     'Operationalization: ' + m.spec + (arr(m.specRefs).length ? ' (' + refText(m.specRefs) + ')' : ''),
     'Time window: ' + (winOf(m) ? winText(m) : (sigOf(m) === 'time' ? '[specify; not given in the sources]' : 'n/a')),
     'Frequency band(s): ' + (b.length ? b.map(bandText).join(', ') : (sigOf(m) === 'time' ? 'n/a' : '[specify; not given in the sources]')),
-    'Electrode sites: ' + (sitesOf(m).length ? sitesOf(m).join(', ') + (isInf(m, 'sites') ? ' [interpreted from a region named in the source; confirm]' : '') : '[specify; not given in the sources]') + (m.lateralized ? ' (contralateral minus ipsilateral)' : ''),
+    'Electrode sites: ' + (elecNames(m).length ? sitesOf(m).concat(pointsOf(m).map(pointText)).join(', ') + (isInf(m, 'sites') ? ' [interpreted from a region named in the source; confirm]' : '') : '[specify; not given in the sources]') + (m.lateralized ? ' (contralateral minus ipsilateral)' : ''),
     'Quantification: [mean amplitude in an a priori window / fractional-area latency / power]',
     'Interpreted as indexing: [construct]. Also linked in the knowledge base to: ' + (cs.join('; ') || 'none'),
     'Known caveats:',
@@ -1875,7 +1987,9 @@ const AREAS = [
   ['P', 'Parietal', 'the upper back of the head', 'parietal lobe'],
   ['O', 'Occipital', 'the back of the head', 'occipital lobe'],
   ['M', 'Mastoid', 'the bony bump behind the ear', ''],
-  ['A', 'Earlobe', 'the earlobe', '']
+  ['A', 'Earlobe', 'the earlobe', ''],
+  ['N', 'Nasion', 'the dip between the eyes, at the top of the nose', ''],
+  ['I', 'Inion', 'the bump at the back of the skull', '']
 ];
 function siteInfo(name) {
   const a = AREAS.find(x => name.indexOf(x[0]) === 0 && /^(z|\d{1,2})$/.test(name.slice(x[0].length)));
@@ -1886,6 +2000,7 @@ function siteInfo(name) {
   if (a[0] === 'M' || a[0] === 'A') {
     return {name: name, region: a[1] + ', ' + side, desc: (a[0] === 'M' ? 'The bony bump behind the ' + side + ' ear' : 'The ' + side + ' earlobe') + '. Usually a reference electrode, not over the brain.'};
   }
+  if (a[0] === 'N' || a[0] === 'I') return {name: name, region: a[1] + ', midline', desc: a[2].charAt(0).toUpperCase() + a[2].slice(1) + '. A landmark for measuring the head.'};
   const where = suf === 'z' ? 'on the centre line' : n <= 2 ? 'just ' + side + ' of the centre line' : n >= 7 ? 'far to the ' + side : 'on the ' + side + ' side';
   const pos = a[2].charAt(0).toUpperCase() + a[2].slice(1);
   return {name: name, region: a[1] + ', ' + (suf === 'z' ? 'midline' : side + ' side'), desc: pos + ', ' + where + '. Over the ' + a[3] + '.'};
@@ -1893,7 +2008,7 @@ function siteInfo(name) {
 /* ---------- Contribute: one paper and topic, and a card for each EEG signal ---------- */
 /* Each card is one signal the paper links to the topic, with its own electrodes, frequency range, page and claim.
    One or two cards sit side by side; from the third on, all but the open card fold into a narrow column. */
-const CF = {cards: [], open: 0, seq: 0, locked: false, drag: null, moved: false, suppressClick: false, last: null};
+const CF = {cards: [], open: 0, seq: 0, locked: false, drag: null, moved: false, suppressClick: false, last: null, hoverK: null};
 const CF_MAX = 8;
 const cfCard = k => CF.cards.find(c => c.k === k) || null;
 const cfEl = (c, name) => c ? document.getElementById('f-' + name + '-' + c.k) : null;
@@ -1905,12 +2020,42 @@ function placerSVG(k) {
   let s = '<svg class="pl-head" id="f-head-' + k + '" viewBox="-128 -136 256 264" role="group" aria-label="Head seen from above, nose at the top. Click a position to add or remove an electrode.">' +
     '<ellipse class="ear" cx="-103" cy="0" rx="8" ry="19"/><ellipse class="ear" cx="103" cy="0" rx="8" ry="19"/><path class="nose" d="M-13 -99 L0 -117 L13 -99 Z"/><circle class="hd" cx="0" cy="0" r="100"/>' +
     '<text class="orient" x="0" y="-122" text-anchor="middle">nose</text><text class="orient" x="-120" y="-30" text-anchor="middle">L</text><text class="orient" x="120" y="-30" text-anchor="middle">R</text>';
+  // Fixed positions: click one to add or remove it.
+  s += '<g class="pl-fixed">';
   Object.keys(SITES).forEach(n => {
     const p = SITES[n], info = siteInfo(n);
     s += '<g class="ps" data-site="' + n + '" data-act="pl-toggle" role="button" tabindex="0" aria-pressed="false" aria-label="' + esc(n + ': ' + info.region) + '">' +
       '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="10.5"/><text x="' + p[0] + '" y="' + (-p[1] + 2.6) + '">' + n + '</text></g>';
   });
+  // Free placement: the area electrodes can go, faint standard 10–10 positions to steer by, the signal's usual
+  // electrodes, the electrodes placed so far, and a crosshair where a dragged electrode would land.
+  s += '</g><g class="pl-free"><circle class="fp-hit" cx="0" cy="0" r="' + (LIM * RING).toFixed(1) + '"/><g class="fp-guides" aria-hidden="true">';
+  Object.keys(SITES_EXT).forEach(n => {
+    const p = SITES_EXT[n], big = !!SITES[n];
+    s += '<circle class="fg' + (big ? ' big' : '') + '" cx="' + p[0] + '" cy="' + (-p[1]) + '" r="' + (big ? 2.4 : 1.7) + '"/>' +
+      (big ? '<text class="fgl" x="' + p[0] + '" y="' + (-p[1] - 4.5) + '">' + n + '</text>' : '');
+  });
+  s += '</g><g class="fp-usual" aria-hidden="true"></g><g class="fp-pts"></g>' +
+    '<g class="pl-cross" aria-hidden="true" style="display:none"><line x1="-13" y1="0" x2="13" y2="0"/><line x1="0" y1="-13" x2="0" y2="13"/><circle r="7.5"/></g></g>';
   return s + '</svg>';
+}
+/* Optional: electrodes by name, by head-map position, or by 3D position (for example from a cap's electrode file). */
+function addFormHTML(k) {
+  const id = n => 'f-' + n + '-' + k;
+  const num = (n, ph, lab) => '<input id="' + id(n) + '" type="number" inputmode="decimal" step="any" placeholder="' + ph + '" aria-label="' + esc(lab) + '">';
+  return '<details class="pl-add" id="' + id('pl-add') + '" hidden><summary>Add by name or coordinates (optional)</summary><div class="pa-body">' +
+    '<p class="small muted">For when the paper lists electrode names or coordinates. Each one is added to the head, where you can still drag it.</p>' +
+    '<div class="pa-row"><label for="' + id('pa-name') + '">Standard names</label><div class="pa-in"><input id="' + id('pa-name') + '" list="pl-names" maxlength="300" placeholder="e.g. AF3, PO9, TP10" autocomplete="off" spellcheck="false">' +
+      '<button type="button" class="btn sm" data-act="fp-add-name">Add</button></div></div>' +
+    '<div class="pa-row"><span class="pa-l">Head-map position</span><div class="pa-in">' + num('pa-x', 'x', 'x, toward the right ear') + num('pa-y', 'y', 'y, toward the nose') +
+      '<button type="button" class="btn sm" data-act="fp-add-map">Add</button></div>' +
+      '<p class="pa-hint">Cz is (0, 0), x grows toward the right ear and y toward the nose, and the circle through Fpz, T8, Oz and T7 has radius 1.</p></div>' +
+    '<div class="pa-row"><span class="pa-l">3D position, for example from a cap file</span><div class="pa-in">' + num('pa-3x', 'x', '3D x') + num('pa-3y', 'y', '3D y') + num('pa-3z', 'z', '3D z') +
+      '<button type="button" class="btn sm" data-act="fp-add-3d">Add</button></div>' +
+      '<select id="' + id('pa-axes') + '" aria-label="Which way the 3D axes point"><option value="ras">x to the right ear, y to the nose, z up (MNI, RAS)</option><option value="als">x to the nose, y to the left ear, z up (EEGLAB, CTF)</option></select>' +
+      '<p class="pa-hint">Read as a direction from the centre of the head, so millimetres work as well as values on a unit sphere.</p></div>' +
+    '<div class="pa-row"><label for="' + id('pa-label') + '">Label for the next one (optional)</label><input id="' + id('pa-label') + '" maxlength="40" placeholder="e.g. E57, or the paper\'s name for it"></div>' +
+    '<p class="fmsg" id="' + id('pa-msg') + '" role="status"></p></div></details>';
 }
 /* One signal card: which signal, where and at what frequency the paper measured it, and what the paper says about it. */
 function sigCardHTML(k) {
@@ -1932,12 +2077,20 @@ function sigCardHTML(k) {
         fld('m-spec', 'Specification as the source gives it', inp('m-spec', 300), 'wide') + '</div>' +
       '<div class="subform placer-wrap" id="' + id('place') + '">' +
         '<p class="small muted" id="' + id('place-intro') + '"></p>' +
-        '<div id="' + id('sites-part') + '"><span class="eyebrow">Where on the head</span>' +
-          '<div class="placer"><div class="placer-fig">' + placerSVG(k) + '</div>' +
-          '<div class="placer-side"><div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
-            '<p class="small muted">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
+        '<div id="' + id('sites-part') + '"><div class="pl-top"><span class="eyebrow">Where on the head</span>' +
+          '<div class="pl-mode" role="group" aria-label="How to mark the electrodes">' +
+            '<button type="button" data-act="pl-mode" data-mode="fixed" aria-pressed="true">Fixed positions</button>' +
+            '<button type="button" data-act="pl-mode" data-mode="free" aria-pressed="false">Free placement</button></div></div>' +
+          '<p class="small muted pl-mode-note" id="' + id('mode-note') + '" hidden>Drag electrodes anywhere on the head: for caps with other layouts (32 or 64 channels, for example) or spots between positions, such as between O1 and PO7. ' +
+            'The faint dots are the standard 10–10 positions, for reference; an electrode let go right next to one snaps to it.</p>' +
+          '<div class="placer"><div class="placer-fig">' + placerSVG(k) +
+            '<label class="pl-guides" id="' + id('guides-l') + '" hidden><input type="checkbox" id="' + id('guides') + '" data-cf="guides" checked> Show the standard positions</label></div>' +
+          '<div class="placer-side"><div class="pl-read" id="' + id('read') + '" hidden></div>' +
+            '<div class="pl-tray"><button type="button" class="pl-token" data-act="pl-token" aria-label="Electrode: drag onto the head"><i aria-hidden="true"></i>Drag an electrode onto the head</button></div>' +
+            '<p class="small muted" id="' + id('pl-help') + '">Or click a position on the head. Drag an electrode to move it, or off the head to remove it.</p>' +
             '<div class="pl-usual" id="' + id('usual') + '" hidden></div>' +
             '<ul class="pl-list" id="' + id('pl-list') + '" aria-live="polite"></ul>' +
+            addFormHTML(k) +
             fld('sites-note', 'Location in the paper\'s words (optional)', inp('sites-note', 200, 'e.g. referenced to the left mastoid, or "posterior sites"')) +
           '</div></div></div>' +
         '<div id="' + id('band-part') + '"><span class="eyebrow">Frequency range</span>' +
@@ -1966,22 +2119,155 @@ function sigCardHTML(k) {
 function renderPlacer(c) {
   const svg = cfEl(c, 'head'), list = cfEl(c, 'pl-list');
   if (!svg || !list) return;
-  $$('.ps', svg).forEach(g => {
-    const on = c.sites.includes(g.getAttribute('data-site'));
-    g.classList.toggle('on', on); g.setAttribute('aria-pressed', String(on));
-  });
-  list.innerHTML = c.sites.length ? c.sites.map(n => {
-    const i = siteInfo(n);
-    return '<li data-site="' + n + '"><b class="nm">' + n + '</b><span><span class="rg">' + esc(i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span>' +
-      '<button type="button" class="btn sm ghost" data-act="pl-remove" data-site="' + n + '" aria-label="Remove ' + n + '">Remove</button></li>';
-  }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
+  const free = c.mode === 'free', root = cfRoot(c);
+  svg.classList.toggle('free', free);
+  svg.setAttribute('aria-label', 'Head seen from above, nose at the top. ' + (free ? 'Click or drag anywhere on the head to place an electrode, and drag an electrode to move it.' : 'Click a position to add or remove an electrode.'));
+  if (root) $$('[data-act="pl-mode"]', root).forEach(b => { const on = b.getAttribute('data-mode') === c.mode; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+  ['mode-note', 'read', 'pl-add', 'guides-l'].forEach(n => { const e = cfEl(c, n); if (e) e.hidden = !free; });
+  cfEl(c, 'pl-help').textContent = free
+    ? 'Or click anywhere on the head, or press and drag to find the spot. Drag an electrode to move it, or off the head to remove it. Click one and use the arrow keys to nudge it.'
+    : 'Or click a position on the head. Drag an electrode to move it, or off the head to remove it.';
+  if (free) {
+    svg.querySelector('.fp-pts').innerHTML = c.points.map(fpHTML).join('');
+    const sel = svg.querySelector('.fp[data-pt="' + c.sel + '"]');
+    if (sel) sel.classList.add('sel');
+    list.innerHTML = c.points.length ? c.points.map((p, i) => {
+      const near = siteDist(p, Object.keys(SITES_EXT))[0].n;
+      return '<li data-pt="' + i + '"><b class="nm">' + (i + 1) + '</b><span><span class="rg">' + esc(pointLabel(p)) + '</span><br><span class="ds">x ' + fmtC(p.x) + ', y ' + fmtC(p.y) + ' · ' + esc(siteInfo(near).region) + '</span></span>' +
+        '<button type="button" class="btn sm ghost" data-act="fp-remove" data-pt="' + i + '" aria-label="Remove electrode ' + (i + 1) + '">Remove</button></li>';
+    }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
+    plReadSel(c);
+  } else {
+    $$('.ps', svg).forEach(g => {
+      const on = c.sites.includes(g.getAttribute('data-site'));
+      g.classList.toggle('on', on); g.setAttribute('aria-pressed', String(on));
+    });
+    list.innerHTML = c.sites.length ? c.sites.map(n => {
+      const i = siteInfo(n);
+      return '<li data-site="' + n + '"><b class="nm">' + n + '</b><span><span class="rg">' + esc(i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span>' +
+        '<button type="button" class="btn sm ghost" data-act="pl-remove" data-site="' + n + '" aria-label="Remove ' + n + '">Remove</button></li>';
+    }).join('') : '<li class="pl-empty">No electrodes yet.</li>';
+  }
   plHighlight(c, c.hover);
   cfSummaries();
 }
-function plHighlight(c, site) {
-  c.hover = site;
+/* One electrode placed freely, numbered as in the list beside the head. */
+const fpHTML = (p, i) => '<g class="fp" data-pt="' + i + '" transform="translate(' + (p.x * RING).toFixed(1) + ' ' + (-p.y * RING).toFixed(1) + ')" role="button" tabindex="0" aria-label="' +
+  esc('Electrode ' + (i + 1) + ': ' + pointLabel(p) + ', x ' + fmtC(p.x) + ', y ' + fmtC(p.y) + '. Arrow keys move it; Delete removes it.') + '"><circle r="7.5"/><text y="2.5">' + (i + 1) + '</text></g>';
+/* Highlights one electrode on the head and in the list: a site name, or "pt:<number>" for one placed freely. */
+function plHighlight(c, key) {
+  c.hover = key;
   const box = cfEl(c, 'place');
-  if (box) $$('[data-site]', box).forEach(el => el.classList.toggle('hl', !!site && el.getAttribute('data-site') === site && el.tagName !== 'BUTTON'));
+  if (box) $$('[data-site],[data-pt]', box).forEach(el => {
+    const k = el.hasAttribute('data-pt') ? 'pt:' + el.getAttribute('data-pt') : el.getAttribute('data-site');
+    el.classList.toggle('hl', !!key && k === key && el.tagName !== 'BUTTON');
+  });
+}
+const READ_IDLE = '<span class="eyebrow">Coordinates</span><p class="rd-idle">Point at the head to see where you are. Cz is (0, 0), x grows toward the right ear and y toward the nose, and the circle through Fpz, T8, Oz and T7 has radius 1.</p>';
+/* The box beside the head that shows where the pointer, or the electrode being dragged, is right now. */
+function plRead(c, p, title, note) {
+  const box = cfEl(c, 'read');
+  if (!box) return;
+  box.classList.toggle('live', !!p && !!CF.drag);
+  if (!p) { box.innerHTML = READ_IDLE; return; }
+  const off = !onHead(p), v = mapTo3d(p);
+  box.innerHTML = '<span class="eyebrow">' + esc(title) + '</span>' +
+    '<div class="rd-xy"><span>x <b>' + fmtC(p.x) + '</b></span><span>y <b>' + fmtC(p.y) + '</b></span></div>' +
+    '<div class="rd-near">' + esc(off ? 'Off the head' : nearSite(p)) + '</div>' +
+    (note ? '<div class="rd-note">' + esc(note) + '</div>' : '') +
+    (off ? '' : '<div class="rd-3d">On a sphere: x ' + fmtC(v.x) + ', y ' + fmtC(v.y) + ', z ' + fmtC(v.z) + ' · ' + Math.round(Math.hypot(p.x, p.y) * 72) + '° from Cz</div>');
+}
+/* With nothing under the pointer, the box shows the selected electrode, or how the coordinates work. */
+function plReadSel(c) {
+  const p = c.points[c.sel];
+  if (c.mode === 'free' && p) plRead(c, p, 'Electrode ' + (c.sel + 1)); else plRead(c, null);
+}
+function selectPt(c, i, focus) {
+  const p = c.points[i];
+  if (!p) return;
+  c.sel = i;
+  $$('.fp', cfEl(c, 'head')).forEach(g => g.classList.toggle('sel', Number(g.getAttribute('data-pt')) === i));
+  if (focus) { const g = cfEl(c, 'head').querySelector('.fp[data-pt="' + i + '"]'); if (g) try { g.focus({preventScroll: true}); } catch (e) {} }
+  plRead(c, p, 'Electrode ' + (i + 1));
+}
+/* The spot under the pointer, in head-map coordinates, held to a standard position when it is right next to one. */
+function freeAt(c, cx, cy) {
+  const svg = cfEl(c, 'head'), m = svg && svg.getScreenCTM();
+  if (!m) return null;
+  const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy;
+  const q = pt.matrixTransform(m.inverse());
+  return snapPt({x: q.x / RING, y: -q.y / RING});
+}
+function plCross(c, p) {
+  const svg = cfEl(c, 'head'), g = svg && svg.querySelector('.pl-cross');
+  if (!g) return;
+  g.style.display = p ? '' : 'none';
+  if (p) g.setAttribute('transform', 'translate(' + (p.x * RING).toFixed(1) + ' ' + (-p.y * RING).toFixed(1) + ')');
+}
+/* Switching between fixed positions and free placement keeps the electrodes: fixed positions become points, and
+   points move to the nearest fixed position (the form says which ones moved). */
+function setMode(c, mode) {
+  if (c.mode === mode || (mode !== 'free' && mode !== 'fixed')) return;
+  if (mode === 'free') {
+    c.points = c.sites.filter(n => SITES_EXT[n]).map(n => Object.assign(siteMap(n), {label: '', auto: true}));
+  } else {
+    const out = [], moved = [];
+    c.points.forEach(p => {
+      const n = nearestFixed(p), l = pointLabel(p);
+      if (!out.includes(n)) out.push(n);
+      if (l !== n) moved.push(l + ' → ' + n);
+    });
+    c.sites = out.slice(0, 30);
+    if (moved.length) toast('Moved to the nearest fixed positions: ' + moved.slice(0, 3).join('; ') + (moved.length > 3 ? ', and ' + (moved.length - 3) + ' more' : '') + '.');
+  }
+  c.mode = mode; c.sel = -1; c.hover = null;
+  renderPlacer(c); plVisibility(c);
+}
+function paMsg(c, t, err) { const e = cfEl(c, 'pa-msg'); if (e) { e.textContent = t; e.className = 'fmsg' + (err ? ' err' : t ? ' ok' : ''); } }
+/* Adds electrodes from the optional form. Each lands on the head, where it can still be dragged. */
+function addPoints(c, list, label) {
+  const add = list.slice(0, Math.max(0, MAX_PTS - c.points.length));
+  if (!add.length) return 0;
+  add.forEach(p => c.points.push({x: p.x, y: p.y, label: label || '', auto: !label}));
+  renderPlacer(c);
+  selectPt(c, c.points.length - 1, false);
+  return add.length;
+}
+const NAME_KEY = (() => { const o = {}; Object.keys(SITES_EXT).forEach(n => { o[n.toLowerCase()] = n; }); Object.keys(SITE_ALIAS).forEach(a => { o[a.toLowerCase()] = SITE_ALIAS[a]; }); return o; })();
+function addByName(c) {
+  const inp = cfEl(c, 'pa-name'), words = (inp.value || '').split(/[\s,;/]+/).filter(Boolean);
+  if (!words.length) return paMsg(c, 'Type one or more standard names, such as AF3, PO9.', true);
+  const bad = [], names = [];
+  words.forEach(w => { const n = NAME_KEY[w.toLowerCase()]; if (!n) bad.push(w); else if (!names.includes(n)) names.push(n); });
+  const fresh = names.filter(n => { const q = siteMap(n); return !c.points.some(p => Math.hypot(p.x - q.x, p.y - q.y) < 0.02); });
+  const lbl = names.length === 1 ? cfVal(c, 'pa-label') : '';
+  const n = fresh.length ? addPoints(c, fresh.map(siteMap), lbl) : 0, msg = [];
+  if (n) msg.push('Added ' + fresh.slice(0, n).join(', ') + '.');
+  if (n < fresh.length) msg.push((n ? 'The rest did' : 'They did') + ' not fit: a signal can have up to ' + MAX_PTS + ' electrodes.');
+  if (names.length > fresh.length) msg.push(names.length - fresh.length === 1 ? (names.length === 1 ? 'It is' : 'One is') + ' already on the head.' : (names.length - fresh.length) + ' are already on the head.');
+  if (bad.length) msg.push('Not a standard name: ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? '…' : '') + '. Place ' + (bad.length > 1 ? 'those' : 'it') + ' on the head or by coordinates.');
+  paMsg(c, msg.join(' '), !!bad.length || n < fresh.length);
+  if (n) { inp.value = bad.join(', '); if (lbl) cfEl(c, 'pa-label').value = ''; }
+}
+function addAt(c, p, fields) {
+  if (!addPoints(c, [p], cfVal(c, 'pa-label'))) return paMsg(c, 'This signal already has ' + MAX_PTS + ' electrodes, the most it can have.', true);
+  paMsg(c, 'Added at x ' + fmtC(p.x) + ', y ' + fmtC(p.y) + ' on the head map (' + nearSite(p) + ').');
+  fields.concat('pa-label').forEach(n => { cfEl(c, n).value = ''; });
+}
+function addByMap(c) {
+  const xs = cfVal(c, 'pa-x'), ys = cfVal(c, 'pa-y'), x = Number(xs), y = Number(ys);
+  if (xs === '' || ys === '' || !isFinite(x) || !isFinite(y)) return paMsg(c, 'Enter both x and y, for example x −0.45 and y −0.86.', true);
+  const p = {x: r2(x), y: r2(y)};
+  if (!onHead(p)) return paMsg(c, 'That is ' + r2(Math.hypot(x, y)) + ' from Cz, beyond the edge of the head map (' + LIM + ').', true);
+  addAt(c, p, ['pa-x', 'pa-y']);
+}
+function addBy3d(c) {
+  const vs = ['pa-3x', 'pa-3y', 'pa-3z'].map(n => cfVal(c, n)), v = vs.map(Number);
+  if (vs.some(s => s === '') || !v.every(isFinite)) return paMsg(c, 'Enter all three numbers: x, y and z.', true);
+  const p = cfVal(c, 'pa-axes') === 'als' ? mapFrom3d(-v[1], v[0], v[2]) : mapFrom3d(v[0], v[1], v[2]);
+  if (!p) return paMsg(c, 'That is the centre of the head, not a position on it.', true);
+  if (!onHead(p)) return paMsg(c, 'That position is too low on the head for the map (more than ' + Math.round(LIM * 72) + '° from the top). Check which way the axes point.', true);
+  addAt(c, p, ['pa-3x', 'pa-3y', 'pa-3z']);
 }
 function togglePl(c, site) {
   if (!SITES[site]) return;
@@ -2000,20 +2286,74 @@ function plNearest(c, cx, cy) {
   return best;
 }
 function plPointerDown(ev) {
-  const tok = ev.target.closest && ev.target.closest('.pl-token');
-  const g = ev.target.closest && ev.target.closest('.pl-head .ps.on');
   const c = cfOf(ev.target);
-  if ((!tok && !g) || !c || (ev.button !== undefined && ev.button > 0) || CF.locked) return;
-  ev.preventDefault();
-  CF.drag = {k: c.k, from: g ? g.getAttribute('data-site') : null, x0: ev.clientX, y0: ev.clientY, ghost: null, target: null};
+  if (!c || !ev.target.closest || (ev.button !== undefined && ev.button > 0) || CF.locked) return;
+  const tok = ev.target.closest('.pl-token');
+  if (c.mode === 'free') {
+    // From the tray, or a press anywhere on the head: a new electrode. On an electrode: move it.
+    const fp = ev.target.closest('.pl-head .fp'), head = ev.target.closest('.pl-head');
+    if (!tok && !head) return;
+    ev.preventDefault();
+    const d = CF.drag = {k: c.k, free: true, i: fp ? Number(fp.getAttribute('data-pt')) : -1, tap: !tok && !fp, x0: ev.clientX, y0: ev.clientY, ghost: null, at: null};
+    if (d.tap) { d.at = freeAt(c, ev.clientX, ev.clientY); if (d.at && onHead(d.at)) { plCross(c, d.at); plRead(c, d.at, 'New electrode', 'Let go to place it here'); } }
+  } else {
+    const g = ev.target.closest('.pl-head .ps.on');
+    if (!tok && !g) return;
+    ev.preventDefault();
+    CF.drag = {k: c.k, from: g ? g.getAttribute('data-site') : null, x0: ev.clientX, y0: ev.clientY, ghost: null, target: null};
+  }
   CF.moved = false;
+}
+/* Without a drag, pointing at a head in free placement shows the coordinates under the pointer. */
+function plHover(ev) {
+  const svg = ev.target.closest && ev.target.closest('.pl-head.free'), c = svg ? cfOf(svg) : null;
+  if (CF.hoverK && (!c || c.k !== CF.hoverK)) { const o = cfCard(CF.hoverK); CF.hoverK = null; if (o) plReadSel(o); }
+  if (!c || ev.pointerType === 'touch' || CF.locked) return;
+  CF.hoverK = c.k;
+  const fp = ev.target.closest('.fp');
+  if (fp) { const i = Number(fp.getAttribute('data-pt')); if (c.points[i]) plRead(c, c.points[i], 'Electrode ' + (i + 1), 'Drag it to move it'); return; }
+  const p = freeAt(c, ev.clientX, ev.clientY);
+  if (p && onHead(p)) plRead(c, p, 'Pointer', 'Click to place an electrode here'); else plReadSel(c);
+}
+function freeDrag(c, d, ev) {
+  const p = freeAt(c, ev.clientX, ev.clientY);
+  if (!p) return;
+  d.at = p;
+  const off = !onHead(p), mv = d.i >= 0;
+  if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 'pl-ghost' + (mv || d.tap ? ' bare' : ''); d.ghost.innerHTML = '<span></span>'; document.body.appendChild(d.ghost); }
+  d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
+  d.ghost.classList.toggle('off', off);
+  d.ghost.firstChild.textContent = off ? (mv ? 'Let go to remove' : 'Off the head') : 'x ' + fmtC(p.x) + ', y ' + fmtC(p.y);
+  if (mv) {
+    const g = cfEl(c, 'head').querySelector('.fp[data-pt="' + d.i + '"]');
+    if (g) { g.setAttribute('transform', 'translate(' + (p.x * RING).toFixed(1) + ' ' + (-p.y * RING).toFixed(1) + ')'); g.classList.add('drag'); g.classList.toggle('off', off); }
+  } else plCross(c, off ? null : p);
+  plRead(c, p, mv ? 'Moving electrode ' + (d.i + 1) : 'New electrode', off ? (mv ? 'Let go here to remove it' : 'Outside the head') : 'Let go to place it here');
+}
+function freeDrop(c, d) {
+  plCross(c, null);
+  // A click on an electrode selects it, so the arrow keys can nudge it; a click on the tray only explains.
+  if (!CF.moved && d.i >= 0) { selectPt(c, d.i, true); return; }
+  if (!CF.moved && !d.tap) { plReadSel(c); return; }
+  if (CF.moved) { CF.suppressClick = true; setTimeout(() => { CF.suppressClick = false; }, 0); }
+  const p = d.at;
+  if (d.i >= 0) {
+    if (p && onHead(p)) { c.points[d.i].x = p.x; c.points[d.i].y = p.y; c.sel = d.i; }
+    else { c.points.splice(d.i, 1); c.sel = -1; toast('Electrode ' + (d.i + 1) + ' removed'); }
+  } else if (p && onHead(p)) {
+    if (c.points.length >= MAX_PTS) toast('A signal can have up to ' + MAX_PTS + ' electrodes.');
+    else { c.points.push({x: p.x, y: p.y, label: '', auto: true}); c.sel = c.points.length - 1; }
+  }
+  renderPlacer(c);
+  if (c.sel >= 0) selectPt(c, c.sel, true);
 }
 function plPointerMove(ev) {
   const d = CF.drag, c = d && cfCard(d.k);
-  if (!c) return;
+  if (!c) { plHover(ev); return; }
   if (!CF.moved && Math.hypot(ev.clientX - d.x0, ev.clientY - d.y0) < 5) return;
   CF.moved = true;
   ev.preventDefault();
+  if (d.free) { freeDrag(c, d, ev); return; }
   if (!d.ghost) { d.ghost = document.createElement('div'); d.ghost.className = 'pl-ghost'; document.body.appendChild(d.ghost); }
   d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
   const t = plNearest(c, ev.clientX, ev.clientY);
@@ -2026,6 +2366,7 @@ function plPointerUp() {
   if (d.ghost) d.ghost.remove();
   const c = cfCard(d.k);
   if (!c) return;
+  if (d.free) { freeDrop(c, d); return; }
   $$('.ps.target', cfEl(c, 'head')).forEach(x => x.classList.remove('target'));
   if (!CF.moved) return;
   CF.suppressClick = true; setTimeout(() => { CF.suppressClick = false; }, 0);
@@ -2048,9 +2389,9 @@ function plVisibility(c) {
   cfEl(c, 'sites-part').hidden = false;
   if (S.edit) {
     const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
-    setUsual(c, []);
+    setUsual(c, [], []);
     cfEl(c, 'band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
-    cfEl(c, 'place-intro').textContent = (em && sitesOf(em).length
+    cfEl(c, 'place-intro').textContent = (em && elecNames(em).length
       ? 'These are the electrodes on the site now. Drag, add or remove them to match the paper.'
       : 'This signal has no electrodes on the site yet. Add them here if the paper gives them.') +
       (nb > 1 ? ' The signal has ' + nb + ' frequency ranges; this form changes the first one and keeps the others.' : '');
@@ -2058,10 +2399,11 @@ function plVisibility(c) {
   }
   const sel = cfVal(c, 'measure'), isNew = sel === '__new';
   const m = sel && !isNew ? model().mById.get(sel) : null;
-  const usual = m ? sitesOf(m).filter(x => SITES[x]) : [];
+  const usual = m ? sitesOf(m).filter(x => SITES[x]) : [], names = m ? elecNames(m) : [];
+  const usualPts = m ? sitesOf(m).filter(x => SITES_EXT[x]).map(siteMap).concat(pointsOf(m)) : [];
   const sk = isNew ? cfVal(c, 'm-signal') : m ? sigOf(m) : '';
   const bandOn = sk === 'freq' || sk === 'phase', mb = m ? bandsOf(m)[0] : null;
-  setUsual(c, usual);
+  setUsual(c, usual, usualPts);
   cfEl(c, 'band-part').hidden = !bandOn;
   cfEl(c, 'band-lo').placeholder = mb ? String(mb.lo) : 'e.g. 4';
   cfEl(c, 'band-hi').placeholder = mb ? String(mb.hi) : 'e.g. 8';
@@ -2069,16 +2411,22 @@ function plVisibility(c) {
   cfEl(c, 'place-intro').textContent = !sel
     ? 'Mark where the paper put the electrodes. Choose the EEG signal above to see where it is usually recorded.'
     : isNew ? 'Show where the paper records this signal' + (bandOn ? ' and the frequency range it uses' : '') + '. Optional.'
-    : usual.length ? 'Dashed circles show where this signal is usually recorded (' + usual.join(', ') + '). Mark the electrodes this paper used; they are saved with your link. Optional.'
+    : names.length ? 'Dashed circles show where this signal is usually recorded (' + names.join(', ') + '). Mark the electrodes this paper used; they are saved with your link. Optional.' +
+      (c.mode === 'fixed' && !usual.length ? ' Those electrodes were placed freely, so switch to Free placement to see them on the head.' : '')
     : 'This signal has no electrodes on the site yet. If the paper gives them, mark them here; they are added to the signal when your suggestion is accepted.';
 }
-function setUsual(c, list) {
-  c.usual = list;
-  $$('.ps', cfEl(c, 'head')).forEach(g => g.classList.toggle('usual', list.includes(g.getAttribute('data-site'))));
+/* The signal's usual electrodes, drawn as dashed circles: fixed positions, and every position in free placement. */
+function setUsual(c, list, pts) {
+  c.usual = list; c.usualPts = pts || [];
+  const svg = cfEl(c, 'head');
+  $$('.ps', svg).forEach(g => g.classList.toggle('usual', list.includes(g.getAttribute('data-site'))));
+  const u = svg && svg.querySelector('.fp-usual');
+  if (u) u.innerHTML = c.usualPts.map(p => '<circle cx="' + (p.x * RING).toFixed(1) + '" cy="' + (-p.y * RING).toFixed(1) + '" r="9.5"/>').join('');
   const b = cfEl(c, 'usual');
   if (!b) return;
-  b.hidden = !list.length;
-  b.innerHTML = list.length ? '<button type="button" class="btn sm" data-act="pl-usual"' + (CF.locked ? ' disabled' : '') + '>Start from the usual electrodes (' + esc(list.join(', ')) + ')</button>' : '';
+  const names = c.mode === 'free' ? c.usualPts.map(pointLabel) : list;
+  b.hidden = !names.length;
+  b.innerHTML = names.length ? '<button type="button" class="btn sm" data-act="pl-usual"' + (CF.locked ? ' disabled' : '') + '>Start from the usual electrodes (' + esc(names.join(', ')) + ')</button>' : '';
 }
 function parseBand(c) {
   const lo = cfVal(c, 'band-lo'), hi = cfVal(c, 'band-hi');
@@ -2099,10 +2447,12 @@ const bandShown = c => { const p = cfEl(c, 'band-part'); return !!(p && !p.hidde
 /* What a card adds about where and at what frequency the signal is measured. */
 function placePayload(c) {
   const box = cfEl(c, 'place');
-  if (!box || box.hidden) return {sites: [], sitesNote: '', bands: []};
-  const sitesOn = !cfEl(c, 'sites-part').hidden, b = bandShown(c) ? parseBand(c) : null;
-  return {sites: sitesOn ? c.sites.slice() : [], sitesNote: sitesOn ? cfVal(c, 'sites-note') : '', bands: b && !b.error ? [b] : []};
+  if (!box || box.hidden) return {sites: [], points: [], sitesNote: '', bands: []};
+  const sitesOn = !cfEl(c, 'sites-part').hidden, b = bandShown(c) ? parseBand(c) : null, free = c.mode === 'free';
+  return {sites: sitesOn && !free ? c.sites.slice() : [], points: sitesOn && free ? ptsOut(c) : [], sitesNote: sitesOn ? cfVal(c, 'sites-note') : '', bands: b && !b.error ? [b] : []};
 }
+/* Electrodes placed freely, as sent: rounded to 0.01 and labelled (a label typed in, or where the electrode sits). */
+const ptsOut = c => c.points.map(p => ({x: r2(p.x), y: r2(p.y), label: pointLabel(p).slice(0, 40)}));
 function fillMeasureSelect(c, M) {
   const sel = cfEl(c, 'measure');
   if (!sel) return;
@@ -2114,7 +2464,8 @@ function fillMeasureSelect(c, M) {
 function cfAdd(copyFrom) {
   const main = $('#sig-main');
   if (!main) return null;
-  const c = {k: ++CF.seq, sites: [], usual: [], hover: null};
+  // A new card starts in the placement mode of the card before it: a paper usually uses one cap for all its signals.
+  const c = {k: ++CF.seq, mode: copyFrom && copyFrom.mode === 'free' ? 'free' : 'fixed', sites: [], points: [], sel: -1, usual: [], usualPts: [], hover: null};
   CF.cards.push(c);
   main.insertAdjacentHTML('beforeend', sigCardHTML(c.k));
   fillMeasureSelect(c);
@@ -2142,7 +2493,7 @@ function addSigCard() {
 function removeSigCard(c) {
   if (!c || CF.cards.length < 2) return;
   const key = 'sig-x:' + c.k;
-  if ((cfVal(c, 'measure') || cfVal(c, 'claim') || c.sites.length) && S.armed !== key) { armKey(key); return; }
+  if ((cfVal(c, 'measure') || cfVal(c, 'claim') || c.sites.length || c.points.length) && S.armed !== key) { armKey(key); return; }
   S.armed = null;
   const i = CF.cards.indexOf(c);
   CF.cards.splice(i, 1);
@@ -2186,7 +2537,8 @@ function cfSummaries() {
     if (!CLAIM[cfVal(c, 'ctype')]) need.push('claim type');
     root.querySelector('.sig-n').textContent = 'Signal ' + (i + 1);
     root.querySelector('.sig-t').textContent = name;
-    root.querySelector('.sig-sum').innerHTML = (c.sites.length ? '<span>' + esc(plural(c.sites.length, 'electrode')) + '</span>' : '') +
+    const nEl = c.mode === 'free' ? c.points.length : c.sites.length;
+    root.querySelector('.sig-sum').innerHTML = (nEl ? '<span>' + esc(plural(nEl, 'electrode')) + '</span>' : '') +
       (need.length ? '<span class="need">Needs ' + esc(need.join(', ')) + '</span>' : '<span class="ok">Ready</span>');
     const h = root.querySelector('.sig-h');
     if (h.getAttribute('role')) h.setAttribute('aria-label', 'Open signal ' + (i + 1) + ': ' + name);
@@ -2215,7 +2567,8 @@ function updateSubmitLabel() {
   b.textContent = E ? (admin ? 'Save edit' : 'Send edit for review') : admin ? (n > 1 ? 'Add ' + n + ' links to the site' : 'Add to the site') : (n > 1 ? 'Send ' + n + ' suggestions' : 'Send suggestion');
 }
 function placeText(s) {
-  const sites = arr(s.sites).join(', ') + (s.sitesNote ? (arr(s.sites).length ? ' (' : '') + s.sitesNote + (arr(s.sites).length ? ')' : '') : '');
+  const el = arr(s.sites).concat(pointsOf(s).map(pointText)).join(', ');
+  const sites = el + (s.sitesNote ? (el ? ' (' : '') + s.sitesNote + (el ? ')' : '') : '');
   const b = arr(s.bands)[0];
   return {sites: sites, band: b && isFinite(b.lo) && isFinite(b.hi) ? bandText(b) : ''};
 }
@@ -2312,12 +2665,13 @@ function dupCheck() {
 const EDIT_FIELDS = [
   ['claim', 'What the paper says', 'claim'], ['pages', 'Page(s)', 'pages'], ['claimType', 'Link strength', 'ctype'], ['evidence', 'Kind of evidence', 'evid'],
   ['paradigm', 'Task', 'paradigm'], ['population', 'Population', 'pop'], ['behaviour', 'Behavioural outcome', 'beh'], ['cites', 'Original studies cited', 'cites'],
-  ['sites', 'Electrodes'], ['sitesNote', 'Location in the paper\'s words', 'sites-note'], ['bands', 'Frequency range']
+  ['sites', 'Electrodes'], ['points', 'Electrodes placed by position'], ['sitesNote', 'Location in the paper\'s words', 'sites-note'], ['bands', 'Frequency range']
 ];
 const ENTRY_KEYS = EDIT_FIELDS.slice(0, 8).map(f => f[0]);
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function editVal(k, v) {
   if (k === 'sites') return arr(v).join(', ') || '(none)';
+  if (k === 'points') return pointsOf({points: v}).map(pointText).join('; ') || '(none)';
   if (k === 'bands') return arr(v).map(bandText).join(', ') || '(none)';
   if (k === 'claimType') return (CLAIM[v] || CLAIM.attributed).label;
   if (k === 'evidence') return (EVID[v] || EVID['human-eeg']).label;
@@ -2326,7 +2680,7 @@ function editVal(k, v) {
 /* The values an edit starts from, as they are on the site now. */
 function editSnapshot(entryId, measureId) {
   const e = entryId ? S.raw.entries.get(entryId) : null, m = S.raw.measures.get(measureId) || {};
-  const o = {sites: sitesOf(m).slice(), sitesNote: String(m.sitesNote || ''),
+  const o = {sites: sitesOf(m).slice(), points: pointsOf(m), sitesNote: String(m.sitesNote || ''),
     bands: bandsOf(m).map(b => ({lo: Number(b.lo), hi: Number(b.hi), label: String(b.label || '').trim().slice(0, 30)}))};
   if (e) {
     ENTRY_KEYS.forEach(k => { o[k] = String(e[k] == null ? '' : e[k]); });
@@ -2381,6 +2735,9 @@ function startEdit(entryId, measureId) {
   const b0 = b.bands[0];
   cfEl(c, 'band-lo').value = b0 ? b0.lo : ''; cfEl(c, 'band-hi').value = b0 ? b0.hi : ''; cfEl(c, 'band-label').value = b0 ? b0.label : '';
   c.sites = b.sites.slice(); c.hover = null;
+  // A signal whose electrodes were placed freely opens in free placement, with each label kept unless it only said where the electrode sits.
+  c.mode = E.mode0 = b.points.length && !b.sites.length ? 'free' : 'fixed';
+  c.points = b.points.map(p => Object.assign({}, p, {auto: !p.label || p.label === nearSite(p)}));
   renderPlacer(c); renderBandPreview(c);
   $('#f-msg').textContent = '';
   render();
@@ -2401,10 +2758,22 @@ function editPayload() {
     if (f[0] === 'evidence' && !EVID[val]) val = b.evidence;
     if (val !== b[f[0]]) ch[f[0]] = val;
   });
-  if (!same(c.sites, b.sites)) ch.sites = c.sites.slice();
+  if (c.mode === 'free') {
+    // Free placement replaces the signal's fixed positions. Only switching over, with the electrodes left where they were, changes nothing.
+    const pts = ptsOut(c), asSites = b.sites.filter(n => SITES_EXT[n]).map(n => Object.assign(siteMap(n), {label: n}));
+    if (!same(pts, b.points) && !(b.sites.length && !b.points.length && same(pts, asSites))) {
+      ch.points = pts;
+      if (b.sites.length) ch.sites = [];
+    }
+  } else {
+    if (!same(c.sites, b.sites)) ch.sites = c.sites.slice();
+    // Back from free placement: the fixed positions replace the electrodes placed by position.
+    if (b.points.length && (E.mode0 === 'free' || ch.sites)) ch.points = [];
+  }
+  const added = (ch.sites && ch.sites.length) || (ch.points && ch.points.length), had = b.sites.length || b.points.length;
   if (v('sites-note') !== b.sitesNote) ch.sitesNote = v('sites-note');
   // Adding the first electrodes replaces a "Not given in the papers" note that was left as it was.
-  else if (ch.sites && ch.sites.length && !b.sites.length && /^not (given|specified)/i.test(b.sitesNote)) ch.sitesNote = '';
+  else if (added && !had && /^not (given|specified)/i.test(b.sitesNote)) ch.sitesNote = '';
   if (bandShown(c)) {
     const band = parseBand(c), bands = (band && !band.error ? [band] : []).concat(b.bands.slice(1));
     if (!same(bands, b.bands)) ch.bands = bands;
@@ -2559,6 +2928,7 @@ V.contribute = {
         '</div>' +
         '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
+        '<datalist id="pl-names">' + Object.keys(SITES_EXT).map(n => '<option value="' + n + '">').join('') + '</datalist>' +
       '</form></section>' +
       '<section class="panel"><div class="sh"><h3 id="ct-qh">Review queue</h3><span class="small muted" id="ct-role"></span></div><div class="queue" id="ct-queue"></div></section></div>';
     $('#ct-form').addEventListener('submit', submitEntry);
@@ -2576,7 +2946,36 @@ V.contribute = {
       if (!c) return;
       if (f === 'measure') { cfEl(c, 'newm').hidden = ev.target.value !== '__new'; plVisibility(c); dupCheck(); }
       else if (f === 'm-signal') plVisibility(c);
+      else if (f === 'guides') cfEl(c, 'head').classList.toggle('noguide', !ev.target.checked);
       cfSummaries();
+    });
+    // Electrodes placed freely: the arrow keys nudge the selected one (Shift for bigger steps) and Delete removes it.
+    // Enter in the optional add-by-name or coordinates rows adds, instead of sending the form.
+    sigs.addEventListener('keydown', ev => {
+      const row = ev.key === 'Enter' && ev.target.closest('.pa-row');
+      if (row) { ev.preventDefault(); const b = row.querySelector('button'); if (b) b.click(); return; }
+      const g = ev.target.closest('.pl-head .fp'), c = g && cfOf(g);
+      if (!c || CF.locked) return;
+      const i = Number(g.getAttribute('data-pt')), p = c.points[i], st = ev.shiftKey ? 0.05 : 0.01;
+      const mv = {ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st]}[ev.key];
+      if (!p) return;
+      if (mv) {
+        ev.preventDefault();
+        const q = {x: r2(p.x + mv[0]), y: r2(p.y + mv[1])};
+        if (!onHead(q)) return;
+        p.x = q.x; p.y = q.y; c.sel = i;
+        renderPlacer(c); selectPt(c, i, true);
+      } else if (ev.key === 'Delete' || ev.key === 'Backspace') {
+        ev.preventDefault();
+        c.points.splice(i, 1); c.sel = -1; c.hover = null;
+        renderPlacer(c);
+        if (c.points.length) selectPt(c, Math.min(i, c.points.length - 1), true);
+        else { const t = cfRoot(c).querySelector('.pl-token'); if (t) t.focus(); }
+      }
+    });
+    sigs.addEventListener('focusin', ev => {
+      const g = ev.target.closest && ev.target.closest('.pl-head .fp'), c = g && cfOf(g);
+      if (c && !CF.drag) selectPt(c, Number(g.getAttribute('data-pt')), false);
     });
     sigs.addEventListener('input', ev => {
       const c = cfOf(ev.target), f = ev.target.getAttribute('data-cf') || '';
@@ -2585,7 +2984,12 @@ V.contribute = {
       if (f.indexOf('band-') === 0) renderBandPreview(c);
       if (f === 'claim' || f === 'm-name') cfSummaries();
     });
-    const hover = ev => { const c = cfOf(ev.target); if (!c) return; const t = ev.target.closest('[data-site]'); plHighlight(c, t ? t.getAttribute('data-site') : null); };
+    const hover = ev => {
+      const c = cfOf(ev.target);
+      if (!c) return;
+      const t = ev.target.closest('[data-site],[data-pt]');
+      plHighlight(c, t ? (t.hasAttribute('data-pt') ? 'pt:' + t.getAttribute('data-pt') : t.getAttribute('data-site')) : null);
+    };
     sigs.addEventListener('mouseover', hover);
     sigs.addEventListener('focusin', hover);
     sigs.addEventListener('mouseleave', () => CF.cards.forEach(c => { if (c.hover) plHighlight(c, null); }));
@@ -2893,7 +3297,7 @@ async function acceptSub(id) {
       const sig = SIG[s.newMeasure.signal] ? s.newMeasure.signal : 'time';
       mid = 'm-' + slug(s.newMeasure.name) + '-' + rid();
       await S.db.doc('measures/' + mid).set({name: String(s.newMeasure.name), short: '', aka: [], domain: SIG[sig].label, signal: sig, spec: String(s.newMeasure.spec || ''), specRefs: [],
-        window: null, windowNote: '', bands: arr(s.bands).slice(0, 1), bandsNote: '', sites: arr(s.sites).filter(x => SITES[x]), sitesNote: String(s.sitesNote || ''), inferred: [], lateralized: false,
+        window: null, windowNote: '', bands: arr(s.bands).slice(0, 1), bandsNote: '', sites: arr(s.sites).filter(x => SITES[x]), points: arr(s.sites).length ? [] : pointsOf(s), sitesNote: String(s.sitesNote || ''), inferred: [], lateralized: false,
         caveats: [], methods: [], feasibility: {passive: null, infants: null, note: '', refs: []}, provenance: 'contributed', order: 500, addedAt: now, submissionId: id});
     }
     if (!cid && s.newConstruct && s.newConstruct.name) {
@@ -2911,6 +3315,7 @@ async function acceptSub(id) {
     await S.db.doc('entries/' + eid).set({provenance: 'contributed', measureId: mid, constructId: cid, sourceId: sid, pages: String(s.pages || ''),
       claim: String(s.claim || ''), claimType: CLAIM[s.claimType] ? s.claimType : 'attributed', evidence: EVID[s.evidence] ? s.evidence : 'human-eeg',
       paradigm: String(s.paradigm || ''), population: String(s.population || ''), behaviour: String(s.behaviour || ''), cites: String(s.cites || ''),
+      sites: arr(s.sites).filter(x => SITES_EXT[x]), points: arr(s.sites).length ? [] : pointsOf(s), sitesNote: String(s.sitesNote || ''),
       status: 'accepted', addedAt: now.slice(0, 10), submissionId: id, submittedBy: s.submittedBy || null, reviewedBy: S.me.id || null});
     await S.db.doc('submissions/' + id).update({status: 'accepted', reviewedAt: now, reviewedBy: S.me.id || null, entryId: eid, measureId: mid, constructId: cid, sourceId: sid});
     toast('Accepted into the knowledge base');
@@ -3419,14 +3824,14 @@ function drawerHTML(m, M) {
       (() => { const sib = M.measures.filter(x => x.id !== m.id && grpOf(x) === grpOf(m)); return '<p class="small muted">Family: <b>' + esc(GRP[grpOf(m)].label) + '</b>' + (sib.length ? ', with ' + sib.map(x => '<button class="link" data-act="open-measure" data-id="' + esc(x.id) + '">' + esc(short(x)) + '</button>').join(', ') : '') + '</p>'; })() +
       '<p class="spec-text">' + esc(m.spec) + ' ' + refHTML(m.specRefs) + '</p>' +
       (feas.length ? '<div class="feas">' + feas.map(t => '<span class="bdg ' + t[0] + '" title="' + esc(refText(f.refs)) + '">' + esc(t[1]) + '</span>').join('') + '</div>' : '') + '</div>' +
-    '<div class="sec"><h3>When and where it is measured</h3><div class="dr-viz"><figure>' + scalp(m, 160, true) + '<figcaption>' + esc(m.sitesNote || sitesOf(m).join(', ') || 'Sites not specified') + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + (m.lateralized ? '<br>opposite side minus same side' : '') + '</figcaption></figure>' +
+    '<div class="sec"><h3>When and where it is measured</h3><div class="dr-viz"><figure>' + scalp(m, 160, true) + '<figcaption>' + esc(m.sitesNote || elecNames(m).join(', ') || 'Sites not specified') + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + (m.lateralized ? '<br>opposite side minus same side' : '') + '</figcaption></figure>' +
       '<div class="sec">' + ruler(m, false) +
       '<dl class="kv"><dt>' + (sigOf(m) === 'time' ? 'When' : 'Frequency') + '</dt><dd>' + (sigOf(m) === 'time'
           ? (winOf(m) ? esc(winText(m)) + (m.windowNote ? '<br><span class="note">' + esc(m.windowNote) + '</span>' : '') : esc(m.windowNote || 'Not given in the papers'))
           : (b.length ? esc(b.map(bandText).join(', ')) : 'Not given in the papers') + (m.bandsNote ? '<br><span class="note">' + esc(m.bandsNote) + '</span>' : '')) + '</dd>' +
-      '<dt>Where</dt><dd>' + (sitesOf(m).length ? esc(sitesOf(m).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : esc(m.sitesNote && !/^not given/i.test(m.sitesNote) ? m.sitesNote : 'Not given in the papers')) + '</dd></dl>' +
+      '<dt>Where</dt><dd>' + (elecNames(m).length ? esc(sitesOf(m).concat(pointsOf(m).map(pointText)).join(', ')) + (isInf(m, 'sites') ? '<span class="inf">inferred</span>' : '') : esc(m.sitesNote && !/^not given/i.test(m.sitesNote) ? m.sitesNote : 'Not given in the papers')) + '</dd></dl>' +
       (miss.length ? '<div class="callout warn"><b>The papers do not give the ' + esc(miss.join(' or ')) + '</b><span>Decide ' + (miss.length > 1 ? 'them' : 'it') + ' before you analyse your data, and report your choice.</span></div>' : '') +
-      (canSuggestEdit() ? '<div class="btns"><button class="btn sm ghost" data-act="edit-measure" data-id="' + esc(m.id) + '">' + (sitesOf(m).length ? 'Suggest a change to the electrodes' : 'Add the electrode sites') + '</button></div>' : '') + '</div></div></div>' +
+      (canSuggestEdit() ? '<div class="btns"><button class="btn sm ghost" data-act="edit-measure" data-id="' + esc(m.id) + '">' + (elecNames(m).length ? 'Suggest a change to the electrodes' : 'Add the electrode sites') + '</button></div>' : '') + '</div></div></div>' +
     '<div class="sec"><h3>Topics it is linked to<span class="count">' + n + '</span></h3><p class="small muted">' + esc(specLine) + '</p>' +
       (n ? '<ul class="clist">' + cs.map(c => { const ce = es.filter(e => e.constructId === c.id); return '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="sub">' + claimSummary(ce) + '</span></li>'; }).join('') + '</ul>' : '') + '</div>' +
     (nCav ? '<details class="more-d"><summary>Cautions from the papers<span class="hint">' + nCav + '</span></summary><ul class="srcd warnl">' + m.caveats.map(t => '<li>' + esc(t.t) + ' ' + refHTML(t.refs) + '</li>').join('') + '</ul></details>' : '') +
@@ -3478,7 +3883,7 @@ function generalNote(text) {
 function gdStep(n, title, body) { return '<section class="gd-step panel" data-step="' + n + '"><h2><span class="n">' + n + '</span>' + esc(title) + '</h2>' + body + '</section>'; }
 function guideHTML(m, M) {
   const es = M.byM.get(m.id) || [], cs = consFor(M, m.id), f = m.feasibility || {}, sk = sigOf(m);
-  const known = sitesOf(m).filter(x => SITES[x]), miss = specMissing(m), fam = GRP[grpOf(m)];
+  const known = sitesOf(m).filter(x => SITES[x]), pts = pointsOf(m), miss = specMissing(m), fam = GRP[grpOf(m)];
   const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>Suggest an edit</button>' : '';
   const editMenu = canSuggestEdit() && S.drEdit === m.id && es.length > 1
     ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head and notes for this guide.</p>' +
@@ -3505,11 +3910,16 @@ function guideHTML(m, M) {
   const elList = '<ul class="gd-els">' + known.map(k => {
     const i = siteInfo(k), isRef = /^[MA]\d/.test(k);
     return '<li data-act="gd-el" data-site="' + k + '" role="button" tabindex="0" aria-label="' + esc(k + ': ' + (isRef ? 'reference, ' : '') + i.region + '. Show on the head') + '"><b class="nm">' + k + '</b><span><span class="rg">' + esc((isRef ? 'Reference: ' : '') + i.region) + '</span><br><span class="ds">' + esc(i.desc) + '</span></span></li>';
+  }).join('') + pts.map((p, n) => {
+    // Electrodes placed freely: where they sit, in words and as head-map coordinates.
+    const l = pointLabel(p), i = siteInfo(siteDist(p, Object.keys(SITES_EXT))[0].n);
+    return '<li data-act="gd-el" data-site="pt:' + n + '" role="button" tabindex="0" aria-label="' + esc(l + ': ' + i.region + '. Show on the head') + '"><b class="nm">' + esc(l.length <= 5 ? l : '•') + '</b>' +
+      '<span><span class="rg">' + esc(l.length <= 5 ? i.region : l) + '</span><br><span class="ds">' + esc((l.length <= 5 ? '' : i.region + '. ') + 'Placed at x ' + fmtC(p.x) + ', y ' + fmtC(p.y) + ' on the head map (Cz is 0, 0).') + '</span></span></li>';
   }).join('') + '</ul>';
   const note = m.sitesNote && !/^not (given|specified)/i.test(m.sitesNote) ? m.sitesNote : '';
   h += gdStep(1, 'Set up the recording',
     '<div class="gd-setup"><figure class="gd-fig">' + scalp(m, 220, true) + '<figcaption>Head seen from above, nose at the top</figcaption></figure><div class="gd-setup-r">' +
-      (known.length ? '<h3>Where to put the EEG electrodes</h3><p class="small muted">Click an electrode to find it on the head.</p>' + elList
+      (known.length || pts.length ? '<h3>Where to put the EEG electrodes</h3><p class="small muted">Click an electrode to find it on the head.</p>' + elList
         : '<div class="callout warn"><b>The papers on the site do not give the electrode sites</b><span>Choose them before you record, and report your choice.' +
           (canSuggestEdit() ? ' If a paper gives them, <button class="link" data-act="edit-measure" data-id="' + esc(m.id) + '">add them</button>.' : '') + '</span></div>') +
       (note ? '<p class="small">' + esc(note) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</p>' : '') +
@@ -3604,7 +4014,7 @@ function searchKB(q) {
   const M = model(), qt = qToks(q), phrase = normTxt(q);
   const ms = M.measures.map(m => ({m: m, s: scoreRecord(qt, phrase, [
       [m.name, 3], [m.short || '', 3], [arr(m.aka).join(' | '), 2.5], [GRP[grpOf(m)].label, 1], [(m.summary || '') + ' ' + (m.spec || ''), 1],
-      [consFor(M, m.id).map(c => c.name).join(' | '), 1.2], [(M.byM.get(m.id) || []).map(e => e.aspect || '').join(' | '), 1.2], [sitesOf(m).join(' '), 1.5]])}))
+      [consFor(M, m.id).map(c => c.name).join(' | '), 1.2], [(M.byM.get(m.id) || []).map(e => e.aspect || '').join(' | '), 1.2], [elecNames(m).join(' '), 1.5]])}))
     .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   const cs = M.constructs.map(c => ({c: c, s: scoreRecord(qt, phrase, [
       [c.name, 3], [arr(c.aka).join(' | '), 2.5], [c.definition || '', 1], [FAM[famOf(c)].label, 1], [measFor(M, c.id).map(m => m.name + ' ' + (m.short || '')).join(' | '), 0.8]])}))
@@ -3622,7 +4032,7 @@ function runSearch(input, box) {
   if (!q) { box.hidden = true; box.innerHTML = ''; return; }
   const M = model(), R = searchKB(q);
   const site = Object.keys(SITES).find(x => x.toLowerCase() === q.toLowerCase());
-  const siteN = site ? M.measures.filter(m => sitesOf(m).includes(site)).length : 0;
+  const siteN = site ? M.measures.filter(m => elecNames(m).includes(site)).length : 0;
   let h = '';
   if (site) h += '<h4>Electrode</h4><button data-act="site" data-v="' + site + '"><span>Signals measured at ' + site + '</span><span class="sub">' + plural(siteN, 'signal') + '</span></button>';
   if (R.ms.length) h += '<h4>Measurement guides</h4>' + R.ms.slice(0, 5).map(x => '<button data-act="open-measure" data-id="' + esc(x.m.id) + '"><span>' + esc(x.m.name) + '</span><span class="sub">' + esc(GRP[grpOf(x.m)].label + ' · ' + clip(x.m.summary || x.m.spec, 110)) + '</span></button>').join('');
@@ -3863,8 +4273,9 @@ const TRACKS = {
       {route: 'contribute', target: () => cfEl(cf0(), 'measure'), place: ['bottom', 'right', 'top'], task: 'Pick the brain signal the paper recorded',
         text: 'Not in the list? Choose “+ New signal…” at the bottom and type its name.', done: () => !!cfVal(cf0(), 'measure')},
       {route: 'contribute', target: () => cfEl(cf0(), 'sites-part'), place: SIDE, task: 'Click where the paper put the sensors', skip: 'The paper doesn’t say',
-        text: () => (cf0() && cf0().usual.length ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them.',
-        done: () => !!cf0() && cf0().sites.length > 0},
+        text: () => (cf0() && (cf0().usual.length || cf0().usualPts.length) ? 'Dashed circles show where this signal is usually recorded. ' : '') + 'Click those spots on the head. You can drag them to move them. ' +
+          'For a cap with other positions, or a spot between two, switch to Free placement.',
+        done: () => !!cf0() && (cf0().sites.length > 0 || cf0().points.length > 0)},
       {route: 'contribute', target: () => cfEl(cf0(), 'claim'), place: ['bottom', 'top'], task: 'Write what the paper found',
         text: 'One or two short sentences, in your own words. Add the page above it too, if you can check it.', done: () => cfVal(cf0(), 'claim').length >= 15 && typedPause(2500)},
       {route: 'contribute', target: () => cfEl(cf0(), 'ctype'), place: ['bottom', 'top'], task: 'Choose the claim type',
@@ -4168,7 +4579,7 @@ const HINTS = [
   {id: 'topic-warn', route: 'constructs', target: '#cv-detail .callout.warn', text: 'These signals are linked to more than one topic, so on their own they can’t tell you which one changed.'},
   {id: 'signals-type', route: 'measures', target: '#mf-sig', text: 'Show only one kind of signal.'},
   {id: 'plan-form', route: 'planner', target: '#pl-form', text: 'Answer the 3 questions. The list updates as you go.'},
-  {id: 'ct-head', route: 'contribute', target: '.sig-main .pl-head', text: 'Click the head to mark where the sensors go.'},
+  {id: 'ct-head', route: 'contribute', target: '.sig-main .pl-head', text: 'Click the head to mark where the sensors go. Free placement takes any spot and shows its coordinates.'},
   {id: 'ct-more', route: 'contribute', target: '#sig-add', text: 'Same paper, more signals for this topic? Add them here instead of starting again.'},
   {id: 'ct-guide', route: 'contribute', target: '.sig-main .gnotes', text: 'Add the paper’s how-to tips to the signal’s guide.'}
 ];
@@ -4344,13 +4755,25 @@ function onAct(t) {
     case 'rv-reject': reviewDecide('reject'); break;
     case 'pl-toggle': { const c = cfOf(t); if (c && !CF.suppressClick && !CF.locked) togglePl(c, t.getAttribute('data-site')); break; }
     case 'pl-remove': { const c = cfOf(t); if (c && !CF.locked) { c.sites = c.sites.filter(s => s !== t.getAttribute('data-site')); renderPlacer(c); } break; }
-    case 'pl-token': if (!CF.suppressClick) toast('Drag the electrode onto the head, or click a position on the head.'); break;
+    case 'pl-token': if (!CF.suppressClick) toast('Drag the electrode onto the head, or click ' + ((cfOf(t) || {}).mode === 'free' ? 'anywhere' : 'a position') + ' on the head.'); break;
+    case 'pl-mode': { const c = cfOf(t); if (c && !CF.locked) setMode(c, t.getAttribute('data-mode')); break; }
+    case 'fp-remove': { const c = cfOf(t); if (c && !CF.locked) { c.points.splice(Number(t.getAttribute('data-pt')), 1); c.sel = -1; c.hover = null; renderPlacer(c); } break; }
+    case 'fp-add-name': { const c = cfOf(t); if (c && !CF.locked) addByName(c); break; }
+    case 'fp-add-map': { const c = cfOf(t); if (c && !CF.locked) addByMap(c); break; }
+    case 'fp-add-3d': { const c = cfOf(t); if (c && !CF.locked) addBy3d(c); break; }
     case 'sig-add': addSigCard(); break;
     case 'sig-open': openSigCard(cfOf(t)); break;
     case 'sig-remove': removeSigCard(cfOf(t)); break;
     case 'accept-batch': acceptBatch(t.getAttribute('data-batch')); break;
     case 'doi-fill': clearTimeout(doiT); doiFill(false); break;
-    case 'pl-usual': { const c = cfOf(t); if (c && !CF.locked) { c.sites = c.usual.slice(); renderPlacer(c); } break; }
+    case 'pl-usual': {
+      const c = cfOf(t);
+      if (!c || CF.locked) break;
+      if (c.mode === 'free') { c.points = c.usualPts.slice(0, MAX_PTS).map(p => Object.assign({}, p, {auto: !p.label || p.label === nearSite(p)})); c.sel = -1; }
+      else c.sites = c.usual.slice();
+      renderPlacer(c);
+      break;
+    }
     case 'gd-el': S.gdEl = S.gdEl === t.getAttribute('data-site') ? null : t.getAttribute('data-site'); gdElPaint(); TOUR.flags.el = true; break;
     case 'tour-menu': toggleTourMenu(); break;
     case 'tour-start': tourStart(t.getAttribute('data-track')); break;

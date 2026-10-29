@@ -258,6 +258,29 @@ language sql immutable set search_path = '' as $$
     group by t.value order by min(t.ord) limit 30) x;
 $$;
 
+-- Electrodes placed freely on the head map rather than at a fixed position: x toward the right ear and y toward
+-- the nose, with Cz at (0, 0) and the circle through Fpz, T8, Oz and T7 at radius 1. Each keeps a short label
+-- (the paper's name for it, or where it sits, such as "between O1 and PO7"); at most 64.
+create or replace function public._points(v jsonb) returns jsonb
+language sql immutable set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('x', round(x.nx, 2), 'y', round(x.ny, 2), 'label', x.label) order by x.ord), '[]'::jsonb) from (
+    select q.nx, q.ny, q.label, q.ord from (
+      -- Only numbers are read as numbers, so anything else is dropped rather than raising an error.
+      select case when jsonb_typeof(t.p->'x') = 'number' then (t.p->>'x')::numeric end as nx,
+             case when jsonb_typeof(t.p->'y') = 'number' then (t.p->>'y')::numeric end as ny,
+             case when jsonb_typeof(t.p) = 'object' then left(trim(coalesce(t.p->>'label', '')), 40) else '' end as label, t.ord
+      from jsonb_array_elements(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) with ordinality as t(p, ord)) q
+    where q.nx is not null and q.ny is not null and abs(q.nx) <= 1.5 and abs(q.ny) <= 1.5
+    order by q.ord limit 64) x;
+$$;
+
+-- Electrodes placed freely, as text for emails and the link's record: "label (x, y); …".
+create or replace function public._points_text(v jsonb) returns text
+language sql immutable set search_path = '' as $$
+  select string_agg(coalesce(nullif(t.p->>'label', ''), 'placed') || ' (' || (t.p->>'x') || ', ' || (t.p->>'y') || ')', '; ' order by t.ord)
+  from jsonb_array_elements(public._points(v)) with ordinality as t(p, ord);
+$$;
+
 -- The first frequency range of a suggestion, if it is two numbers with 0 <= from < to <= 1000 Hz.
 create or replace function public._band(v jsonb) returns jsonb
 language sql immutable set search_path = '' as $$
@@ -287,6 +310,7 @@ create or replace function public._edit_val(k text, v jsonb) returns text
 language sql immutable set search_path = '' as $$
   select coalesce(nullif(case
     when k = 'sites' then (select string_agg(t.x, ', ') from jsonb_array_elements_text(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) as t(x))
+    when k = 'points' then public._points_text(v)
     when k = 'bands' then (select string_agg(trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz'), ', ')
                            from jsonb_array_elements(case when jsonb_typeof(v) = 'array' then v else '[]'::jsonb end) as t(b))
     when k = 'claimType' then case v #>> '{}' when 'attributed' then 'Stated by the paper' when 'inferred' then 'Used to infer'
@@ -324,7 +348,7 @@ language sql stable security definer set search_path = public as $$
     'claimType', coalesce(p->>'claimType', ''),
     'evidence', coalesce(p->>'evidence', ''),
     'sites', concat_ws(' ',
-      (select string_agg(value, ', ') from jsonb_array_elements_text(public._sites(p->'sites'))),
+      nullif(concat_ws('; ', (select string_agg(value, ', ') from jsonb_array_elements_text(public._sites(p->'sites'))), public._points_text(p->'points')), ''),
       case when coalesce(p->>'sitesNote', '') <> '' then '(' || left(p->>'sitesNote', 200) || ')' end),
     'band', coalesce((select trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz')
                       from jsonb_array_elements(public._band(p->'bands')) as t(b) limit 1), ''));
@@ -342,11 +366,13 @@ begin
   for f in select * from (values
       (1, 'claim', 'What the paper says'), (2, 'pages', 'Page(s)'), (3, 'claimType', 'Link strength'), (4, 'evidence', 'Kind of evidence'),
       (5, 'paradigm', 'Task'), (6, 'population', 'Population'), (7, 'behaviour', 'Behavioural outcome'), (8, 'cites', 'Original studies cited'),
-      (9, 'sites', 'Electrodes'), (10, 'sitesNote', 'Location in the paper''s words'), (11, 'bands', 'Frequency range')) as v(n, k, label) order by n
+      (9, 'sites', 'Electrodes'), (10, 'points', 'Electrodes placed by position'), (11, 'sitesNote', 'Location in the paper''s words'),
+      (12, 'bands', 'Frequency range')) as v(n, k, label) order by n
   loop
     if ch ? f.k then
       v_out := v_out || '<br><b>' || f.label || ':</b> ' || public._esc(public._edit_val(f.k, case when f.n <= 8 then e->f.k else m->f.k end))
-        || ' → <b>' || public._esc(public._edit_val(f.k, case f.k when 'sites' then public._sites(ch->f.k) when 'bands' then public._bands(ch->f.k) else ch->f.k end)) || '</b>';
+        || ' → <b>' || public._esc(public._edit_val(f.k, case f.k when 'sites' then public._sites(ch->f.k) when 'points' then public._points(ch->f.k)
+                                                            when 'bands' then public._bands(ch->f.k) else ch->f.k end)) || '</b>';
     end if;
   end loop;
   return nullif(substr(v_out, 5), '');
@@ -753,7 +779,7 @@ declare
   v_name text; v_sig text; v_fam text; v_cite text; v_doi text; v_short text; v_surname text; v_year text;
   v_now text := to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   sm jsonb;
-  v_sites jsonb; v_band jsonb; v_snote text; v_spec text;
+  v_sites jsonb; v_points jsonb; v_band jsonb; v_snote text; v_spec text;
   v_cname text; v_aspect text;
 begin
   select * into s from public.submissions where id = p_sub for update;
@@ -762,10 +788,13 @@ begin
   p := s.payload;
   if p->>'kind' = 'edit' then return public._accept_edit(s.id, p_actor, p_email); end if;
   v_sites := public._sites(p->'sites');
+  -- Electrodes come either at fixed positions or placed by position on the head map, never both.
+  v_points := case when jsonb_array_length(v_sites) > 0 then '[]'::jsonb else public._points(p->'points') end;
   v_band := public._band(p->'bands');
   v_snote := left(trim(coalesce(p->>'sitesNote', '')), 200);
   v_spec := concat_ws('; ',
     case when jsonb_array_length(v_sites) > 0 then 'Electrodes: ' || (select string_agg(value, ', ') from jsonb_array_elements_text(v_sites)) end,
+    case when jsonb_array_length(v_points) > 0 then 'Electrodes placed by position: ' || public._points_text(v_points) end,
     case when jsonb_array_length(v_band) > 0 then trim(coalesce(v_band->0->>'label', '') || ' ' || (v_band->0->>'lo') || '–' || (v_band->0->>'hi') || ' Hz') end);
 
   -- Paper: an existing one, a matching one (same DOI or citation), or a new record.
@@ -814,18 +843,19 @@ begin
         'domain', case v_sig when 'freq' then 'Frequency' when 'phase' then 'Frequency / phase' when 'stage' then 'Sleep staging' else 'Time (ERP)' end,
         'signal', v_sig, 'spec', coalesce(p->'newMeasure'->>'spec', ''),
         'specRefs', jsonb_build_array(jsonb_build_object('s', sid, 'p', coalesce(p->>'pages', ''))),
-        'window', null, 'windowNote', '', 'bands', v_band, 'bandsNote', '', 'sites', v_sites, 'sitesNote', v_snote,
+        'window', null, 'windowNote', '', 'bands', v_band, 'bandsNote', '', 'sites', v_sites, 'points', v_points, 'sitesNote', v_snote,
         'inferred', '[]'::jsonb, 'lateralized', false, 'caveats', '[]'::jsonb, 'methods', '[]'::jsonb,
         'feasibility', jsonb_build_object('passive', null, 'infants', null, 'note', '', 'refs', '[]'::jsonb),
         'provenance', 'contributed', 'order', 500, 'addedAt', v_now, 'submissionId', s.id));
     end if;
   end if;
-  -- Fill in electrode sites or a frequency range the signal does not have yet (never overwrites existing ones).
+  -- Fill in electrodes or a frequency range the signal does not have yet (never overwrites existing ones).
   update public.kb_records set
     doc = doc
-      || case when jsonb_array_length(v_sites) > 0
+      || case when jsonb_array_length(v_sites) + jsonb_array_length(v_points) > 0
                and (case when jsonb_typeof(doc->'sites') = 'array' then jsonb_array_length(doc->'sites') else 0 end) = 0
-              then jsonb_build_object('sites', v_sites, 'sitesNote', v_snote) else '{}'::jsonb end
+               and (case when jsonb_typeof(doc->'points') = 'array' then jsonb_array_length(doc->'points') else 0 end) = 0
+              then jsonb_build_object('sites', v_sites, 'points', v_points, 'sitesNote', v_snote) else '{}'::jsonb end
       || case when jsonb_array_length(v_band) > 0
                and (case when jsonb_typeof(doc->'bands') = 'array' then jsonb_array_length(doc->'bands') else 0 end) = 0
               then jsonb_build_object('bands', v_band, 'bandsNote', '') else '{}'::jsonb end,
@@ -858,7 +888,7 @@ begin
     end if;
   end if;
 
-  -- The link itself. No email addresses go into public records.
+  -- The link itself, with the electrodes this paper used. No email addresses go into public records.
   eid := 'e-c-' || to_char(now(), 'YYMMDDHH24MISS') || public._rid();
   insert into public.kb_records (collection, id, doc) values ('entries', eid, jsonb_build_object(
     'measureId', mid, 'constructId', cid, 'sourceId', sid, 'pages', coalesce(p->>'pages', ''),
@@ -867,6 +897,7 @@ begin
     'evidence', case when p->>'evidence' in ('human-eeg', 'stimulation', 'intracranial', 'review') then p->>'evidence' else 'human-eeg' end,
     'paradigm', coalesce(p->>'paradigm', ''), 'population', coalesce(p->>'population', ''),
     'behaviour', coalesce(p->>'behaviour', ''), 'cites', coalesce(p->>'cites', ''), 'specUsed', v_spec,
+    'sites', v_sites, 'points', v_points, 'sitesNote', v_snote,
     'provenance', 'contributed', 'status', 'accepted', 'addedAt', to_char(now(), 'YYYY-MM-DD'), 'submissionId', s.id)
     || case when v_aspect is not null then jsonb_build_object('aspect', v_aspect) else '{}'::jsonb end);
 
@@ -935,6 +966,17 @@ begin
   if ch ? 'sites' then
     m_new := m_new || jsonb_build_object('sites', public._sites(ch->'sites'),
       'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
+  end if;
+  if ch ? 'points' then
+    m_new := m_new || jsonb_build_object('points', public._points(ch->'points'),
+      'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
+  end if;
+  -- A signal keeps one kind of electrodes: fixed positions, or electrodes placed by position on the head map.
+  if ch ? 'points' and jsonb_array_length(m_new->'points') > 0 then
+    m_new := m_new || jsonb_build_object('sites', '[]'::jsonb);
+  elsif ch ? 'sites' and jsonb_array_length(m_new->'sites') > 0
+        and (case when jsonb_typeof(m_new->'points') = 'array' then jsonb_array_length(m_new->'points') else 0 end) > 0 then
+    m_new := m_new || jsonb_build_object('points', '[]'::jsonb);
   end if;
   if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
   if ch ? 'bands' then
