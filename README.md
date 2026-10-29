@@ -6,13 +6,17 @@ A website that shows which EEG signals published papers link to which cognitive 
 
 ## What is in it
 
+The content is being built up paper by paper. These counts are updated from the database once a day.
+
+<!-- counts:start (filled in automatically by .github/scripts/refresh-data.js) -->
 | Part | Count |
 | --- | --- |
-| Source papers | 6 |
-| EEG signals | 31 (21 ERPs, 9 brain rhythms, 1 rhythm-coupling measure) |
-| Topics | 72, in 12 areas |
-| Links between a topic and a signal | 99 |
-| Design and reporting guidance items | 16 |
+| Source papers | 4 |
+| EEG signals | 15 (14 ERPs, 1 brain rhythm) |
+| Topics | 10, in 8 areas |
+| Links between a topic and a signal | 25 |
+| Design and reporting guidance items | 10 |
+<!-- counts:end -->
 
 Every link names the paper and page it comes from. Claims are paraphrased, never quoted. Each link carries a strength label (causal test, stated by the paper, used to infer, hypothesis, debated) and, where it applies, an evidence label for findings that are not human scalp EEG.
 
@@ -20,20 +24,20 @@ Electrode sites worked out from a region name in a paper are marked "inferred". 
 
 ## Pages
 
-- **Home**: search by topic or signal, or start from a topic area.
-- **Topics** and **EEG signals**: browse the links in either direction.
-- **Plan a study**: pick a topic, participants and task type to get ranked signals and a design checklist.
+- **Home**: search by topic or signal, or start from a topic area. A 2-minute tutorial shows new visitors around.
+- **Topics** and **EEG signals**: browse the links in either direction. Each signal has a measurement guide with its electrodes on a head map.
 - **EEG basics**: a short primer for students new to EEG.
-- **Source papers**, **Topic–signal map**, **Contribute**, **Data & export** (under More).
+- **Plan a study** (under More): pick a topic, participants and task type to get ranked signals and a design checklist.
+- **Source papers**, **Topic–signal map**, **Contribute**, **Data & export**, and **Admin** for admins (under More).
 
 ## Sources
 
-- Kappenman, E. S., & Luck, S. J. (2012). ERP components: The ups and downs of brainwave recordings. In S. J. Luck & E. S. Kappenman (Eds.), *The Oxford handbook of event-related potential components* (pp. 3–30). Oxford University Press. Read from the uncorrected proof, so page numbers may differ from print.
-- Woodman, G. F. (2010). A brief introduction to the use of event-related potentials in studies of perception and attention. *Attention, Perception, & Psychophysics, 72*(8), 2031–2046. https://doi.org/10.3758/APP.72.8.2031
-- Beres, A. M. (2017). Time is of the essence: A review of electroencephalography (EEG) and event-related brain potentials (ERPs) in language research. *Applied Psychophysiology and Biofeedback, 42*, 247–255. https://doi.org/10.1007/s10484-017-9371-3
-- Herrmann, C. S., Strüber, D., Helfrich, R. F., & Engel, A. K. (2016). EEG oscillations: From correlation to causality. *International Journal of Psychophysiology, 103*, 12–21. https://doi.org/10.1016/j.ijpsycho.2015.02.003
-- Gupta, D. S., & Chen, L. (2016). Brain oscillations in perception, timing and action. *Current Opinion in Behavioral Sciences, 8*, 161–166. https://doi.org/10.1016/j.cobeha.2016.02.021
-- Buzsáki, G., & Draguhn, A. (2004). Neuronal oscillations in cortical networks. *Science, 304*(5679), 1926–1929. https://doi.org/10.1126/science.1099745
+<!-- sources:start (filled in automatically by .github/scripts/refresh-data.js) -->
+- Aguiar, P. V., Williams, M. R., & Paul, B. T. (2025). Visual cortical responses in age-related hearing loss show evidence for compensatory neuroplasticity. GeroScience, 48(5), 6739–6756. https://doi.org/10.1007/s11357-025-02013-w
+- Bakhos, D., Galvin, J., Roux, S., Lescanne, E., & Bruneau, N. (2018). Cortical Processing of Vocal and Nonvocal Sounds in Cochlear-Implanted Children: An Electrophysiological Study. Ear & Hearing, 39(1), 150–160. https://doi.org/10.1097/AUD.0000000000000475
+- Campbell, J., & Sharma, A. (2016). Visual Cross-Modal Re-Organization in Children with Cochlear Implants. PLOS ONE, 11(1), e0147793. https://doi.org/10.1371/journal.pone.0147793
+- Woodman, G. F. (2010). A brief introduction to the use of event-related potentials in studies of perception and attention. Attention, Perception, & Psychophysics, 72(8), 2031–2046. https://doi.org/10.3758/APP.72.8.2031
+<!-- sources:end -->
 
 The papers themselves are not included in this repository.
 
@@ -41,7 +45,7 @@ The papers themselves are not included in this repository.
 
 Use the **Contribute** page on the site.
 
-- **Current setup: sign-in and admin review** (see [SETUP.md](SETUP.md)). Contributors sign in with an emailed code and send the suggestion. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Links and edits from admins and the owner skip review and go on the site straight away. Admins can also delete links (with undo), add other admins and step down from the Admin page. The records live in a Supabase database; `data/kb.json` is the backup the site falls back to if the database cannot be reached.
+- **Current setup: invitation, sign-in and admin review** (see [SETUP.md](SETUP.md)). Accounts are by invitation from the Admin page. Contributors sign in with an emailed code and send the suggestion; pasting a DOI fills in the citation. Every admin gets an email with Accept and Reject buttons, and accepted links appear on the site immediately. Links and edits from admins and the owner skip review and go on the site straight away. Admins can also delete links (with undo), invite people, add other admins and step down from the Admin page. The records live in a Supabase database; `data/kb.json` is the backup the site falls back to if the database cannot be reached, and a daily job keeps it up to date.
 - **Earlier setup, now switched off:** suggestions went in as GitHub issues and a GitHub Action ([`.github/workflows/add-contribution.yml`](.github/workflows/add-contribution.yml)) added them to `data/kb.json` without review. It is disabled in **Actions → Add contributions**. It only matters again if sign-in is switched off (by emptying the two Supabase values in `config.js`); in that case, re-enable it there.
 
 ### The GitHub automation (only when sign-in is off)
@@ -60,5 +64,6 @@ Use the **Contribute** page on the site.
 | `supabase/setup.sql` | Database, sign-in roles and email approvals; run once in Supabase |
 | `SETUP.md` | Step-by-step setup for sign-in, admins and email approvals |
 | `.nojekyll` | Tells GitHub Pages to serve the files as they are |
+| `.github/` | Automation: the daily data refresh, which also updates the counts and sources in this README, and the switched-off GitHub-issue contribution workflow |
 
-Without sign-in, update the site by editing `data/kb.json`. Each entry links one `measureId` to one `constructId` and cites a `sourceId` with `pages`. With sign-in, the database holds the records and `data/kb.json` is only the starting point and a fallback if the database is unreachable.
+Without sign-in, update the site by editing `data/kb.json`. Each entry links one `measureId` to one `constructId` and cites a `sourceId` with `pages`. With sign-in, the database holds the records and `data/kb.json` is a daily copy the site falls back to if the database is unreachable.

@@ -128,6 +128,7 @@ A scheduled GitHub workflow, **Refresh saved data** (`.github/workflows/refresh-
 
 - reads every record from the database, which counts as activity and keeps a free Supabase project from pausing;
 - rewrites `data/kb.json`, the saved copy the site shows if the database cannot be reached, and commits it only when something changed;
+- updates the counts table and the list of papers in `README.md`, so the repository's front page matches the site;
 - leaves `data/kb.json` alone and fails if the database does not answer or returns nothing. GitHub then emails the repository owner, which is also your early warning that the project needs restoring.
 
 To run it straight away, open the repository's **Actions** tab, choose **Refresh saved data**, and click **Run workflow**. GitHub switches off scheduled workflows after 60 days with no repository activity, so after a quiet month the workflow commits a one-line note (`.github/last-data-check.txt`) to keep the schedule on.
