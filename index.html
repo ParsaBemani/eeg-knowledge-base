@@ -671,7 +671,11 @@ pre.csv{margin:0;overflow:auto;max-height:280px;background:var(--panel-2);border
 .acc-list{max-height:460px;overflow-y:auto}
 .adm-btns{display:flex;gap:6px;flex-wrap:wrap}
 #si-invite{margin:0}
-#acc-q{width:100%;margin-bottom:6px}
+#acc-q,#lk-q{width:100%;margin-bottom:6px}
+.lk-list{max-height:520px;overflow-y:auto}
+.mrow .adm-links{display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:8px;border-top:1px dashed var(--rule)}
+.mrow .adm-link{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--ink-2)}
+.mrow .adm-link > span{margin-right:auto}
 .ep-panel{padding-top:14px;padding-bottom:14px}
 .ep-panel h3{margin-bottom:8px}
 details.ep > summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);padding:5px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--panel-2)}
@@ -1570,7 +1574,7 @@ function entryCard(e, M, opts) {
     '<dl class="en-kv">' + row('Aspect', e.aspect) + row('Paradigm', e.paradigm) + row('Population', e.population) + row('Behavioural outcome', e.behaviour) + row('Specification used', e.specUsed) + '</dl>' +
     '<div class="en-src"><span class="eyebrow">Source</span>' + src + '</div>' +
     (e.cites ? '<p class="en-cites">Primary work cited by the source: ' + esc(e.cites) + '</p>' : '') +
-    (canSuggestEdit() || isSbAdmin() ? '<div class="en-admin">' + (canSuggestEdit() ? '<button class="btn sm ghost" data-act="edit-entry" data-id="' + esc(e.id) + '">Suggest an edit</button>' : '') + (isSbAdmin() ? delBtn('entries', e.id, 'Delete this link') : '') + '</div>' : '') + '</article>';
+    (canSuggestEdit() || isSbAdmin() ? '<div class="en-admin">' + (canSuggestEdit() ? '<button class="btn sm ghost" data-act="edit-entry" data-id="' + esc(e.id) + '">' + (isSbAdmin() ? 'Edit this link' : 'Suggest an edit') + '</button>' : '') + (isSbAdmin() ? delBtn('entries', e.id, 'Delete this link') : '') + '</div>' : '') + '</article>';
 }
 /* Two-step delete button for admins: the first click arms it, the second deletes. */
 function delBtn(col, id, label) {
@@ -1714,7 +1718,10 @@ function constructDetail(c, M) {
     const best = mes.slice().sort((a, b) => (CLAIM[b.claimType] || CLAIM.attributed).rank - (CLAIM[a.claimType] || CLAIM.attributed).rank)[0];
     const np = uniq(mes.map(e => e.sourceId).filter(Boolean)).length;
     h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + (np > 1 ? '<span class="chip" title="Papers that make this link">' + np + ' papers</span>' : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
-      '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button>' + citeLinks(M, mes) + '</div>' +
+      '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button>' + citeLinks(M, mes) +
+      // Admins can edit or delete each link behind this row right here.
+      (isSbAdmin() ? '<div class="adm-links">' + mes.map(e => '<div class="adm-link"><span>' + esc(mes.length > 1 ? 'Link from ' + ((M.sById.get(e.sourceId) || {}).short || 'a paper') + (e.pages ? ', p. ' + e.pages : '') : 'This link') + '</span>' +
+        '<button class="btn sm" data-act="edit-entry" data-id="' + esc(e.id) + '">Edit</button>' + delBtn('entries', e.id, 'Delete') + '</div>').join('') + '</div>' : '') + '</div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
   h += '</div>' + topicHeatHTML(c, M);
@@ -2605,7 +2612,7 @@ function plVisibility(c) {
   box.hidden = false;
   cfEl(c, 'sites-part').hidden = false;
   if (S.edit) {
-    const em = model().mById.get(S.edit.measureId), nb = em ? bandsOf(em).length : 0;
+    const em = model().mById.get(cfVal(c, 'measure') || S.edit.measureId), nb = em ? bandsOf(em).length : 0;
     setUsual(c, [], []);
     cfEl(c, 'band-part').hidden = !(em && (sigOf(em) === 'freq' || sigOf(em) === 'phase' || nb));
     cfEl(c, 'place-intro').textContent = (em && elecNames(em).length
@@ -2880,15 +2887,21 @@ function dupCheck() {
 }
 
 /* ---------- suggesting an edit: the Contribute form in edit mode ---------- */
-/* What an edit may change: [key, label, field of the signal card]. The first eight belong to the link, the rest to its signal. */
+/* What an edit may change: [key, label, field of the signal card]. The topic, signal and paper of a link can be changed
+   by admins only; the electrodes belong to the link in a link's edit, and to the signal in an edit of the signal alone. */
 const EDIT_FIELDS = [
+  ['constructId', 'Topic'], ['measureId', 'EEG signal'], ['sourceId', 'Paper'],
   ['claim', 'What the paper says', 'claim'], ['pages', 'Page(s)', 'pages'], ['claimType', 'Link strength', 'ctype'], ['evidence', 'Kind of evidence', 'evid'],
   ['paradigm', 'Task', 'paradigm'], ['population', 'Population', 'pop'], ['behaviour', 'Behavioural outcome', 'beh'], ['cites', 'Original studies cited', 'cites'],
   ['sites', 'Electrodes'], ['points', 'Electrodes placed by position'], ['sitesNote', 'Location in the paper\'s words', 'sites-note'], ['bands', 'Frequency range']
 ];
-const ENTRY_KEYS = EDIT_FIELDS.slice(0, 8).map(f => f[0]);
+const ENTRY_KEYS = ['claim', 'pages', 'claimType', 'evidence', 'paradigm', 'population', 'behaviour', 'cites'];
+const LINK_KEYS = ['constructId', 'measureId', 'sourceId'];
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 function editVal(k, v) {
+  if (k === 'constructId') return v ? ((S.raw.constructs.get(v) || {}).name || 'a topic no longer on the site') : '(none)';
+  if (k === 'measureId') return v ? ((S.raw.measures.get(v) || {}).name || 'a signal no longer on the site') : '(none)';
+  if (k === 'sourceId') return v ? ((S.raw.sources.get(v) || {}).short || 'a paper no longer on the site') : '(none)';
   if (k === 'sites') return arr(v).join(', ') || '(none)';
   if (k === 'points') return pointsOf({points: v}).map(pointText).join('; ') || '(none)';
   if (k === 'bands') return arr(v).map(bandText).join(', ') || '(none)';
@@ -2899,15 +2912,20 @@ function editVal(k, v) {
 /* The values an edit starts from, as they are on the site now. */
 function editSnapshot(entryId, measureId) {
   const e = entryId ? S.raw.entries.get(entryId) : null, m = S.raw.measures.get(measureId) || {};
-  const o = {sites: sitesOf(m).slice(), points: pointsOf(m), sitesNote: String(m.sitesNote || ''),
+  // A link's own electrodes, if the paper's are recorded with it; otherwise the signal's, as a starting point.
+  const own = e && (elecPts(e).length || e.sitesNote) ? e : m;
+  const o = {sites: sitesOf(own).slice(), points: pointsOf(own), sitesNote: String(own.sitesNote || ''),
     bands: bandsOf(m).map(b => ({lo: Number(b.lo), hi: Number(b.hi), label: String(b.label || '').trim().slice(0, 30)}))};
   if (e) {
     ENTRY_KEYS.forEach(k => { o[k] = String(e[k] == null ? '' : e[k]); });
     o.claimType = CLAIM[e.claimType] ? e.claimType : 'attributed';
     o.evidence = EVID[e.evidence] ? e.evidence : 'human-eeg';
+    LINK_KEYS.forEach(k => { o[k] = String(e[k] || ''); });
   }
   return o;
 }
+/* An admin editing a link can move it to another topic, signal or paper already on the site. */
+const canRelink = () => !!(S.edit && S.edit.entryId && isSbAdmin());
 function editTitle(p) {
   const m = S.raw.measures.get(p.measureId), e = p.entryId ? S.raw.entries.get(p.entryId) : null, c = e ? S.raw.constructs.get(e.constructId) : null;
   return (m ? m.name : 'Unknown signal') + (p.entryId ? ' → ' + (c ? c.name : 'Unknown topic') : ': electrodes and frequency');
@@ -2962,6 +2980,15 @@ function startEdit(entryId, measureId) {
   render();
   try { $('#ct-form').closest('.panel').scrollIntoView({block: 'start'}); } catch (err) {}
 }
+/* An admin moved the link to another signal: the frequency range shown is now that signal's, and an edit to it changes that signal. */
+function editSignalChanged(c) {
+  const m = S.raw.measures.get(cfVal(c, 'measure'));
+  if (!m || !S.edit) return;
+  const bands = bandsOf(m).map(b => ({lo: Number(b.lo), hi: Number(b.hi), label: String(b.label || '').trim().slice(0, 30)})), b0 = bands[0];
+  S.edit.base.bands = bands;
+  cfEl(c, 'band-lo').value = b0 ? b0.lo : ''; cfEl(c, 'band-hi').value = b0 ? b0.hi : ''; cfEl(c, 'band-label').value = b0 ? b0.label : '';
+  renderBandPreview(c);
+}
 function cancelEdit() {
   S.edit = null;
   $('#ct-form').reset(); cfReset();
@@ -2971,12 +2998,16 @@ function cancelEdit() {
 /* Only the fields that differ from the site go into the edit. An edit uses the first (and only) signal card. */
 function editPayload() {
   const E = S.edit, b = E.base, c = cf0(), v = n => cfVal(c, n), ch = {};
-  if (E.entryId) EDIT_FIELDS.slice(0, 8).forEach(f => {
+  if (E.entryId) EDIT_FIELDS.filter(f => ENTRY_KEYS.includes(f[0])).forEach(f => {
     let val = v(f[2]);
     if (f[0] === 'claimType' && !CLAIM[val]) val = b.claimType;
     if (f[0] === 'evidence' && !EVID[val]) val = b.evidence;
     if (val !== b[f[0]]) ch[f[0]] = val;
   });
+  if (canRelink()) {
+    const now = {constructId: ($('#f-construct').value || '').trim(), measureId: v('measure'), sourceId: ($('#f-source').value || '').trim()};
+    LINK_KEYS.forEach(k => { if (now[k] && now[k] !== b[k]) ch[k] = now[k]; });
+  }
   if (c.mode === 'free') {
     // Free placement replaces the signal's fixed positions. Only switching over, with the electrodes left where they were, changes nothing.
     const pts = ptsOut(c), asSites = b.sites.filter(n => SITES_EXT[n]).map(n => Object.assign(siteMap(n), {label: n}));
@@ -3009,6 +3040,10 @@ async function submitEdit(setMsg) {
   if (!S.session) return setMsg('Sign in first, then send your edit.', true);
   const band = bandShown(cf0()) ? parseBand(cf0()) : null;
   if (band && band.error) return setMsg('Fix the frequency range: two numbers from 0 to 1000 Hz, the first one lower.', true);
+  if (canRelink()) {
+    const pick = [['f-construct', 'topic'], ['f-measure-' + cf0().k, 'EEG signal'], ['f-source', 'paper']].filter(x => { const el = $('#' + x[0]); return !el || !el.value || el.value === '__new'; });
+    if (pick.length) return setMsg('Choose a ' + pick.map(x => x[1]).join(' and a ') + ' already on the site. To add a new one, cancel this edit and add the link as a new suggestion.', true);
+  }
   const payload = editPayload();
   if (!Object.keys(payload.changes).length) return setMsg('Nothing has changed yet. Change a field or the electrodes on the head, then send.', true);
   if (payload.changes.claim === '') return setMsg('A link needs a description of what the paper says.', true);
@@ -3156,14 +3191,14 @@ V.contribute = {
     $('#f-doi').addEventListener('input', () => { clearTimeout(doiT); doiT = setTimeout(() => doiFill(true), 700); });
     $('#f-cite').addEventListener('input', ev => { if (ev.isTrusted) { delete ev.target.dataset.doi; } });
     $('#ct-form').addEventListener('reset', () => { delete $('#f-cite').dataset.doi; doiMsg(DOI_HELP, ''); });
-    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = $('#f-construct').value !== '__new'; dupCheck(); });
-    $('#f-source').addEventListener('change', () => { $('#f-news').hidden = $('#f-source').value !== '__new'; dupCheck(); });
+    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = !!S.edit || $('#f-construct').value !== '__new'; dupCheck(); });
+    $('#f-source').addEventListener('change', () => { $('#f-news').hidden = !!S.edit || $('#f-source').value !== '__new'; dupCheck(); });
     // One set of listeners serves every signal card.
     const sigs = $('#sigs');
     sigs.addEventListener('change', ev => {
       const c = cfOf(ev.target), f = ev.target.getAttribute('data-cf');
       if (!c) return;
-      if (f === 'measure') { cfEl(c, 'newm').hidden = ev.target.value !== '__new'; plVisibility(c); dupCheck(); }
+      if (f === 'measure') { if (S.edit) editSignalChanged(c); cfEl(c, 'newm').hidden = !!S.edit || ev.target.value !== '__new'; plVisibility(c); dupCheck(); }
       else if (f === 'm-signal') plVisibility(c);
       else if (f === 'guides') cfEl(c, 'head').classList.toggle('noguide', !ev.target.checked);
       cfSummaries();
@@ -3230,21 +3265,28 @@ V.contribute = {
     FAMILIES.forEach(f => { const cs = M.constructs.filter(c => famOf(c) === f.id); if (cs.length) cOpts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>'; });
     fill($('#f-construct'), cOpts, 'New topic', 'Choose a topic…');
     fill($('#f-source'), M.sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.short) + '</option>').join(''), 'Other paper', 'Choose a paper…');
-    if (S.edit && !(M.mById.has(S.edit.measureId) && (!S.edit.entryId || S.raw.entries.has(S.edit.entryId)))) { S.edit = null; toast('The record you were editing is no longer on the site.'); }
+    if (S.edit && !(M.mById.has(S.edit.measureId) && (!S.edit.entryId || S.raw.entries.has(S.edit.entryId)))) {
+      // A link deleted from its own edit form leaves edit mode quietly; anything else gone from under the form is explained.
+      if (!S.edit.deleting) toast('The record you were editing is no longer on the site.');
+      S.edit = null; $('#ct-form').reset(); cfReset();
+    }
     const E = S.edit, ee = E && E.entryId ? S.raw.entries.get(E.entryId) : null;
     if (E) {
       // An edit changes one link, so the form keeps a single signal card.
       while (CF.cards.length > 1) { const x = CF.cards.pop(), r = cfRoot(x); if (r) r.remove(); }
       cfLayout();
-      cfEl(cf0(), 'measure').value = E.measureId;
-      if (ee) { $('#f-construct').value = ee.constructId; $('#f-source').value = ee.sourceId || ''; }
+      if (!canRelink()) {
+        cfEl(cf0(), 'measure').value = E.measureId;
+        if (ee) { $('#f-construct').value = ee.constructId; $('#f-source').value = ee.sourceId || ''; }
+      }
       const es = ee && ee.sourceId ? M.sById.get(ee.sourceId) : null;
       $('#ct-edit').innerHTML = '<div class="callout"><b>Editing: ' + esc(editTitle(E)) + '</b><span>' +
-        (ee ? 'Correct what is wrong or missing' + (es ? ' in this link to ' + esc(es.short) : '') + ', including the electrodes on the head. ' : 'Add or correct the electrodes on the head and the frequency range for this signal. ') +
-        (isSbAdmin() ? 'You\'re an admin, so the change goes live as soon as you save it. ' : 'An admin reviews the edit before it goes live. ') +
-        'To link a different signal, topic or paper, cancel and suggest a new link.</span></div>';
+        (ee ? 'Correct what is wrong or missing' + (es ? ' in this link to ' + esc(es.short) : '') + ', including the electrodes this paper used. ' : 'Add or correct the electrodes on the head and the frequency range for this signal. ') +
+        (isSbAdmin() ? 'You\'re an admin, so the change goes live as soon as you save it' + (ee ? ', and you can also move the link to another topic, signal or paper above' : '') + '. Every edit can be undone from the Admin page. '
+          : 'An admin reviews the edit before it goes live. To link a different signal, topic or paper, cancel and suggest a new link.') + '</span>' +
+        (ee && isSbAdmin() ? '<div class="btns">' + delBtn('entries', ee.id, 'Delete this link') + '</div>' : '') + '</div>';
     }
-    $('#ct-h').textContent = E ? 'Suggest an edit' : 'Suggest links from a paper';
+    $('#ct-h').textContent = E ? (isSbAdmin() ? (E.entryId ? 'Edit a link' : 'Edit a signal’s electrodes') : 'Suggest an edit') : 'Suggest links from a paper';
     $('#ct-edit').hidden = !E; $('#f-reason-wrap').hidden = !E; $('#f-cancel').hidden = !E;
     const sigOnly = !!(E && !E.entryId);
     $('#ct-shared').hidden = sigOnly;
@@ -3255,9 +3297,10 @@ V.contribute = {
       if (S.prefill.c && M.cById.has(S.prefill.c)) $('#f-construct').value = S.prefill.c;
       S.prefill = null;
     }
-    CF.cards.forEach(c => { cfEl(c, 'newm').hidden = cfVal(c, 'measure') !== '__new'; plVisibility(c); });
-    $('#f-newc').hidden = $('#f-construct').value !== '__new';
-    $('#f-news').hidden = $('#f-source').value !== '__new';
+    // An edit only links to records already on the site, so the forms for a new signal, topic or paper stay closed.
+    CF.cards.forEach(c => { cfEl(c, 'newm').hidden = !!E || cfVal(c, 'measure') !== '__new'; plVisibility(c); });
+    $('#f-newc').hidden = !!E || $('#f-construct').value !== '__new';
+    $('#f-news').hidden = !!E || $('#f-source').value !== '__new';
     dupCheck();
     const lockAll = () => $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = CF.locked; });
     if (S.sbMode) {
@@ -3270,7 +3313,7 @@ V.contribute = {
             : 'Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. New here? Signing in creates your account.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       lockAll();
-      if (E) { [cfEl(cf0(), 'measure'), $('#f-construct'), $('#f-source')].forEach(x => { if (x) x.disabled = true; }); $('#f-cancel').disabled = false; }
+      if (E) { if (!canRelink()) [cfEl(cf0(), 'measure'), $('#f-construct'), $('#f-source')].forEach(x => { if (x) x.disabled = true; }); $('#f-cancel').disabled = false; }
       updateSubmitLabel(); cfSummaries();
       const admin = isSbAdmin();
       $('#ct-qh').textContent = admin ? 'Review queue' : 'Your suggestions';
@@ -3842,7 +3885,7 @@ V.admin = {
         return '<li><span>' + esc(i.email) + '<br><span class="sub">' + (i.invited_by_email ? 'by ' + esc(i.invited_by_email) + ' · ' : '') + (gone ? 'expired ' : 'expires ') + esc(fmtDate(i.expires_at)) + '</span></span>' +
           '<span class="adm-btns"><button class="btn sm" data-act="resend-invite" data-email="' + esc(i.email) + '">Send again</button><button class="btn sm ghost" data-act="withdraw-invite" data-email="' + esc(i.email) + '">Withdraw</button></span></li>';
       }).join('') + '</ul>' : '') + '</section>';
-    h += '<section class="panel"><h3>Delete a link</h3><p class="small muted">Open any topic or signal: as an admin you see a <b>Delete this link</b> button under each link. Deleted items, and accepted edits, can be undone from the activity list.</p></section>';
+    h += linksAdminHTML(M);
     if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
     h += '</div><div class="adm-col">';
@@ -3894,6 +3937,21 @@ V.admin = {
     keepInputs(body, () => { body.innerHTML = h; });
   }
 };
+
+/* Admin page: every link on the site, to edit any part of it (topic, signal, paper, claim, electrodes…) or delete it. */
+function linksAdminHTML(M) {
+  const q = normTxt(S.lkQ || ''), name = (map, id, k) => (map.get(id) || {})[k] || '';
+  const rows = M.entries.map(e => ({e: e, c: name(M.cById, e.constructId, 'name'), m: name(M.mById, e.measureId, 'name'), s: name(M.sById, e.sourceId, 'short')}))
+    .sort((a, b) => a.c.localeCompare(b.c) || a.m.localeCompare(b.m) || a.s.localeCompare(b.s));
+  const shown = q ? rows.filter(r => normTxt([r.c, r.m, r.s, r.e.claim, r.e.pages].join(' ')).includes(q)) : rows;
+  return '<section class="panel"><h3>Edit or delete links<span class="count">' + rows.length + '</span></h3>' +
+    '<p class="small muted">Change anything about a link (its topic, signal, paper, page, claim, link strength, electrodes and the rest), or delete it. Changes go live straight away, and both edits and deletions can be undone from the activity list.</p>' +
+    '<input id="lk-q" type="search" placeholder="Find a link by topic, signal, paper or claim" aria-label="Find a link" maxlength="200" value="' + esc(S.lkQ || '') + '">' +
+    (shown.length ? '<ul class="adm-list lk-list">' + shown.map(r => '<li><span><b>' + esc(r.c || 'Unknown topic') + '</b> → ' + esc(r.m || 'Unknown signal') +
+        '<br><span class="sub">' + esc((r.s || 'No paper') + (r.e.pages ? ', p. ' + r.e.pages : '')) + (r.e.claim ? ' · ' + esc(String(r.e.claim).slice(0, 90)) + (String(r.e.claim).length > 90 ? '…' : '') : '') + '</span></span>' +
+        '<span class="adm-btns"><button class="btn sm" data-act="edit-entry" data-id="' + esc(r.e.id) + '">Edit</button>' + delBtn('entries', r.e.id, 'Delete') + '</span></li>').join('') + '</ul>'
+      : '<p class="small muted">' + (rows.length ? 'No link matches “' + esc(S.lkQ) + '”.' : 'No links yet.') + '</p>') + '</section>';
+}
 
 V.review = {
   mount(el) {
@@ -4043,7 +4101,7 @@ function drawerHTML(m, M) {
   if (f.passive === false) feas.push(['', 'Needs a task']);
   if (f.infants === true) feas.push(['ok', '✓ Used with infants']);
   const nCav = arr(m.caveats).length, nMet = arr(m.methods).length;
-  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>Suggest an edit</button>' : '';
+  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>' + (isSbAdmin() ? 'Edit' : 'Suggest an edit') + '</button>' : '';
   const editMenu = canSuggestEdit() && S.drEdit === m.id && es.length > 1
     ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head.</p>' +
       es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
@@ -4116,7 +4174,7 @@ function gdStep(n, title, body) { return '<section class="gd-step panel" data-st
 function guideHTML(m, M) {
   const es = M.byM.get(m.id) || [], cs = consFor(M, m.id), f = m.feasibility || {}, sk = sigOf(m);
   const known = sitesOf(m).filter(x => SITES[x]), pts = pointsOf(m), miss = specMissing(m), fam = GRP[grpOf(m)];
-  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>Suggest an edit</button>' : '';
+  const editTop = canSuggestEdit() ? '<button class="btn sm" data-act="dr-edit" data-id="' + esc(m.id) + '"' + (es.length > 1 ? ' aria-expanded="' + String(S.drEdit === m.id) + '"' : '') + '>' + (isSbAdmin() ? 'Edit' : 'Suggest an edit') + '</button>' : '';
   const editMenu = canSuggestEdit() && S.drEdit === m.id && es.length > 1
     ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head and notes for this guide.</p>' +
       es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
@@ -4961,7 +5019,10 @@ function onAct(t) {
       const col = t.getAttribute('data-col'), key = col + '/' + id;
       if (S.armed !== key) { armKey(key); break; }
       S.armed = null;
-      sbCall('delete_record', {p_collection: col, p_id: id}, 'Deleted. You can undo it from the Admin page.', true);
+      const fromEdit = S.edit && S.edit.entryId === id && col === 'entries';
+      if (fromEdit) S.edit.deleting = true;
+      sbCall('delete_record', {p_collection: col, p_id: id}, 'Deleted. You can undo it from the Admin page.', true)
+        .then(ok => { if (!ok && fromEdit && S.edit) S.edit.deleting = false; });
       break;
     }
     case 'step-down':
@@ -5067,6 +5128,7 @@ function bind() {
     if (ev.target.id === 'mf-q') { S.mf.q = ev.target.value; V.measures.update($('#v-measures')); }
     else if (ev.target.id === 'cv-q') { S.cq = ev.target.value; V.constructs.update($('#v-constructs')); }
     else if (ev.target.id === 'acc-q') { S.accQ = ev.target.value; V.admin.update($('#v-admin')); }
+    else if (ev.target.id === 'lk-q') { S.lkQ = ev.target.value; V.admin.update($('#v-admin')); }
   });
   document.addEventListener('change', ev => {
     const t = ev.target;

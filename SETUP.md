@@ -10,7 +10,7 @@ Until this is set up, the site runs from `data/kb.json` and the Contribute page 
 - If a contributor's electrodes are far from where other studies of the topic put theirs, the form asks them to double-check first. If they send them anyway, the review email and the Admin page say so.
 - One suggestion can carry several EEG signals that a paper links to the same topic. Admins get one email listing all of them, each with its own Accept and Reject buttons, and can accept them all at once on the Admin page. The contributor gets one email once all of them have been reviewed.
 - Links and edits sent by an admin or the owner skip review and go on the site straight away; they are listed under **Activity** on the Admin page. If one cannot be added (for example, its signal was deleted in the meantime), it goes to the other admins for review instead.
-- Admins can also review suggestions, delete links (with undo), add other admins and step down from the **Admin** page (under More).
+- Admins can also review suggestions, edit or delete any link (its topic, signal, paper, claim, electrodes and the rest, all with undo), add other admins and step down from the **Admin** page (under More). Each topic page also has Edit and Delete buttons under every link for admins.
 - The last remaining admin cannot step down, so someone can always review suggestions.
 
 Allow about 45 minutes. Everything below is free and done in a web browser.

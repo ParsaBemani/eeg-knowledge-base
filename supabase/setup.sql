@@ -359,18 +359,29 @@ create or replace function public._edit_html(p jsonb) returns text
 language plpgsql stable security definer set search_path = public as $$
 declare
   ch jsonb := case when jsonb_typeof(p->'changes') = 'object' then p->'changes' else '{}'::jsonb end;
-  e jsonb; m jsonb; f record; v_out text := '';
+  e jsonb; m jsonb; el jsonb; f record; v_out text := '';
 begin
   select doc into e from public.kb_records where collection = 'entries' and id = p->>'entryId';
   select doc into m from public.kb_records where collection = 'measures' and id = coalesce(e->>'measureId', p->>'measureId');
+  -- In an edit of a link the electrodes are the link's own (or, if it has none yet, its signal's); otherwise the signal's.
+  el := case when e is not null and (jsonb_array_length(coalesce(e->'sites', '[]')) + jsonb_array_length(coalesce(e->'points', '[]')) > 0
+                                     or coalesce(e->>'sitesNote', '') <> '') then e else m end;
   for f in select * from (values
+      (-2, 'constructId', 'Topic'), (-1, 'measureId', 'EEG signal'), (0, 'sourceId', 'Paper'),
       (1, 'claim', 'What the paper says'), (2, 'pages', 'Page(s)'), (3, 'claimType', 'Link strength'), (4, 'evidence', 'Kind of evidence'),
       (5, 'paradigm', 'Task'), (6, 'population', 'Population'), (7, 'behaviour', 'Behavioural outcome'), (8, 'cites', 'Original studies cited'),
       (9, 'sites', 'Electrodes'), (10, 'points', 'Electrodes placed by position'), (11, 'sitesNote', 'Location in the paper''s words'),
       (12, 'bands', 'Frequency range')) as v(n, k, label) order by n
   loop
-    if ch ? f.k then
-      v_out := v_out || '<br><b>' || f.label || ':</b> ' || public._esc(public._edit_val(f.k, case when f.n <= 8 then e->f.k else m->f.k end))
+    if ch ? f.k and f.n <= 0 then
+      -- Moving the link: the names of the old and the new topic, signal or paper.
+      v_out := v_out || '<br><b>' || f.label || ':</b> '
+        || public._esc(coalesce((select coalesce(r.doc->>'name', r.doc->>'short') from public.kb_records r
+                                  where r.collection = case f.k when 'constructId' then 'constructs' when 'measureId' then 'measures' else 'sources' end and r.id = e->>f.k), '(none)'))
+        || ' → <b>' || public._esc(coalesce((select coalesce(r.doc->>'name', r.doc->>'short') from public.kb_records r
+                                  where r.collection = case f.k when 'constructId' then 'constructs' when 'measureId' then 'measures' else 'sources' end and r.id = ch->>f.k), 'unknown')) || '</b>';
+    elsif ch ? f.k then
+      v_out := v_out || '<br><b>' || f.label || ':</b> ' || public._esc(public._edit_val(f.k, case when f.n <= 8 then e->f.k when f.n <= 11 then el->f.k else m->f.k end))
         || ' → <b>' || public._esc(public._edit_val(f.k, case f.k when 'sites' then public._sites(ch->f.k) when 'points' then public._points(ch->f.k)
                                                             when 'bands' then public._bands(ch->f.k) else ch->f.k end)) || '</b>';
     end if;
@@ -936,6 +947,7 @@ declare
   e_old jsonb; e_new jsonb; m_old jsonb; m_new jsonb;
   sm jsonb;
   v_changes text;
+  v_el boolean := false;
   v_today text := to_char(now(), 'YYYY-MM-DD');
 begin
   select * into s from public.submissions where id = p_sub;
@@ -946,6 +958,13 @@ begin
     select doc into e_old from public.kb_records where collection = 'entries' and id = eid;
     if not found then raise exception 'The link this edit changes is no longer on the site.'; end if;
     mid := e_old->>'measureId';
+    -- Moving the link to another signal: everything below about the signal applies to the new one.
+    if coalesce(ch->>'measureId', '') <> '' then
+      if not exists (select 1 from public.kb_records where collection = 'measures' and id = ch->>'measureId') then
+        raise exception 'The EEG signal chosen for this link is no longer on the site.';
+      end if;
+      mid := ch->>'measureId';
+    end if;
   else
     mid := nullif(p->>'measureId', '');
   end if;
@@ -967,26 +986,66 @@ begin
     if coalesce(e_new->>'claim', '') = '' then
       raise exception 'A link needs a description of what the paper says.';
     end if;
+    -- Its topic, signal and paper: only records already on the site.
+    if coalesce(ch->>'constructId', '') <> '' then
+      if not exists (select 1 from public.kb_records where collection = 'constructs' and id = ch->>'constructId') then
+        raise exception 'The topic chosen for this link is no longer on the site.';
+      end if;
+      e_new := e_new || jsonb_build_object('constructId', ch->>'constructId');
+    end if;
+    if coalesce(ch->>'sourceId', '') <> '' then
+      if not exists (select 1 from public.kb_records where collection = 'sources' and id = ch->>'sourceId') then
+        raise exception 'The paper chosen for this link is no longer on the site.';
+      end if;
+      e_new := e_new || jsonb_build_object('sourceId', ch->>'sourceId');
+    end if;
+    e_new := e_new || jsonb_build_object('measureId', mid);
+    -- The electrodes this paper used belong to the link; a link keeps one kind, as a signal does.
+    v_el := ch ? 'sites' or ch ? 'points';
+    if ch ? 'sites' then e_new := e_new || jsonb_build_object('sites', public._sites(ch->'sites')); end if;
+    if ch ? 'points' then e_new := e_new || jsonb_build_object('points', public._points(ch->'points')); end if;
+    if ch ? 'points' and jsonb_array_length(e_new->'points') > 0 then
+      e_new := e_new || jsonb_build_object('sites', '[]'::jsonb);
+    elsif ch ? 'sites' and jsonb_array_length(e_new->'sites') > 0 then
+      e_new := e_new || jsonb_build_object('points', '[]'::jsonb);
+    end if;
+    if ch ? 'sitesNote' then e_new := e_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
+    if v_el then
+      e_new := e_new || jsonb_build_object('specUsed', concat_ws('; ',
+        case when jsonb_array_length(coalesce(e_new->'sites', '[]')) > 0 then 'Electrodes: ' || (select string_agg(value, ', ') from jsonb_array_elements_text(e_new->'sites')) end,
+        case when jsonb_array_length(coalesce(e_new->'points', '[]')) > 0 then 'Electrodes placed by position: ' || public._points_text(e_new->'points') end));
+    end if;
   end if;
 
-  -- The signal: electrodes, the paper's wording for them, and frequency ranges. Edited values are no longer marked as inferred.
   m_new := m_old;
-  if ch ? 'sites' then
+  if eid is not null then
+    -- A signal with no electrodes yet takes the link's, as it does when a new link is added.
+    if v_el and jsonb_array_length(coalesce(e_new->'sites', '[]')) + jsonb_array_length(coalesce(e_new->'points', '[]')) > 0
+       and (case when jsonb_typeof(m_new->'sites') = 'array' then jsonb_array_length(m_new->'sites') else 0 end) = 0
+       and (case when jsonb_typeof(m_new->'points') = 'array' then jsonb_array_length(m_new->'points') else 0 end) = 0 then
+      m_new := m_new || jsonb_build_object('sites', coalesce(e_new->'sites', '[]'), 'points', coalesce(e_new->'points', '[]'),
+        'sitesNote', coalesce(e_new->>'sitesNote', ''));
+    end if;
+  -- An edit of the signal alone: electrodes, the paper's wording for them. Edited values are no longer marked as inferred.
+  elsif ch ? 'sites' then
     m_new := m_new || jsonb_build_object('sites', public._sites(ch->'sites'),
       'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
   end if;
-  if ch ? 'points' then
-    m_new := m_new || jsonb_build_object('points', public._points(ch->'points'),
-      'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
+  if eid is null then
+    if ch ? 'points' then
+      m_new := m_new || jsonb_build_object('points', public._points(ch->'points'),
+        'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'sites' else '[]'::jsonb end);
+    end if;
+    -- A signal keeps one kind of electrodes: fixed positions, or electrodes placed by position on the head map.
+    if ch ? 'points' and jsonb_array_length(m_new->'points') > 0 then
+      m_new := m_new || jsonb_build_object('sites', '[]'::jsonb);
+    elsif ch ? 'sites' and jsonb_array_length(m_new->'sites') > 0
+          and (case when jsonb_typeof(m_new->'points') = 'array' then jsonb_array_length(m_new->'points') else 0 end) > 0 then
+      m_new := m_new || jsonb_build_object('points', '[]'::jsonb);
+    end if;
+    if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
   end if;
-  -- A signal keeps one kind of electrodes: fixed positions, or electrodes placed by position on the head map.
-  if ch ? 'points' and jsonb_array_length(m_new->'points') > 0 then
-    m_new := m_new || jsonb_build_object('sites', '[]'::jsonb);
-  elsif ch ? 'sites' and jsonb_array_length(m_new->'sites') > 0
-        and (case when jsonb_typeof(m_new->'points') = 'array' then jsonb_array_length(m_new->'points') else 0 end) > 0 then
-    m_new := m_new || jsonb_build_object('points', '[]'::jsonb);
-  end if;
-  if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
+  -- The frequency range belongs to the signal (the new one, if the link was moved).
   if ch ? 'bands' then
     m_new := m_new || jsonb_build_object('bands', public._bands(ch->'bands'),
       'inferred', case when jsonb_typeof(m_new->'inferred') = 'array' then (m_new->'inferred') - 'bands' else '[]'::jsonb end);
