@@ -11,10 +11,10 @@ The content is being built up paper by paper. These counts are updated from the 
 <!-- counts:start (filled in automatically by .github/scripts/refresh-data.js) -->
 | Part | Count |
 | --- | --- |
-| Source papers | 4 |
-| EEG signals | 15 (14 ERPs, 1 brain rhythm) |
+| Source papers | 5 |
+| EEG signals | 16 (15 ERPs, 1 brain rhythm) |
 | Topics | 10, in 8 areas |
-| Links between a topic and a signal | 25 |
+| Links between a topic and a signal | 26 |
 | Design and reporting guidance items | 10 |
 <!-- counts:end -->
 
@@ -36,6 +36,7 @@ Electrode sites worked out from a region name in a paper are marked "inferred". 
 - Aguiar, P. V., Williams, M. R., & Paul, B. T. (2025). Visual cortical responses in age-related hearing loss show evidence for compensatory neuroplasticity. GeroScience, 48(5), 6739–6756. https://doi.org/10.1007/s11357-025-02013-w
 - Bakhos, D., Galvin, J., Roux, S., Lescanne, E., & Bruneau, N. (2018). Cortical Processing of Vocal and Nonvocal Sounds in Cochlear-Implanted Children: An Electrophysiological Study. Ear & Hearing, 39(1), 150–160. https://doi.org/10.1097/AUD.0000000000000475
 - Campbell, J., & Sharma, A. (2016). Visual Cross-Modal Re-Organization in Children with Cochlear Implants. PLOS ONE, 11(1), e0147793. https://doi.org/10.1371/journal.pone.0147793
+- Cheng, X., Zhong, J., Zhang, J., Cui, C., Jiang, L., Liu, Y.-W., Chen, Y., Cao, Q., Wang, D., Cheng, G., Zong, Y., Shen, M., Xu, C., Lv, J., Wang, H., Zhang, L., Zhu, B., Tang, H., Wang, J., … Shu, Y. (2025). Gene Therapy vs Cochlear Implantation in Restoring Hearing Function and Speech Perception for Individuals With Congenital Deafness. JAMA Neurology, 82(9), 941. https://doi.org/10.1001/jamaneurol.2025.2053
 - Woodman, G. F. (2010). A brief introduction to the use of event-related potentials in studies of perception and attention. Attention, Perception, & Psychophysics, 72(8), 2031–2046. https://doi.org/10.3758/APP.72.8.2031
 <!-- sources:end -->
 
