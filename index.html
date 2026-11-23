@@ -2249,8 +2249,8 @@ function sigCardHTML(k) {
   const id = n => 'f-' + n + '-' + k;
   const opts = (o, ph) => (ph ? '<option value="">' + ph + '</option>' : '') + Object.keys(o).map(x => '<option value="' + x + '">' + esc(o[x].label) + '</option>').join('');
   const fld = (n, label, input, cls) => '<div class="field' + (cls ? ' ' + cls : '') + '"><label for="' + id(n) + '">' + label + '</label>' + input + '</div>';
-  const inp = (n, max, ph) => '<input id="' + id(n) + '" data-cf="' + n + '" maxlength="' + max + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '>';
-  const area = (n, rows, ph) => '<textarea id="' + id(n) + '" data-cf="' + n + '" rows="' + rows + '" maxlength="' + (n === 'claim' ? 700 : 1500) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></textarea>';
+  const inp = (n, max, ph) => '<input id="' + id(n) + '" data-cf="' + n + '"' + (n === 'band-label' ? ' maxlength="' + max + '"' : '') + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '>';
+  const area = (n, rows, ph) => '<textarea id="' + id(n) + '" data-cf="' + n + '" rows="' + rows + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></textarea>';
   const num = (n, ph) => '<input id="' + id(n) + '" data-cf="' + n + '" type="number" inputmode="decimal" min="0" max="1000" step="any" placeholder="' + ph + '">';
   return '<div class="sig" data-k="' + k + '">' +
     '<div class="sig-h" data-act="sig-open"><span class="sig-n"></span><b class="sig-t"></b><span class="sig-sum"></span><span class="sig-go" aria-hidden="true">Open ›</span>' +
@@ -2952,7 +2952,7 @@ function editRowsHTML(p, live) {
 /* Notes for a signal's measurement guide, sent with a suggestion or an edit. */
 const GUIDE_KEYS = [['setup', 'Set-up'], ['lookFor', 'What to look for'], ['quantify', 'What number to report'], ['caveats', 'Watch out for']];
 function guideLines(c) {
-  const lines = n => cfVal(c, n).split(/\n+/).map(x => x.trim()).filter(Boolean).slice(0, 8);
+  const lines = n => cfVal(c, n).split(/\n+/).map(x => x.trim()).filter(Boolean);
   const g = {setup: lines('g-setup'), lookFor: lines('g-look'), quantify: lines('g-quant'), caveats: lines('g-warn')};
   return Object.keys(g).some(k => g[k].length) ? g : null;
 }
@@ -3125,11 +3125,7 @@ function apaCite(m) {
     tail = cont ? cont + (m.volume ? ', ' + m.volume + (m.issue ? '(' + m.issue + ')' : '') : '') + (pages ? ', ' + pages : '') + '.' : (pub ? pub + '.' : '');
   }
   const build = who => (who ? who + (/\.$/.test(who) ? ' ' : '. ') : '') + '(' + year + '). ' + (title ? title + '. ' : '') + tail;
-  // The citation box holds 400 characters: shorten very long author lists rather than cut the title.
-  let s = build(apaAuthors(names, 20));
-  if (s.length > 400) s = build(apaAuthors(names, 7));
-  if (s.length > 400 && names.length) s = build(names[0] + ' et al.');
-  return s.trim().slice(0, 400);
+  return build(apaAuthors(names, 20)).trim();
 }
 function doiMsg(t, cls) { const el = $('#f-doi-msg'); if (el) { el.textContent = t; el.className = cls ? 'fmsg ' + cls : 'small muted'; } }
 /* auto: run after a pause in typing; it then never replaces a citation the person typed themselves. */
@@ -3172,12 +3168,12 @@ V.contribute = {
           '<div class="frow"><div class="field"><label for="f-source">Source (the paper)<span class="req">required</span></label><select id="f-source"></select></div>' +
           '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
           '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
-            '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" maxlength="300" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
+            '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
               '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
-            '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" maxlength="400" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
+            '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
             '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
           '<div class="subform" id="f-newc" hidden><span class="eyebrow">New topic</span>' +
-            '<div class="field"><label for="f-c-name">Topic name</label><input id="f-c-name" maxlength="140"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
+            '<div class="field"><label for="f-c-name">Topic name</label><input id="f-c-name"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
             '<div class="field"><label for="f-c-family">Research domain</label><select id="f-c-family">' + FAMILIES.map(f => '<option value="' + f.id + '">' + esc(f.label) + '</option>').join('') + '</select></div></div>' +
         '</div>' +
         '<div class="ct-sec" id="ct-signals"><h4 class="ct-st"><span class="step" aria-hidden="true">2</span>EEG signals the paper links to this topic<span class="count" id="sig-count" hidden>1</span></h4>' +
@@ -3185,7 +3181,7 @@ V.contribute = {
           '<div class="sigs" id="sigs"><div class="sig-rail" id="sig-rail" hidden></div><div class="sig-main" id="sig-main"></div></div>' +
           '<button type="button" class="btn sig-add" id="sig-add" data-act="sig-add">+ Add another signal from this paper</button>' +
         '</div>' +
-        '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" maxlength="500" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
+        '<div class="field" id="f-reason-wrap" hidden><label for="f-reason">Why this change (optional)</label><textarea id="f-reason" rows="2" placeholder="e.g. The paper gives the electrodes on page 4: F4, C4 and O2."></textarea></div>' +
         '<div class="btns"><button class="btn primary" type="submit" id="f-submit">Submit for review</button><button class="btn ghost" type="button" data-act="cancel-edit" id="f-cancel" hidden>Cancel edit</button><span id="f-msg" class="fmsg" role="status"></span></div>' +
         '<datalist id="pl-names">' + Object.keys(SITES_EXT).map(n => '<option value="' + n + '">').join('') + '</datalist>' +
       '</form></section>' +

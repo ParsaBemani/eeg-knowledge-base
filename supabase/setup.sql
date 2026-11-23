@@ -59,7 +59,7 @@ create table if not exists public.submissions (
   submitted_by uuid default auth.uid() references auth.users (id) on delete set null,
   submitter_email text,
   status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected')),
-  payload jsonb not null check (octet_length(payload::text) < 12000),
+  payload jsonb not null check (octet_length(payload::text) < 500000),
   review_note text,
   reviewed_by uuid,
   reviewer_email text,
@@ -342,14 +342,14 @@ language sql stable security definer set search_path = public as $$
     'paper', coalesce(
       (select r.doc->>'cite' from public.kb_records r, ids where r.collection = 'sources' and r.id = ids.sid),
       p->'reference'->>'cite', case when p->>'kind' = 'edit' then '' end, 'Unknown paper'),
-    'reason', left(coalesce(p->>'reason', ''), 500),
+    'reason', coalesce(p->>'reason', ''),
     'pages', coalesce(p->>'pages', ''),
     'claim', coalesce(p->>'claim', ''),
     'claimType', coalesce(p->>'claimType', ''),
     'evidence', coalesce(p->>'evidence', ''),
     'sites', concat_ws(' ',
       nullif(concat_ws('; ', (select string_agg(value, ', ') from jsonb_array_elements_text(public._sites(p->'sites'))), public._points_text(p->'points')), ''),
-      case when coalesce(p->>'sitesNote', '') <> '' then '(' || left(p->>'sitesNote', 200) || ')' end),
+      case when coalesce(p->>'sitesNote', '') <> '' then '(' || (p->>'sitesNote') || ')' end),
     'band', coalesce((select trim(coalesce(t.b->>'label', '') || ' ' || (t.b->>'lo') || '–' || (t.b->>'hi') || ' Hz')
                       from jsonb_array_elements(public._band(p->'bands')) as t(b) limit 1), ''));
 $$;
@@ -404,9 +404,9 @@ begin
   foreach k in array array['setup', 'lookFor', 'quantify', 'caveats'] loop
     select coalesce(jsonb_agg(jsonb_build_object('t', x.t, 'refs', jsonb_build_array(jsonb_build_object('s', p_sid, 'p', coalesce(p_pages, ''))))), '[]'::jsonb)
       into v_add
-      from (select left(trim(a.e), 300) as t
+      from (select trim(a.e) as t
             from jsonb_array_elements_text(case when jsonb_typeof(g->k) = 'array' then g->k else '[]'::jsonb end) as a(e)
-            where trim(a.e) <> '' limit 8) x;
+            where trim(a.e) <> '') x;
     if jsonb_array_length(v_add) > 0 then
       d := d || jsonb_build_object(k, (case when jsonb_typeof(d->k) = 'array' then d->k else '[]'::jsonb end) || v_add);
     end if;
@@ -810,7 +810,7 @@ begin
   -- Electrodes come either at fixed positions or placed by position on the head map, never both.
   v_points := case when jsonb_array_length(v_sites) > 0 then '[]'::jsonb else public._points(p->'points') end;
   v_band := public._band(p->'bands');
-  v_snote := left(trim(coalesce(p->>'sitesNote', '')), 200);
+  v_snote := trim(coalesce(p->>'sitesNote', ''));
   v_spec := concat_ws('; ',
     case when jsonb_array_length(v_sites) > 0 then 'Electrodes: ' || (select string_agg(value, ', ') from jsonb_array_elements_text(v_sites)) end,
     case when jsonb_array_length(v_points) > 0 then 'Electrodes placed by position: ' || public._points_text(v_points) end,
@@ -978,7 +978,7 @@ begin
   if eid is not null then
     foreach k in array array['claim', 'pages', 'paradigm', 'population', 'behaviour', 'cites'] loop
       if ch ? k then
-        e_new := e_new || jsonb_build_object(k, left(trim(coalesce(ch->>k, '')), case k when 'claim' then 700 when 'pages' then 40 when 'cites' then 300 else 200 end));
+        e_new := e_new || jsonb_build_object(k, trim(coalesce(ch->>k, '')));
       end if;
     end loop;
     if ch->>'claimType' in ('attributed', 'inferred', 'causal', 'hypothesis', 'debated') then e_new := e_new || jsonb_build_object('claimType', ch->>'claimType'); end if;
@@ -1009,7 +1009,7 @@ begin
     elsif ch ? 'sites' and jsonb_array_length(e_new->'sites') > 0 then
       e_new := e_new || jsonb_build_object('points', '[]'::jsonb);
     end if;
-    if ch ? 'sitesNote' then e_new := e_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
+    if ch ? 'sitesNote' then e_new := e_new || jsonb_build_object('sitesNote', trim(coalesce(ch->>'sitesNote', ''))); end if;
     if v_el then
       e_new := e_new || jsonb_build_object('specUsed', concat_ws('; ',
         case when jsonb_array_length(coalesce(e_new->'sites', '[]')) > 0 then 'Electrodes: ' || (select string_agg(value, ', ') from jsonb_array_elements_text(e_new->'sites')) end,
@@ -1043,7 +1043,7 @@ begin
           and (case when jsonb_typeof(m_new->'points') = 'array' then jsonb_array_length(m_new->'points') else 0 end) > 0 then
       m_new := m_new || jsonb_build_object('points', '[]'::jsonb);
     end if;
-    if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', left(trim(coalesce(ch->>'sitesNote', '')), 200)); end if;
+    if ch ? 'sitesNote' then m_new := m_new || jsonb_build_object('sitesNote', trim(coalesce(ch->>'sitesNote', ''))); end if;
   end if;
   -- The frequency range belongs to the signal (the new one, if the link was moved).
   if ch ? 'bands' then
