@@ -11,11 +11,11 @@ The content is being built up paper by paper. These counts are updated from the 
 <!-- counts:start (filled in automatically by .github/scripts/refresh-data.js) -->
 | Part | Count |
 | --- | --- |
-| Source papers | 8 |
-| EEG signals | 17 (15 ERPs, 2 brain rhythms) |
-| Topics | 10, in 8 areas |
-| Links between a topic and a signal | 29 |
-| Design and reporting guidance items | 10 |
+| Source papers | 9 |
+| EEG signals | 18 (16 ERPs, 2 brain rhythms) |
+| Topics | 11, in 8 areas |
+| Links between a topic and a signal | 36 |
+| Design and reporting guidance items | 13 |
 <!-- counts:end -->
 
 Every link names the paper and page it comes from. Claims are paraphrased, never quoted. Each link carries a strength label (causal test, stated by the paper, used to infer, hypothesis, debated) and, where it applies, an evidence label for findings that are not human scalp EEG.
@@ -39,6 +39,7 @@ Electrode sites worked out from a region name in a paper are marked "inferred". 
 - Cheng, X., Zhong, J., Zhang, J., Cui, C., Jiang, L., Liu, Y.-W., Chen, Y., Cao, Q., Wang, D., Cheng, G., Zong, Y., Shen, M., Xu, C., Lv, J., Wang, H., Zhang, L., Zhu, B., Tang, H., Wang, J., … Shu, Y. (2025). Gene Therapy vs Cochlear Implantation in Restoring Hearing Function and Speech Perception for Individuals With Congenital Deafness. JAMA Neurology, 82(9), 941. https://doi.org/10.1001/jamaneurol.2025.2053
 - Chow, R., Baker, S., Mo, S., Bugos, J. A., Alain, C., & Rosenbaum, R. S. (2025). Mismatch negativity predicts age-related declines in memory precision. Neurobiology of Aging, 147, 32–48. https://doi.org/10.1016/j.neurobiolaging.2024.11.012
 - Freigang, C., Rübsamen, R., & Richter, N. (2014). Pre-attentive cortical processing of behaviorally perceptible spatial changes in older adults—a mismatch negativity study. Frontiers in Neuroscience, 8, 146. https://doi.org/10.3389/fnins.2014.00146
+- Kappenman, E. S., Farrens, J. L., Zhang, W., Stewart, A. X., & Luck, S. J. (2021). ERP CORE: An open resource for human event-related potential research. NeuroImage, 225, 117465. https://doi.org/10.1016/j.neuroimage.2020.117465 Tasks, scripts and data: https://doi.org/10.18115/D5JW4R. Places in the paper are given as sections and tables, which are the same in the published article and the free author manuscript. The recommended settings were validated in neurotypical young adults and may need adjusting for other groups (Sec. 4).
 - Spironelli, C., & Borella, E. (2021). Working Memory Training and Cortical Arousal in Healthy Older Adults: A Resting-State EEG Pilot Study. Frontiers in Aging Neuroscience, 13, 718965. https://doi.org/10.3389/fnagi.2021.718965
 - Woodman, G. F. (2010). A brief introduction to the use of event-related potentials in studies of perception and attention. Attention, Perception, & Psychophysics, 72(8), 2031–2046. https://doi.org/10.3758/APP.72.8.2031
 <!-- sources:end -->
