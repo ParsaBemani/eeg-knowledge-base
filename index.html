@@ -1700,7 +1700,7 @@ V.overview = {
     el.innerHTML =
       '<div class="home">' +
         '<h1 id="home-q">What do you want to measure?</h1>' +
-        '<p class="lede">Search for a brain process or an EEG signal. You get a step-by-step guide: where to put the electrodes, what to look for in the recording, what number to report, and the paper and page behind each step.</p>' +
+        '<p class="lede">Search for a brain process, an EEG signal or a task (such as an oddball or flanker task). You get a step-by-step guide: where to put the electrodes, what to look for in the recording, what number to report, and the paper and page behind each step.</p>' +
         '<div class="hsearch" role="search">' +
           '<input id="hq" type="search" autocomplete="off" spellcheck="false" placeholder="e.g. attention or memory" aria-labelledby="home-q" aria-controls="hres">' +
           '<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>' +
@@ -1849,7 +1849,7 @@ V.measures = {
   mount(el) {
     el.innerHTML = '<div class="sh"><div><h2>EEG signals</h2></div><p>Every EEG signal in the knowledge base, grouped into families. Click a card to open its step-by-step measurement guide.</p></div>' +
       '<div class="toolbar">' +
-        '<input id="mf-q" class="grow" type="search" placeholder="Search by name, topic or electrode" aria-label="Search signals">' +
+        '<input id="mf-q" class="grow" type="search" placeholder="Search by name, topic, task or electrode" aria-label="Search signals">' +
         '<div class="seg" role="group" aria-label="Signal type" id="mf-sig"></div>' +
       '</div>' +
       '<details class="more-d" id="mf-more"><summary>More filters<span class="hint">topic area, paper, sort order, spreadsheet view</span></summary><div class="toolbar">' +
@@ -1879,7 +1879,7 @@ V.measures = {
       if (f.source !== 'all' && !srcIdsForM(M, m.id).includes(f.source)) return false;
       if (f.family !== 'all' && !consFor(M, m.id).some(c => famOf(c) === f.family)) return false;
       if (ql) {
-        const hay = [m.name, m.short, m.spec, m.domain].concat(arr(m.aka), arr(m.caveats).map(x => x.t), sitesOf(m), consFor(M, m.id).map(c => c.name)).join(' ').toLowerCase();
+        const hay = [m.name, m.short, m.spec, m.domain].concat(arr(m.aka), arr(m.caveats).map(x => x.t), sitesOf(m), consFor(M, m.id).map(c => c.name), tasksOf(M, m).map(x => x.t)).join(' ').toLowerCase();
         if (!hay.includes(ql)) return false;
       }
       return true;
@@ -4422,7 +4422,9 @@ function guideHTML(m, M) {
       (note ? '<p class="small">' + esc(note) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</p>' : '') +
       (m.lateralized ? '<p class="small">Measured as the side opposite the stimulus or response minus the same side.</p>' : '') +
     '</div></div>' +
-    (arr(m.setup).length ? '<h3>Recording set-up</h3>' + guidePoints(m.setup) : generalNote(GENERAL.setup[sk])));
+    (arr(m.setup).length ? '<h3>Recording set-up</h3>' + guidePoints(m.setup) : generalNote(GENERAL.setup[sk])) +
+    // The tasks the papers recorded it with, so a task can be chosen (and searched for) with its source.
+    (tasksOf(M, m).length ? '<h3>Tasks the papers used</h3>' + guidePoints(tasksOf(M, m)) : ''));
   // 2. What to look for
   const timing = sk === 'time' ? (winOf(m) ? winText(m) : '') : (sk === 'freq' || sk === 'phase') ? bandsOf(m).map(bandText).join(', ') : '';
   const tNote = sk === 'time' ? m.windowNote : m.bandsNote;
@@ -4508,15 +4510,37 @@ function scoreRecord(qt, phrase, fields) {
   const bonus = phrase.length > 3 && wf.some(f => f.w >= 2.5 && f.text.includes(phrase)) ? 3 : 0;
   return sum / qt.length * (hit / qt.length) + bonus;
 }
+/* The tasks the papers used to record a signal (the Task of each link, and the ERP CORE-style task notes in its guide),
+   each once, with where it comes from. Used for searching by task, such as "oddball" or "flanker". */
+function tasksOf(M, m, cid) {
+  const by = new Map();
+  (M.byM.get(m.id) || []).filter(e => e.paradigm && (!cid || e.constructId === cid)).forEach(e => {
+    const t = String(e.paradigm).replace(/[.;,\s]+$/, ''), k = normTxt(t);
+    if (!by.has(k)) by.set(k, {t: t, refs: []});
+    by.get(k).refs.push({s: e.sourceId, p: e.pages});
+  });
+  return Array.from(by.values());
+}
+/* The task a search matched, to show beside the result, or ''. */
+function taskHit(qt, phrase, list) {
+  const x = list.find(t => scoreRecord(qt, phrase, [[t.t, 1]]) > 0);
+  return x ? x.t : '';
+}
 function searchKB(q) {
   const M = model(), qt = qToks(q), phrase = normTxt(q);
-  const ms = M.measures.map(m => ({m: m, s: scoreRecord(qt, phrase, [
+  const ms = M.measures.map(m => {
+    const tasks = tasksOf(M, m), tt = tasks.map(x => x.t).join(' | ');
+    return {m: m, task: taskHit(qt, phrase, tasks), s: scoreRecord(qt, phrase, [
       [m.name, 3], [m.short || '', 3], [arr(m.aka).join(' | '), 2.5], [GRP[grpOf(m)].label, 1], [(m.summary || '') + ' ' + (m.spec || ''), 1],
-      [consFor(M, m.id).map(c => c.name).join(' | '), 1.2], [(M.byM.get(m.id) || []).map(e => e.aspect || '').join(' | '), 1.2], [elecNames(m).join(' '), 1.5]])}))
-    .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
-  const cs = M.constructs.map(c => ({c: c, s: scoreRecord(qt, phrase, [
-      [c.name, 3], [arr(c.aka).join(' | '), 2.5], [c.definition || '', 1], [FAM[famOf(c)].label, 1], [measFor(M, c.id).map(m => m.name + ' ' + (m.short || '')).join(' | '), 0.8]])}))
-    .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+      [consFor(M, m.id).map(c => c.name).join(' | '), 1.2], [(M.byM.get(m.id) || []).map(e => e.aspect || '').join(' | '), 1.2], [elecNames(m).join(' '), 1.5],
+      [tt + ' | ' + arr(m.setup).map(x => x.t).join(' | '), 1.4]])};
+  }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
+  const cs = M.constructs.map(c => {
+    const tasks = [].concat(...measFor(M, c.id).map(m => tasksOf(M, m, c.id)));
+    return {c: c, task: taskHit(qt, phrase, tasks), s: scoreRecord(qt, phrase, [
+      [c.name, 3], [arr(c.aka).join(' | '), 2.5], [c.definition || '', 1], [FAM[famOf(c)].label, 1], [measFor(M, c.id).map(m => m.name + ' ' + (m.short || '')).join(' | '), 0.8],
+      [subsOf(M, c).map(x => x.name).join(' | '), 1.5], [tasks.map(x => x.t).join(' | '), 1]])};
+  }).filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   const ss = M.sources.map(src => ({src: src, s: scoreRecord(qt, phrase, [[src.short || '', 2], [(src.cite || '') + ' ' + (src.title || ''), 1]])}))
     .filter(x => x.s > 0).sort((a, b) => b.s - a.s);
   return {ms: ms, cs: cs, ss: ss};
@@ -4533,10 +4557,13 @@ function runSearch(input, box) {
   const siteN = site ? M.measures.filter(m => elecNames(m).includes(site)).length : 0;
   let h = '';
   if (site) h += '<h4>Electrode</h4><button data-act="site" data-v="' + site + '"><span>Signals measured at ' + site + '</span><span class="sub">' + plural(siteN, 'signal') + '</span></button>';
-  if (R.ms.length) h += '<h4>Measurement guides</h4>' + R.ms.slice(0, 5).map(x => '<button data-act="open-measure" data-id="' + esc(x.m.id) + '"><span>' + esc(x.m.name) + '</span><span class="sub">' + esc(GRP[grpOf(x.m)].label + ' · ' + clip(x.m.summary || x.m.spec, 110)) + '</span></button>').join('');
+  // A result found through its task says which task, so a search for "oddball" shows why each signal came up.
+  if (R.ms.length) h += '<h4>Measurement guides</h4>' + R.ms.slice(0, 5).map(x => '<button data-act="open-measure" data-id="' + esc(x.m.id) + '"><span>' + esc(x.m.name) + '</span><span class="sub">' +
+    esc(x.task ? 'Task: ' + clip(x.task, 110) : GRP[grpOf(x.m)].label + ' · ' + clip(x.m.summary || x.m.spec, 110)) + '</span></button>').join('');
   if (R.cs.length) h += '<h4>Topics</h4>' + R.cs.slice(0, 4).map(x => {
     const ms = measFor(M, x.c.id);
-    return '<button data-act="open-construct" data-id="' + esc(x.c.id) + '"><span>' + esc(x.c.name) + '</span><span class="sub">' + esc(ms.length ? 'Measure with: ' + ms.slice(0, 3).map(short).join(', ') + (ms.length > 3 ? ' and ' + (ms.length - 3) + ' more' : '') : FAM[famOf(x.c)].label) + '</span></button>';
+    return '<button data-act="open-construct" data-id="' + esc(x.c.id) + '"><span>' + esc(x.c.name) + '</span><span class="sub">' +
+      esc(x.task ? 'Task: ' + clip(x.task, 110) : ms.length ? 'Measure with: ' + ms.slice(0, 3).map(short).join(', ') + (ms.length > 3 ? ' and ' + (ms.length - 3) + ' more' : '') : FAM[famOf(x.c)].label) + '</span></button>';
   }).join('');
   if (R.ss.length) h += '<h4>Papers</h4>' + R.ss.slice(0, 3).map(x => '<button data-act="open-source" data-id="' + esc(x.src.id) + '"><span>' + esc(x.src.short) + '</span><span class="sub">' + esc(clip(x.src.title || x.src.cite, 110)) + '</span></button>').join('');
   const ex = popularTopics(M, 12).map(c => c.name.toLowerCase()).filter(t => t.split(' ').length <= 3).slice(0, 3);
