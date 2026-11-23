@@ -907,6 +907,9 @@ begin
     end if;
   end if;
 
+  -- The subsection of the topic the contributor picked, if any.
+  if nullif(trim(coalesce(p->>'aspect', '')), '') is not null then v_aspect := regexp_replace(trim(p->>'aspect'), '\s+', ' ', 'g'); end if;
+
   -- The link itself, with the electrodes this paper used. No email addresses go into public records.
   eid := 'e-c-' || to_char(now(), 'YYMMDDHH24MISS') || public._rid();
   insert into public.kb_records (collection, id, doc) values ('entries', eid, jsonb_build_object(
@@ -976,7 +979,7 @@ begin
   -- The link: only these fields, cleaned the same way as new suggestions.
   e_new := e_old;
   if eid is not null then
-    foreach k in array array['claim', 'pages', 'paradigm', 'population', 'behaviour', 'cites'] loop
+    foreach k in array array['claim', 'pages', 'paradigm', 'population', 'behaviour', 'cites', 'aspect'] loop
       if ch ? k then
         e_new := e_new || jsonb_build_object(k, trim(coalesce(ch->>k, '')));
       end if;
@@ -1521,6 +1524,102 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Feedback on the measurement guides ("Was this guide useful?").
+-- Only signed-in accounts can leave it, and only through the functions below,
+-- which guard against spam: one piece of feedback per person per guide (sending
+-- again replaces it), at most 30 guides a day, a short wait between changes, at
+-- most two links in a comment, and none from blocked accounts. People see only
+-- their own feedback; admins see all of it and can delete it. The public sees
+-- only how many people found each guide useful, never who.
+-- ---------------------------------------------------------------------------
+create table if not exists public.guide_feedback (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  user_email text,
+  measure_id text not null,
+  useful boolean,
+  comment text not null default '' check (char_length(comment) <= 2000),
+  unique (user_id, measure_id)
+);
+alter table public.guide_feedback enable row level security;
+
+create or replace function public.send_feedback(p_measure text, p_useful boolean, p_comment text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_uid uuid := auth.uid();
+  v_email text;
+  v_comment text := trim(coalesce(p_comment, ''));
+  v_old public.guide_feedback;
+  v_row public.guide_feedback;
+begin
+  if v_uid is null then raise exception 'Sign in to leave feedback.'; end if;
+  v_email := public._user_email(v_uid);
+  if exists (select 1 from public.blocked_emails where email = v_email) then
+    raise exception 'This account is blocked from the EEG Knowledge Base.';
+  end if;
+  if not exists (select 1 from public.kb_records where collection = 'measures' and id = p_measure) then
+    raise exception 'That guide is no longer on the site.';
+  end if;
+  if p_useful is null and v_comment = '' then raise exception 'Choose yes or no, or write a comment.'; end if;
+  if char_length(v_comment) > 2000 then raise exception 'Please keep feedback under 2,000 characters.'; end if;
+  -- Links are the usual sign of spam: allow a couple, for a DOI or a paper.
+  if (select count(*) from regexp_matches(v_comment, '(https?://|www\.)', 'gi')) > 2 then
+    raise exception 'Feedback can include at most two links.';
+  end if;
+  select * into v_old from public.guide_feedback where user_id = v_uid and measure_id = p_measure;
+  if found then
+    if v_old.updated_at > now() - interval '10 seconds' then
+      raise exception 'Please wait a few seconds before changing your feedback again.';
+    end if;
+    update public.guide_feedback set useful = p_useful, comment = v_comment, user_email = v_email, updated_at = now()
+      where id = v_old.id returning * into v_row;
+  else
+    if (select count(*) from public.guide_feedback where user_id = v_uid and created_at > now() - interval '1 day') >= 30 then
+      raise exception 'You have reached the limit of feedback on 30 guides a day. Try again tomorrow.';
+    end if;
+    insert into public.guide_feedback (user_id, user_email, measure_id, useful, comment)
+      values (v_uid, v_email, p_measure, p_useful, v_comment) returning * into v_row;
+  end if;
+  return jsonb_build_object('measure_id', v_row.measure_id, 'useful', v_row.useful, 'comment', v_row.comment, 'updated_at', v_row.updated_at);
+end $$;
+
+-- The signed-in person's own feedback, so each guide shows what they said.
+create or replace function public.my_feedback() returns table (measure_id text, useful boolean, comment text, updated_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select f.measure_id, f.useful, f.comment, f.updated_at from public.guide_feedback f where f.user_id = auth.uid();
+$$;
+
+-- How many signed-in people found each guide useful, without saying who.
+create or replace function public.guide_feedback_counts() returns table (measure_id text, useful bigint, not_useful bigint)
+language sql stable security definer set search_path = public as $$
+  select f.measure_id, count(*) filter (where f.useful), count(*) filter (where f.useful = false)
+  from public.guide_feedback f group by f.measure_id;
+$$;
+
+-- For the Admin page: all feedback, newest first.
+create or replace function public.list_feedback(p_limit int default 200)
+returns table (id uuid, created_at timestamptz, updated_at timestamptz, user_email text, measure_id text, measure_name text, useful boolean, comment text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'Only admins can see all feedback.'; end if;
+  return query
+    select f.id, f.created_at, f.updated_at, f.user_email, f.measure_id, coalesce(r.doc->>'name', f.measure_id), f.useful, f.comment
+    from public.guide_feedback f left join public.kb_records r on r.collection = 'measures' and r.id = f.measure_id
+    order by f.updated_at desc limit least(greatest(coalesce(p_limit, 200), 1), 500);
+end $$;
+
+-- Admins can delete any feedback (spam, for example); everyone can delete their own.
+create or replace function public.delete_feedback(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Sign in first.'; end if;
+  delete from public.guide_feedback where id = p_id and (user_id = auth.uid() or public.is_admin());
+  if not found then raise exception 'That feedback is already gone.'; end if;
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- What the website may use. Row-level security above still limits every row.
 -- ---------------------------------------------------------------------------
 grant usage on schema public to anon, authenticated;
@@ -1548,6 +1647,11 @@ grant execute on function public.invite_info(text) to anon, authenticated;
 -- Email preferences: each signed-in admin reads and sets their own.
 revoke execute on function public.my_email_prefs(), public.set_email_prefs(boolean, boolean) from public, anon;
 grant execute on function public.my_email_prefs(), public.set_email_prefs(boolean, boolean) to authenticated;
+-- Feedback on the guides: only through its functions. Anyone can see the counts; the rest needs a signed-in account.
+revoke all on public.guide_feedback from anon, authenticated;
+revoke execute on function public.send_feedback(text, boolean, text), public.my_feedback(), public.list_feedback(int), public.delete_feedback(uuid) from public, anon;
+grant execute on function public.send_feedback(text, boolean, text), public.my_feedback(), public.list_feedback(int), public.delete_feedback(uuid) to authenticated;
+grant execute on function public.guide_feedback_counts() to anon, authenticated;
 revoke all on public.email_prefs from anon, authenticated;
 revoke all on public.account_invites from anon, authenticated;
 grant select (email, invited_by_email, invited_at, expires_at) on public.account_invites to authenticated;

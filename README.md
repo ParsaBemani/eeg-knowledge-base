@@ -25,9 +25,11 @@ Electrode sites worked out from a region name in a paper are marked "inferred". 
 ## Pages
 
 - **Home**: search by topic or signal, or start from a topic area. A 2-minute tutorial shows new visitors around.
-- **Topics** and **EEG signals**: browse the links in either direction. Each topic has a heat map of where its studies put the electrodes: the colour at each spot shows the share of the topic's links that put an electrode there, so a spot named by twice as many links is twice as strong. Each link's own placement is shown beside it. Each signal has a measurement guide with its electrodes on a head map.
+- **Topics** and **EEG signals**: browse the links in either direction. A topic can have subsections (for example covert visual attention within selective attention); pick one to see only its signals. Each topic has a heat map of where its studies put the electrodes: the colour at each spot shows the share of the topic's links that put an electrode there, so a spot named by twice as many links is twice as strong. Each link's own placement is shown beside it. Each signal has a measurement guide with its electrodes on a head map. The heat map and the head map can be downloaded as images for slides and posters.
+- **Links to share**: every guide, topic and paper has its own address (`#guide/…`, `#topic/…`, `#paper/…`), with a Copy link button.
+- **Feedback**: signed-in visitors can say whether a guide was useful and what is missing or wrong. Admins see it on the Admin page; the public sees only how many people found a guide useful.
 - **EEG basics**: a short primer for students new to EEG.
-- **Plan a study** (under More): pick a topic, participants and task type to get ranked signals and a design checklist.
+- **Plan a study** (under More): pick a topic, participants and task type to get ranked signals, a design checklist, and a draft of the EEG methods in which each statement cites its paper and everything else is left in [brackets] to fill in.
 - **Source papers**, **Topic–signal map**, **Contribute**, **Data & export**, and **Admin** for admins (under More).
 
 ## Sources

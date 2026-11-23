@@ -250,7 +250,7 @@ a.cite{font:500 12.5px/1.4 var(--f-mono);color:var(--accent);text-decoration:und
 .scalp .el.hl,.scalp .el.on.hl{stroke:var(--hl);stroke-width:9;paint-order:stroke}
 .crumbs .crumbs-r{margin-left:auto}
 @media (max-width:680px){.gd-setup{grid-template-columns:1fr}.gd-fig{justify-self:center}}
-@media print{.topbar,.banner,.crumbs,.gd-actions,.dr-top .btn,.dr-editmenu,#toast,details.more-d,#tour,#tour-beacons,#tour-invite{display:none!important}.panel{border:0;padding:0}body{background:#fff}.guide{max-width:none}}
+@media print{.topbar,.banner,.crumbs,.gd-actions,.gd-fb,.fig-save,.cd-link,.dr-top .btn,.dr-editmenu,#toast,details.more-d,#tour,#tour-beacons,#tour-invite{display:none!important}.panel{border:0;padding:0}body{background:#fff}.guide{max-width:none}}
 
 details.more-d{border-top:1px solid var(--grid);padding-top:10px}
 details.more-d > summary{list-style:none;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;color:var(--ink);padding:4px 0}
@@ -364,6 +364,13 @@ details.more-d[open] > summary{margin-bottom:10px}
 .hm-ref circle{fill:var(--ink-3);opacity:.6}
 .hm-ref text{font:600 7px var(--f-mono);fill:var(--ink-2);text-anchor:middle;paint-order:stroke;stroke:var(--panel-2);stroke-width:2.2px}
 .hm-over circle{fill:none;stroke:var(--ink);stroke-width:2.6}
+.gd-fb h2{font-size:18px;margin:0 0 6px}
+.gd-fb .field{margin-top:10px}
+.fb-yn .btn[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.fb-c{white-space:pre-wrap}
+.fig-save{align-self:flex-start}
+.gd-fig .fig-save{align-self:center}
+.md-text{white-space:pre-wrap;font:14px/1.6 var(--f-body);background:var(--panel-2);border:1px solid var(--rule);border-radius:8px;padding:14px;max-height:460px;overflow:auto;margin:10px 0}
 .hm-key{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
 .hm-key i{flex:1;height:10px;border-radius:5px;border:1px solid var(--rule)}
 .hm-read{font-size:13px;color:var(--ink-2);margin:0;min-height:2.7em}
@@ -430,8 +437,16 @@ table.mini{min-width:600px}
 .cnav button:hover{background:var(--panel-2)}
 .cnav button[aria-current="true"]{background:var(--accent-soft)}
 .cnav .n{font:12px var(--f-mono);color:var(--ink-3);flex:none}
+.cnav-subs{display:flex;flex-direction:column;margin:0 0 4px 12px;padding-left:8px;border-left:1px solid var(--rule)}
+.cnav-subs button{font-size:13px;padding:4px 8px;color:var(--ink-2)}
 @media (max-width:900px){.cv{grid-template-columns:1fr}.cnav{position:static;max-height:300px}}
 .cd-head{display:flex;flex-direction:column;gap:8px}
+.cd-head .chips .cd-link{margin-left:auto}
+.subbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 2px}
+.subbar .eyebrow{margin-right:4px}
+.chip-b{border:1px solid var(--rule);background:var(--panel);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px;color:var(--ink-2)}
+.chip-b:hover{border-color:var(--ink-3)}
+.chip-b[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .cd-head h2{font-size:28px;font-stretch:112%}
 .cd-def{font-size:16px;color:var(--ink-2);max-width:68ch}
 .mrow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 20px;padding:14px 0;border-top:1px solid var(--grid)}
@@ -1172,7 +1187,10 @@ function specMissing(m) {
 function winText(m) {
   const w = winOf(m); if (!w) return '';
   const lock = w.lock || 'stimulus';
-  return w.at != null ? '≈' + num(w.at) + ' ms after ' + lock : num(w.min) + '–' + num(w.max) + ' ms after ' + lock;
+  if (w.at != null) return '≈' + num(w.at) + ' ms after ' + lock;
+  if (w.min >= 0) return num(w.min) + '–' + num(w.max) + ' ms after ' + lock;
+  if (w.max <= 0) return num(-w.min) + '–' + num(-w.max) + ' ms before ' + lock;
+  return num(-w.min) + ' ms before to ' + num(w.max) + ' ms after ' + lock;
 }
 function bandText(b) { return (b.label ? b.label + ' ' : '') + num(b.lo) + '–' + num(b.hi) + ' Hz'; }
 function specCaptionText(m) {
@@ -1201,7 +1219,7 @@ function meter(n) {
   const cls = n >= 4 ? 'meter broad' : 'meter';
   let bars = '';
   for (let i = 1; i <= 6; i++) bars += '<i class="' + (i <= n ? 'on' : '') + '"></i>';
-  return '<span class="' + cls + '" title="Linked to ' + plural(n, 'construct') + '"><span class="bars" aria-hidden="true">' + bars + '</span><span>' + plural(n, 'construct') + '</span></span>';
+  return '<span class="' + cls + '" title="Linked to ' + plural(n, 'topic') + '"><span class="bars" aria-hidden="true">' + bars + '</span><span>' + plural(n, 'topic') + '</span></span>';
 }
 
 /* ---------- state ---------- */
@@ -1215,14 +1233,15 @@ const S = {
   me: {id: null, canEdit: false, isOwner: false, canWrite: null},
   readOnly: false, busy: false,
   route: 'overview', mounted: {},
-  selC: null, cFam: 'all', cq: '', selS: null,
+  selC: null, selSub: '', cFam: 'all', cq: '', selS: null,
   mf: {q: '', signal: 'all', family: 'all', source: 'all', sort: 'index', view: 'cards', site: ''},
   mapFam: 'all', mapPin: null,
-  plan: {c: '', pop: 'adults', para: 'either'},
+  plan: {c: '', pop: 'adults', para: 'either', md: ''},
   drawer: null, drEdit: null, guideId: null, gdEl: null, navs: 0, prefill: null, edit: null,
   /* Supabase mode (sign-in, email approvals): see connectSupabase */
   sb: null, sbMode: false, sbNote: '', session: null,
   adm: {admins: [], invites: [], activity: [], loaded: false},
+  fb: {counts: new Map(), mine: new Map(), draft: {}},
   review: {token: '', decision: '', data: null, done: null, busy: false},
   armed: null
 };
@@ -1273,14 +1292,16 @@ function refHTML(refs) {
   if (!list.length) return '';
   return '<span class="refs">' + list.map(r => {
     const s = M.sById.get(r.s);
-    const lab = (s ? s.short : r.s) + (r.p ? ', p. ' + r.p : '');
+    const lab = (s ? s.short : r.s) + (r.p ? ', ' + pgl(r.p) : '');
     return '<button class="ref" data-act="open-source" data-id="' + esc(r.s) + '" title="' + esc(s ? s.cite : '') + '">' + esc(lab) + '</button>';
   }).join('') + '</span>';
 }
 function refText(refs) {
   const M = model();
-  return arr(refs).filter(r => r && r.s).map(r => { const s = M.sById.get(r.s); return (s ? s.short : r.s) + (r.p ? ', p. ' + r.p : ''); }).join('; ');
+  return arr(refs).filter(r => r && r.s).map(r => { const s = M.sById.get(r.s); return (s ? s.short : r.s) + (r.p ? ', ' + pgl(r.p) : ''); }).join('; ');
 }
+/* A place in a paper: "p. 12" for page numbers, and as written for anything else, such as "Table 2". */
+function pgl(p) { p = String(p == null ? '' : p).trim(); return /^\d/.test(p) ? 'p. ' + p : p; }
 /* Where a paper can be read: its DOI page, or the link given instead of a DOI. */
 function paperHref(doi) {
   const d = String(doi || '').trim();
@@ -1305,7 +1326,7 @@ function citeLinks(M, es) {
   });
   if (!by.size) return '';
   const items = Array.from(by.values()).map(g => {
-    const label = (g.s ? g.s.short : (g.ref && g.ref.cite) || 'Unknown source') + (g.pages.length ? ', p. ' + g.pages.join('; ') : '');
+    const label = (g.s ? g.s.short : (g.ref && g.ref.cite) || 'Unknown source') + (g.pages.length ? ', ' + pgl(g.pages.join('; ')) : '');
     const href = paperHref(g.s ? g.s.doi : g.ref && g.ref.doi), title = (g.s && g.s.cite) || (g.ref && g.ref.cite) || '';
     if (href) return '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc(title + ' (opens the paper)') + '">' + esc(label) + ' ↗</a>';
     return g.s ? '<button class="ref" data-act="open-source" data-id="' + esc(g.s.id) + '" title="' + esc(title) + '">' + esc(label) + '</button>' : '<span>' + esc(label) + '</span>';
@@ -1350,9 +1371,10 @@ const elecPts = x => sitesOf(x).filter(n => SITES_EXT[n]).map(n => Object.assign
 /* The links to a topic, each with the electrodes it names; a link that names none uses its signal's usual electrodes.
    Each counts once on the heat map, so a paper that links two signals to the topic counts twice; two links from one
    paper for the same signal count once. */
-function topicLinks(M, cid) {
+function topicLinks(M, cid, only) {
   const by = new Map();
   (M.byC.get(cid) || []).forEach(e => {
+    if (only && !only.has(e.id)) return;
     const m = M.mById.get(e.measureId);
     if (!m) return;
     const own = elecPts(e), key = (e.sourceId || 'link:' + e.id) + '|' + m.id;
@@ -1416,6 +1438,52 @@ function heatSVG(list, id, label) {
   Object.keys(SITES).forEach(n => { const p = SITES[n]; s += '<circle cx="' + p[0] + '" cy="' + (-p[1]) + '" r="1.8"/><text x="' + p[0] + '" y="' + (-p[1] - 4.2) + '">' + n + '</text>'; });
   return s + '</g><g class="hm-over" aria-hidden="true"></g></svg>';
 }
+/* Saves a head figure as a PNG for slides and posters. The drawing is copied with its colours written in (the page's
+   styles do not travel with it), drawn on the page's background at high resolution, and the heat map gets its colour
+   scale underneath. */
+async function saveFigure(svg, name, n) {
+  if (!svg) return;
+  try {
+    const clone = svg.cloneNode(true);
+    const PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linejoin', 'stroke-linecap', 'paint-order', 'opacity', 'font-family', 'font-size', 'font-weight', 'letter-spacing', 'text-anchor', 'dominant-baseline', 'display', 'visibility'];
+    const paint = (a, b) => { const cs = getComputedStyle(a); b.setAttribute('style', PROPS.map(p => p + ':' + cs.getPropertyValue(p)).join(';')); };
+    paint(svg, clone);
+    const src = svg.querySelectorAll('*'), dst = clone.querySelectorAll('*');
+    src.forEach((el, i) => paint(el, dst[i]));
+    $$('.hm-over', clone).forEach(g => { g.innerHTML = ''; });
+    const vb = svg.viewBox.baseVal, W = 1200, Hh = Math.round(W * vb.height / vb.width), key = n > 1 ? 150 : 0;
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', W); clone.setAttribute('height', Hh);
+    clone.querySelectorAll('image').forEach(im => { const h = im.getAttribute('href'); if (h) im.setAttribute('xlink:href', h); });
+    clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    const img = new Image();
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
+    await img.decode();
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = Hh + key;
+    const ctx = cv.getContext('2d'), panel = svg.closest('.panel') || document.body, cs = getComputedStyle(panel);
+    ctx.fillStyle = cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ? cs.backgroundColor : '#ffffff';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(img, 0, 0, W, Hh);
+    if (key) {
+      // The colour scale: from the share one link gives (1 of n) to all of them, as on the page.
+      const dark = darkTheme(), lo = 1 / n, x0 = 180, x1 = W - 180, y = Hh + 40, g = ctx.createLinearGradient(x0, 0, x1, 0);
+      [0, 0.25, 0.5, 0.75, 1].forEach(f => g.addColorStop(f, heatCss(lo + (1 - lo) * f, dark)));
+      ctx.fillStyle = g; ctx.fillRect(x0, y, x1 - x0, 26);
+      ctx.fillStyle = cs.color || '#222'; ctx.font = '30px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+      ctx.textAlign = 'right'; ctx.fillText('1 of ' + n, x0 - 16, y + 13);
+      ctx.textAlign = 'left'; ctx.fillText('all ' + n, x1 + 16, y + 13);
+      ctx.textAlign = 'center'; ctx.font = '26px system-ui, sans-serif';
+      ctx.fillText('Share of ' + n + ' links that put an electrode at each spot', W / 2, y + 78);
+    }
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    if (!blob) throw new Error('no image');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('Saved ' + name + '.png');
+  } catch (e) { toast('This browser could not make the image. Try another browser, or take a screenshot.'); }
+}
 /* A small head with one study's electrodes. */
 function miniHead(pts, size) {
   let s = '<svg class="hm-mini" viewBox="-128 -126 256 252" width="' + size + '" height="' + size + '" aria-hidden="true">' +
@@ -1438,7 +1506,7 @@ function heatLegend(n, dark) {
 }
 function linkCard(u, i) {
   const href = u.s ? paperHref(u.s.doi) : '', pages = uniq(u.es.map(e => e.pages).filter(Boolean)).join('; ');
-  const title = (u.s ? u.s.short : 'A paper') + (pages ? ', p. ' + pages : ''), el = u.pts.map(p => p.label && SITES_EXT[p.label] ? p.label : pointLabel(p));
+  const title = (u.s ? u.s.short : 'A paper') + (pages ? ', ' + pgl(pages) : ''), el = u.pts.map(p => p.label && SITES_EXT[p.label] ? p.label : pointLabel(p));
   return '<li class="hm-study" data-hm="' + i + '" tabindex="0" aria-label="' + esc(title + ', ' + u.m.name + ': electrodes at ' + el.join(', ')) + '">' + miniHead(u.pts, 64) +
     '<div class="hm-st">' + (href ? '<a class="cite" href="' + esc(href) + '" target="_blank" rel="noopener" title="' + esc((u.s.cite || '') + ' (opens the paper)') + '">' + esc(title) + ' ↗</a>'
       : u.s ? '<button class="ref" data-act="open-source" data-id="' + esc(u.s.id) + '">' + esc(title) + '</button>' : '<span>' + esc(title) + '</span>') +
@@ -1446,8 +1514,8 @@ function linkCard(u, i) {
     (u.own ? '' : '<span class="hm-tag" title="The paper\'s own electrodes are not recorded on the site, so the signal\'s usual electrodes stand in">Usual electrodes of the signal</span>') + '</div></li>';
 }
 /* The topic page section: the heat map, and the placement each link names beside it. */
-function topicHeatHTML(c, M) {
-  const all = topicLinks(M, c.id), list = all.filter(u => u.pts.length), n = list.length, dark = darkTheme();
+function topicHeatHTML(c, M, only) {
+  const all = topicLinks(M, c.id, only), list = all.filter(u => u.pts.length), n = list.length, dark = darkTheme();
   HM.list = list;
   const head = '<div class="sec hm"><h3>Where studies put the electrodes' + (n ? '<span class="count">' + plural(n, 'link') + '</span>' : '') + '</h3>';
   if (!n) return head + '<p class="small muted">None of the papers on this topic give electrode positions yet.</p></div>';
@@ -1457,7 +1525,8 @@ function topicHeatHTML(c, M) {
         : 'One link so far; the map fills in as more are added.') +
       (usual ? ' For ' + (usual === n ? (n > 1 ? 'all of them' : 'it') : usual + ' of them') + ', the site has only the usual electrodes of the signal, not the paper\'s own.' : '') + '</p>' +
     '<div class="hm-grid"><figure class="hm-fig">' + heatSVG(list, 'hmt', label) + heatLegend(n, dark) +
-      '<figcaption class="hm-read" id="hm-read" aria-live="polite">Most named: ' + esc(andList(top.slice(0, 3).map(t => t.n + ' (' + t.k + ' of ' + n + ')'))) + '. Point at the map for any spot.</figcaption></figure>' +
+      '<figcaption class="hm-read" id="hm-read" aria-live="polite">Most named: ' + esc(andList(top.slice(0, 3).map(t => t.n + ' (' + t.k + ' of ' + n + ')'))) + '. Point at the map for any spot.</figcaption>' +
+      '<button class="btn sm ghost fig-save" data-act="save-fig" data-name="' + esc('heat-map-' + slug(c.name)) + '" data-n="' + n + '">Download image</button></figure>' +
     '<div class="hm-side"><span class="eyebrow">Each link</span><ul class="hm-studies">' + list.map(linkCard).join('') + '</ul></div></div>' +
     (none ? '<p class="small muted">' + plural(none, 'other link') + ' to this topic ' + (none === 1 ? 'gives' : 'give') + ' no electrode positions.</p>' : '') + '</div>';
 }
@@ -1512,6 +1581,8 @@ function ruler(m, compact) {
     });
     const w = winOf(m);
     if (w && w.at != null) s += range(x(w.at * 0.96), x(w.at * 1.04));
+    // A window that starts before the event (for example before a response) cannot sit on a time-after-the-event scale.
+    else if (w && w.min < 0) s += none(esc(winText(m)));
     else if (w) s += range(x(Math.max(1, w.min)), x(w.max));
     else s += none('window not given in sources');
     s += '<line class="ax" x1="' + pad + '" y1="' + ax + '" x2="' + (W - pad) + '" y2="' + ax + '"/>';
@@ -1566,8 +1637,8 @@ function entryCard(e, M, opts) {
   if (opts.showMeasure && opts.showConstruct) head.push('<span aria-hidden="true">→</span>');
   if (opts.showConstruct && c) head.push('<button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button>');
   let src;
-  if (s) src = '<button class="ref" data-act="open-source" data-id="' + esc(s.id) + '" title="' + esc(s.cite || '') + '">' + esc(s.short) + (e.pages ? ', p. ' + esc(e.pages) : '') + '</button>' + (s.doi ? doiLink(s.doi) : '');
-  else if (e.reference && e.reference.cite) src = '<span>' + esc(e.reference.cite) + (e.pages ? ', p. ' + esc(e.pages) : '') + '</span>' + doiLink(e.reference.doi);
+  if (s) src = '<button class="ref" data-act="open-source" data-id="' + esc(s.id) + '" title="' + esc(s.cite || '') + '">' + esc(s.short) + (e.pages ? ', ' + esc(pgl(e.pages)) : '') + '</button>' + (s.doi ? doiLink(s.doi) : '');
+  else if (e.reference && e.reference.cite) src = '<span>' + esc(e.reference.cite) + (e.pages ? ', ' + esc(pgl(e.pages)) : '') + '</span>' + doiLink(e.reference.doi);
   else src = '<span class="muted">No source recorded.</span>';
   return '<article class="entry"><div class="en-top">' + head.join(' ') + '</div>' +
     (e.claim ? '<p class="en-claim">' + esc(e.claim) + '</p>' : '') +
@@ -1680,39 +1751,70 @@ V.constructs = {
     fam.value = S.cFam;
     const qi = $('#cv-q'); if (qi.value !== S.cq && document.activeElement !== qi) qi.value = S.cq;
     const ql = S.cq.trim().toLowerCase();
-    const list = M.constructs.filter(c => (S.cFam === 'all' || famOf(c) === S.cFam) && (!ql || [c.name, c.definition].concat(arr(c.aka)).join(' ').toLowerCase().includes(ql)));
-    if (!S.selC || !M.cById.has(S.selC) || (S.cFam !== 'all' && famOf(M.cById.get(S.selC)) !== S.cFam)) {
+    const list = M.constructs.filter(c => (S.cFam === 'all' || famOf(c) === S.cFam) && (!ql || [c.name, c.definition].concat(arr(c.aka), subsOf(M, c).map(x => x.name)).join(' ').toLowerCase().includes(ql)));
+    // Keep a topic named in the address while the data is still loading.
+    if (S.status !== 'connecting' && (!S.selC || !M.cById.has(S.selC) || (S.cFam !== 'all' && famOf(M.cById.get(S.selC)) !== S.cFam))) {
       const pref = list.find(c => c.id === 'c-working-memory') || list[0];
-      S.selC = pref ? pref.id : null;
+      S.selC = pref ? pref.id : null; S.selSub = '';
     }
+    // Area headings only help once the list is long; with a few topics they repeat the topic names.
     let nav = '', lastF = null;
+    const heads = S.cFam === 'all' && list.length > 15;
     list.forEach(c => {
       const f = famOf(c);
-      if (f !== lastF) { nav += '<h4>' + esc(FAM[f].label) + '</h4>'; lastF = f; }
-      const n = (M.measOfC.get(c.id) || []).length;
-      nav += '<button data-act="sel-construct" data-id="' + esc(c.id) + '" aria-current="' + (c.id === S.selC) + '"><span>' + esc(c.name) + '</span><span class="n" title="' + plural(n, 'linked signal') + '">' + n + '</span></button>';
+      if (heads && f !== lastF) { nav += '<h4>' + esc(FAM[f].label) + '</h4>'; lastF = f; }
+      const n = (M.measOfC.get(c.id) || []).length, on = c.id === S.selC;
+      nav += '<button data-act="sel-construct" data-id="' + esc(c.id) + '" aria-current="' + on + '"><span>' + esc(c.name) + '</span><span class="n" title="' + plural(n, 'linked signal') + '">' + n + '</span></button>';
+      // The open topic lists its subsections underneath, to pick from.
+      if (on) {
+        const subs = subsOf(M, c);
+        if (subs.length > 1) nav += '<div class="cnav-subs" role="group" aria-label="Subsections of ' + esc(c.name) + '">' + subs.map(x =>
+          '<button data-act="sel-sub" data-v="' + esc(x.name) + '" aria-current="' + (subKey(S.selSub) === subKey(x.name)) + '"><span>' + esc(x.name) + '</span><span class="n" title="' + plural(x.ms.size, 'linked signal') + '">' + x.ms.size + '</span></button>').join('') + '</div>';
+      }
     });
     $('#cv-nav').innerHTML = nav || (M.constructs.length ? '<p class="small muted" style="padding:8px">No topic matches “' + esc(S.cq) + '”.</p>' : emptyState('Topics'));
     const c = S.selC ? M.cById.get(S.selC) : null;
     $('#cv-detail').innerHTML = c ? constructDetail(c, M) : emptyState('Topic details');
+    if (S.route === 'constructs') { document.title = c ? c.name + ' · EEG Knowledge Base' : DEFAULT_TITLE; syncHash(); }
   }
 };
+/* A topic's subsections: the aspects its links name, with the links and signals under each. Names that differ only in
+   capital letters or spaces count as one. */
+const subKey = s => String(s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+function subsOf(M, c) {
+  const by = new Map();
+  (M.byC.get(c.id) || []).forEach(e => {
+    const k = subKey(e.aspect);
+    if (!k) return;
+    if (!by.has(k)) by.set(k, {name: String(e.aspect).trim().replace(/\s+/g, ' '), n: 0, ms: new Set()});
+    const x = by.get(k); x.n++; x.ms.add(e.measureId);
+  });
+  return Array.from(by.values()).sort((a, b) => b.ms.size - a.ms.size || a.name.localeCompare(b.name));
+}
 function constructDetail(c, M) {
-  const es = M.byC.get(c.id) || [];
-  const ms = measFor(M, c.id);
+  const subs = subsOf(M, c), sub = S.selSub ? subs.find(x => subKey(x.name) === subKey(S.selSub)) : null;
+  const all = M.byC.get(c.id) || [];
+  const es = sub ? all.filter(e => subKey(e.aspect) === subKey(sub.name)) : all;
+  const ms = sub ? uniq(es.map(e => e.measureId)).map(id => M.mById.get(id)).filter(Boolean) : measFor(M, c.id);
   const sigs = uniq(ms.map(sigOf));
-  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span>' + contribChip(c.provenance) + '</div><h2>' + esc(c.name) + '</h2>' +
+  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span>' + contribChip(c.provenance) +
+      '<button class="btn sm ghost cd-link" data-act="copy-link" data-h="' + esc('topic/' + c.id) + '" title="Copy a link to this topic">Copy link</button></div><h2>' + esc(c.name) + '</h2>' +
     (c.definition ? '<p class="cd-def">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') + '</div>' +
-    (arr(c.aspects).length ? '<details class="more-d"><summary>What this topic covers<span class="hint">' + plural(c.aspects.length, 'aspect') + ' named in the papers</span></summary><ul class="srcd">' +
-      c.aspects.map(a => '<li><b>' + esc(a.name) + '.</b> ' + esc(a.definition || '') + ' ' + refHTML(a.defRefs) + '</li>').join('') + '</ul></details>' : '');
+    // Subsections: pick one to see only the signals the papers link to that part of the topic.
+    (subs.length > 1 ? '<div class="subbar" role="group" aria-label="Subsections"><span class="eyebrow">Subsections</span>' +
+      '<button class="chip-b" data-act="sel-sub" data-v="" aria-pressed="' + !sub + '">All of ' + esc(c.name.toLowerCase()) + '</button>' +
+      subs.map(x => '<button class="chip-b" data-act="sel-sub" data-v="' + esc(x.name) + '" aria-pressed="' + (sub === x) + '">' + esc(x.name) + '</button>').join('') + '</div>' : '') +
+    (arr(c.aspects).filter(a => a && a.name && a.definition).length ? '<details class="more-d"><summary>What the subsections mean<span class="hint">as the papers define them</span></summary><ul class="srcd">' +
+      c.aspects.filter(a => a && a.name && a.definition).map(a => '<li><b>' + esc(a.name) + '.</b> ' + esc(a.definition || '') + ' ' + refHTML(a.defRefs) + '</li>').join('') + '</ul></details>' : '');
   if (!ms.length) {
     h += '<div class="empty">No EEG signal is linked to this topic yet. <button class="link" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest the first link</button></div>';
     return h;
   }
   const srcN = uniq(es.map(e => e.sourceId).filter(Boolean)).length;
-  h += '<p class="insum">' + (ms.length === 1
-    ? 'The papers link <b>one EEG signal</b> to this topic'
-    : 'The papers link <b>' + ms.length + ' EEG signals</b> to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Each one has a step-by-step measurement guide.</p>';
+  h += '<p class="insum">' + (sub ? 'In <b>' + esc(sub.name.toLowerCase()) + '</b>, the papers link ' : 'The papers link ') + (ms.length === 1
+    ? '<b>one EEG signal</b>'
+    : '<b>' + ms.length + ' EEG signals</b>') + (sub ? '' : ' to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Each one has a step-by-step measurement guide.' +
+    (sub ? ' <button class="link" data-act="sel-sub" data-v="">Show the whole topic</button>' : '') + '</p>';
   h += '<div class="sec"><h3>Ways to measure it</h3>';
   ms.forEach(m => {
     const mes = es.filter(e => e.measureId === m.id);
@@ -1721,11 +1823,11 @@ function constructDetail(c, M) {
     h += '<div class="mrow"><div class="nm"><div class="chips">' + sigChip(m) + (best ? claimChip(best.claimType) : '') + (np > 1 ? '<span class="chip" title="Papers that make this link">' + np + ' papers</span>' : '') + '</div><button class="link" data-act="open-measure" data-id="' + esc(m.id) + '">' + esc(m.name) + '</button>' +
       '<span class="small muted">' + esc(m.summary || m.spec || '') + '</span><button class="btn sm gd-open" data-act="open-measure" data-id="' + esc(m.id) + '">How to measure it →</button>' + citeLinks(M, mes) +
       // Admins can edit or delete each link behind this row right here.
-      (isSbAdmin() ? '<div class="adm-links">' + mes.map(e => '<div class="adm-link"><span>' + esc(mes.length > 1 ? 'Link from ' + ((M.sById.get(e.sourceId) || {}).short || 'a paper') + (e.pages ? ', p. ' + e.pages : '') : 'This link') + '</span>' +
+      (isSbAdmin() ? '<div class="adm-links">' + mes.map(e => '<div class="adm-link"><span>' + esc(mes.length > 1 ? 'Link from ' + ((M.sById.get(e.sourceId) || {}).short || 'a paper') + (e.pages ? ', ' + pgl(e.pages) : '') : 'This link') + '</span>' +
         '<button class="btn sm" data-act="edit-entry" data-id="' + esc(e.id) + '">Edit</button>' + delBtn('entries', e.id, 'Delete') + '</div>').join('') + '</div>' : '') + '</div>' +
       '<div class="viz">' + scalp(m, 64, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + (isInf(m, 'sites') ? '<span class="inf" title="Electrodes interpreted from a region named in the paper">inferred</span>' : '') + '</div></div></div></div>';
   });
-  h += '</div>' + topicHeatHTML(c, M);
+  h += '</div>' + topicHeatHTML(c, M, sub ? new Set(es.map(e => e.id)) : null);
   const shared = ms.map(m => ({m: m, others: consFor(M, m.id).filter(x => x.id !== c.id)})).filter(x => x.others.length);
   if (shared.length) {
     h += '<div class="callout warn"><b>Heads up: ' + (shared.length === 1 ? esc(short(shared[0].m)) + ' is' : shared.length + ' of these signals are') + ' also linked to other topics</b><span>A change in ' + (shared.length === 1 ? 'it' : 'them') + ' does not prove ' + esc(c.name.toLowerCase()) + ' on its own. A good design includes a condition that rules the other topics out.</span></div>';
@@ -1838,7 +1940,7 @@ V.map = {
     highlight(S.mapPin);
     renderMapInfo(M);
     const broad = M.measures.map(m => ({m: m, n: (M.consOfM.get(m.id) || []).length})).filter(x => x.n > 0).sort((a, b) => b.n - a.n || a.m.name.localeCompare(b.m.name)).slice(0, 8);
-    $('#mp-broad').innerHTML = broad.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(x.m.name) + '</button><span class="n">' + plural(x.n, 'construct') + '</span></li>').join('') || '<li class="muted">No entries yet.</li>';
+    $('#mp-broad').innerHTML = broad.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(x.m.name) + '</button><span class="n">' + plural(x.n, 'topic') + '</span></li>').join('') || '<li class="muted">No entries yet.</li>';
     const single = M.constructs.filter(c => (M.measOfC.get(c.id) || []).length === 1);
     $('#mp-single').innerHTML = single.slice(0, 14).map(c => '<li><button class="link" data-act="open-construct" data-id="' + esc(c.id) + '">' + esc(c.name) + '</button><span class="n">' + esc(short(measFor(M, c.id)[0])) + '</span></li>').join('') +
       (single.length > 14 ? '<li class="muted small">and ' + (single.length - 14) + ' more</li>' : '') || '<li class="muted">Every construct has two or more measures.</li>';
@@ -1966,7 +2068,7 @@ V.planner = {
       if (!cs.length) return;
       opts += '<optgroup label="' + esc(f.label) + '">' + cs.map(c => '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>').join('') + '</optgroup>';
     });
-    sel.innerHTML = opts || '<option value="">No constructs loaded</option>';
+    sel.innerHTML = opts || '<option value="">No topics loaded</option>';
     sel.value = S.plan.c;
     $('#pl-out').innerHTML = planHTML(M);
   }
@@ -1997,13 +2099,13 @@ function planData(M) {
   const fit = cands.filter(x => !x.misses.length), miss = cands.filter(x => x.misses.length);
   const sigs = uniq(fit.map(x => sigOf(x.m)));
   let conv;
-  if (!cands.length) conv = 'No EEG measure is linked to this construct in the sources yet.';
-  else if (!fit.length) conv = 'None of the linked measures suits this paradigm according to the sources.';
-  else if (fit.length === 1) conv = 'Only one linked measure (' + short(fit[0].m) + '). Pair it with a behavioural outcome and treat the EEG result as provisional.';
+  if (!cands.length) conv = 'No EEG signal is linked to this topic in the papers yet.';
+  else if (!fit.length) conv = 'According to the papers, none of the linked signals suits this kind of study.';
+  else if (fit.length === 1) conv = 'Only one linked signal (' + short(fit[0].m) + '). Pair it with a behavioural outcome and treat the EEG result as provisional.';
   else if (sigs.includes('time') && sigs.some(s => s !== 'time')) {
     const a = fit.find(x => sigOf(x.m) === 'time'), b = fit.find(x => sigOf(x.m) !== 'time');
-    conv = 'Both an ERP and an oscillatory measure are linked, for example ' + short(a.m) + ' and ' + short(b.m) + '. Recording both allows converging evidence.';
-  } else conv = 'All linked measures are ' + SIG[sigs[0]].label.toLowerCase() + ' measures; a behavioural outcome or a measure from another signal domain would add converging evidence.';
+    conv = 'Both an ERP and a brain rhythm are linked, for example ' + short(a.m) + ' and ' + short(b.m) + '. Recording both allows converging evidence.';
+  } else conv = 'All linked signals are ' + SIG[sigs[0]].many + '; a behavioural outcome, or a different kind of EEG signal, would add converging evidence.';
   const es = M.byC.get(c.id) || [];
   const beh = uniq(es.map(e => e.behaviour).filter(Boolean));
   const top = fit.slice(0, 2);
@@ -2017,7 +2119,7 @@ function candHTML(x, i, c) {
     '<div class="cand-viz"><div class="viz">' + scalp(m, 56, false) + '<div class="viz-r"><div class="cap" style="margin:0">' + esc(whereWhen(m)) + '</div></div></div>' +
     '<div class="badges">' + x.fits.map(t => '<span class="bdg ok" title="' + esc(t[1]) + '">✓ ' + esc(t[0]) + '</span>').join('') + x.misses.map(t => '<span class="bdg no" title="' + esc(t[1]) + '">✕ ' + esc(t[0]) + '</span>').join('') +
     '<span class="bdg">' + plural(x.mes.length, 'link') + ' · ' + plural(x.srcs.length, 'paper') + '</span>' +
-    (x.pops.length ? '<span class="bdg" title="Populations named in this signal\'s links">Studied in: ' + esc(x.pops.join('; ')) + '</span>' : '') + '</div></div>' +
+    (x.pops.length ? '<span class="bdg" title="Populations named in this signal\'s links">Studied in: ' + esc(x.pops.map(p => String(p).replace(/[.;,\s]+$/, '')).join('; ')) + '</span>' : '') + '</div></div>' +
     (x.others.length ? '<p class="small muted">Also linked to ' + x.others.map(o => esc(o.name)).join(', ') + '. Include a condition that separates these from ' + esc(c.name.toLowerCase()) + '.</p>' : '') + '</article>';
 }
 function planHTML(M) {
@@ -2031,8 +2133,88 @@ function planHTML(M) {
   h += '<div class="panel"><details class="more-d" style="border:0;padding:0"><summary>Behaviour to measure alongside<span class="hint">from the papers</span></summary>' + (P.beh.length ? '<div class="chips">' + P.beh.map(a => '<span class="chip">' + esc(a) + '</span>').join('') + '</div>' : '<p class="muted small">None recorded for this topic.</p>') + '</details>' +
     (P.mMethods.length ? '<details class="more-d"><summary>Cautions and method tips for the top signals<span class="hint">' + P.mMethods.length + '</span></summary><ul class="srcd">' + P.mMethods.map(x => '<li><b>' + esc(x.m) + ':</b> ' + esc(x.t) + ' ' + refHTML(x.refs) + '</li>').join('') + '</ul></details>' : '') +
     '<details class="more-d"><summary>Design checklist<span class="hint">' + plural(P.guidance.length, 'item') + ' from the papers</span></summary><p class="small muted">Ticks are not saved.</p><div class="checklist">' + P.guidance.map((g, i) => '<label><input type="checkbox" id="chk-' + i + '"><span><span class="tag">' + esc(g.topic || '') + '</span>' + esc(g.t) + ' ' + refHTML(g.refs) + '</span></label>').join('') + '</div></details></div>';
+  // A methods draft for one of the signals, built only from what the papers on the site say.
+  const pool = P.fit.concat(P.miss);
+  if (pool.length) {
+    if (!pool.some(x => x.m.id === S.plan.md)) S.plan.md = pool[0].m.id;
+    const pick = pool.find(x => x.m.id === S.plan.md);
+    h += '<div class="panel md"><h3>Draft the methods</h3>' +
+      '<p class="small muted">A starting draft of the EEG part of your methods or preregistration, built from the papers on this site. Text in [square brackets] is for you to fill in; every other statement cites the paper it comes from. Check each one against the paper before you use it. ' +
+      'For a full checklist of what an ERP methods section should report, see <a href="https://doi.org/10.1111/psyp.70187" target="_blank" rel="noopener">ARTEM-IS ↗</a>.</p>' +
+      (pool.length > 1 ? '<div class="field"><label for="pl-md">Signal to draft</label><select id="pl-md">' + pool.map(x => '<option value="' + esc(x.m.id) + '"' + (x === pick ? ' selected' : '') + '>' + esc(x.m.name) + '</option>').join('') + '</select></div>' : '') +
+      '<pre class="md-text" id="pl-md-text" tabindex="0" aria-label="Methods draft">' + esc(methodsDraft(M, P, pick)) + '</pre>' +
+      '<div class="btns"><button class="btn primary" data-act="copy-methods">Copy the methods draft</button></div></div>';
+  }
   h += '<div class="btns"><button class="btn primary" data-act="copy-plan">Copy plan as text</button><button class="btn ghost" data-act="contribute-c" data-id="' + esc(c.id) + '">Suggest a link for this topic</button></div>';
   return h;
+}
+/* The methods draft: one paragraph per part of a methods section. Only statements from the papers on the site are
+   written out, each with its citation; everything else is left in [brackets] for the researcher to fill in. */
+function methodsDraft(M, P, x) {
+  if (!x) return '';
+  const m = x.m, c = P.c, used = new Set(), sk = sigOf(m);
+  const au = s => String((s && s.short) || '').replace(/\s*\((\d{4}[a-z]?)\)\s*$/, ', $1');
+  const cite = refs => {
+    const parts = uniq(arr(refs).filter(r => r && r.s && M.sById.has(r.s)).map(r => { used.add(r.s); return au(M.sById.get(r.s)) + (r.p ? ', ' + pgl(r.p) : ''); }));
+    return parts.length ? ' (' + parts.join('; ') + ')' : '';
+  };
+  const sent = t => { t = String(t || '').trim(); return t ? t + (/[.!?]$/.test(t) ? '' : '.') : ''; };
+  const item = t => sent(String(t.t || '').replace(/[.\s]+$/, '') + cite(t.refs));
+  const nm = short(m), els = elecNames(m), w = winOf(m), bands = bandsOf(m);
+  const L = [];
+  L.push('METHODS DRAFT: ' + m.name + ' as a measure of ' + c.name.toLowerCase());
+  L.push('Drafted with the EEG Construct–Measure Knowledge Base on ' + today() + '. Text in [square brackets] is for you to fill in. Check every statement against the cited paper before you use it.');
+  L.push('');
+  L.push('Participants');
+  const pops = uniq(x.mes.map(e => [String(e.population || '').replace(/[.;,\s]+$/, ''), e.sourceId, e.pages]).filter(p => p[0]).map(p => p[0] + cite([{s: p[1], p: ''}])));
+  L.push('[Number] ' + POP[S.plan.pop].toLowerCase() + ' took part. [Recruitment, inclusion and exclusion criteria, and consent.]' +
+    (pops.length ? ' [For comparison, the papers on the site recorded this signal in: ' + pops.join('; ') + '.]' : ''));
+  L.push('');
+  L.push('Task');
+  // The same task named in several links is listed once, with all its citations.
+  const byTask = new Map();
+  x.mes.filter(e => e.paradigm).forEach(e => { const k = String(e.paradigm).replace(/[.;,\s]+$/, ''); if (!byTask.has(k)) byTask.set(k, []); byTask.get(k).push({s: e.sourceId, p: e.pages}); });
+  const paras = Array.from(byTask).map(t => t[0] + cite(t[1]));
+  L.push((S.plan.para === 'passive' ? '[Describe what participants did while the stimuli were presented, for example watching a silent video.]' : 'Participants completed [task].') +
+    ' [Stimuli, timing, and the number of trials per condition.]' + (paras.length ? ' [Tasks the papers on the site used for this link: ' + paras.join('; ') + '.]' : ''));
+  arr(m.setup).filter(t => /task|paradigm|stimul|trial/i.test(t.t)).forEach(t => L.push(item(t)));
+  L.push('');
+  L.push('EEG recording');
+  L.push('EEG was recorded from [number of] electrodes [system and cap] placed according to the 10–20 system' +
+    (els.length ? ', including ' + andList(els) + (isInf(m, 'sites') ? ' [the papers name a region; these sites are the site\'s reading of it]' : '') : ' [the papers on the site do not name the electrodes for this signal; choose them before recording]') +
+    '. [Online reference, ground, sampling rate, online filters and impedance.]');
+  arr(m.setup).filter(t => !/task|paradigm|stimul|trial/i.test(t.t)).forEach(t => L.push(item(t)));
+  L.push('');
+  L.push('Pre-processing');
+  L.push('[Offline filters, re-referencing, artifact correction or rejection, and the criteria for excluding trials and participants.]');
+  L.push('');
+  L.push('Measurement');
+  const where = els.length ? ' at ' + andList(els) : ' at [electrodes]';
+  const side = m.lateralized ? ' of the contralateral-minus-ipsilateral difference' : '';
+  if (sk === 'time') {
+    if (w && w.at == null) L.push('The ' + nm + ' was quantified as the [mean amplitude]' + side + where + ', ' + winText(m) + ', relative to a [pre-event baseline]' + cite(m.windowRefs || m.specRefs) + '.');
+    else if (w) L.push('The ' + nm + ' was quantified as the [mean amplitude]' + side + where + ' in a [time window] around ' + num(w.at) + ' ms after the ' + (w.lock || 'stimulus') + cite(m.windowRefs || m.specRefs) + '.');
+    else L.push('The ' + nm + ' was quantified as the [mean amplitude]' + side + where + ' from [start] to [end] ms after the [event], relative to a [pre-event baseline]. [The papers on the site do not give a time window for this signal; choose it before analysing the data, and report your choice.]');
+  } else if (bands.length) {
+    L.push('The ' + nm + ' was quantified as [power] in the ' + bands.map(bandText).join(' and ') + ' range' + where + ' [method, for example a Fourier or wavelet transform, and epoch length], [as absolute power, or relative to a baseline]' + cite(m.specRefs) + '.');
+  } else L.push('The ' + nm + ' was quantified as [the measure]' + where + '. [The papers on the site do not give its frequency range; choose it before analysing the data, and report your choice.]');
+  arr(m.quantify).forEach(t => L.push(item(t)));
+  L.push('');
+  L.push('Analysis plan');
+  L.push('[The statistical test comparing conditions or groups, using the electrodes and time window above, chosen before seeing the data.]');
+  if (x.others.length) L.push('Because the ' + nm + ' is also linked to ' + andList(x.others.map(o => o.name.toLowerCase())) + ', the design includes [a condition that separates these from ' + c.name.toLowerCase() + '].');
+  if (P.beh.length) L.push('[Behaviour recorded alongside, for example ' + P.beh.slice(0, 3).join('; ') + '.]');
+  const notes = arr(m.methods).concat(arr(m.caveats));
+  if (notes.length) {
+    L.push('');
+    L.push('Notes from the papers to cover in the methods');
+    notes.forEach(t => L.push('- ' + item(t)));
+  }
+  L.push('');
+  L.push('References');
+  Array.from(used).map(id => M.sById.get(id)).filter(Boolean).sort((a, b) => String(a.cite).localeCompare(String(b.cite)))
+    .forEach(s => L.push('- ' + s.cite + (s.doi ? (/^10\./.test(s.doi) ? ' https://doi.org/' + s.doi : ' ' + s.doi) : '')));
+  return L.join('\n');
 }
 function planText(M) {
   const P = planData(M); if (!P) return '';
@@ -2134,10 +2316,12 @@ V.sources = {
   },
   update(el) {
     const M = model();
-    if (!S.selS || !M.sById.has(S.selS)) S.selS = M.sources[0] ? M.sources[0].id : null;
+    // Keep a paper named in the address while the data is still loading.
+    if (S.status !== 'connecting' && (!S.selS || !M.sById.has(S.selS))) S.selS = M.sources[0] ? M.sources[0].id : null;
     $('#sv-nav').innerHTML = M.sources.length ? M.sources.map(s => '<button data-act="sel-source" data-id="' + esc(s.id) + '" aria-current="' + (s.id === S.selS) + '"><span>' + esc(s.short) + '<br><span class="note">' + esc(s.type || '') + '</span></span><span class="n">' + (M.byS.get(s.id) || []).length + '</span></button>').join('') : emptyState('Sources');
     const s = S.selS ? M.sById.get(S.selS) : null;
     $('#sv-detail').innerHTML = s ? sourceDetail(s, M) : emptyState('Source details');
+    if (S.route === 'sources') { document.title = s ? s.short + ' · EEG Knowledge Base' : DEFAULT_TITLE; syncHash(); }
   }
 };
 function sourceDetail(s, M) {
@@ -2146,15 +2330,16 @@ function sourceDetail(s, M) {
   const guid = M.guidance.filter(g => arr(g.refs).some(r => r.s === s.id));
   const cav = [];
   M.measures.forEach(m => arr(m.caveats).concat(arr(m.methods)).forEach(t => { if (arr(t.refs).some(r => r.s === s.id)) cav.push({m: m, t: t}); }));
-  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(s.type || 'Source') + '</span>' + contribChip(s.provenance) + '</div><h2>' + esc(s.short) + '</h2>' + (s.title ? '<p class="cd-def">' + esc(s.title) + '</p>' : '') + '</div>';
+  let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(s.type || 'Source') + '</span>' + contribChip(s.provenance) +
+    '<button class="btn sm ghost cd-link" data-act="copy-link" data-h="' + esc('paper/' + s.id) + '" title="Copy a link to this paper">Copy link</button></div><h2>' + esc(s.short) + '</h2>' + (s.title ? '<p class="cd-def">' + esc(s.title) + '</p>' : '') + '</div>';
   h += '<div class="sec"><div class="cite">' + esc(s.cite || '') + '</div><div class="btns"><button class="btn sm" data-act="copy-cite" data-id="' + esc(s.id) + '">Copy citation</button>' + (s.doi ? doiLink(s.doi) : '') + (s.title ? '<a href="https://scholar.google.com/scholar?q=' + encodeURIComponent(s.title) + '" target="_blank" rel="noopener">Google Scholar ↗</a>' : '') + '</div>' +
     (s.scope ? '<p>' + esc(s.scope) + '</p>' : '') + (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') + (s.file && !S.static ? '<p class="note">File: <span class="mono">' + esc(s.file) + '</span></p>' : '') + '</div>';
-  h += '<div class="cover"><span class="yes">' + plural(es.length, 'entry', 'entries') + '</span><span class="yes">' + plural(mids.length, 'measure') + '</span><span class="yes">' + plural(cids.length, 'construct') + '</span><span class="yes">' + plural(guid.length, 'guidance item') + '</span></div>';
-  h += '<div class="sec"><h3>Entries from this source<span class="count">' + es.length + '</span></h3>' + (es.length ? '<div class="tbl-wrap"><table class="mini"><thead><tr><th>Measure</th><th>Construct</th><th>Claim</th><th>Pages</th></tr></thead><tbody>' +
+  h += '<div class="cover"><span class="yes">' + plural(es.length, 'link') + '</span><span class="yes">' + plural(mids.length, 'EEG signal') + '</span><span class="yes">' + plural(cids.length, 'topic') + '</span><span class="yes">' + plural(guid.length, 'guidance item') + '</span></div>';
+  h += '<div class="sec"><h3>Links from this paper<span class="count">' + es.length + '</span></h3>' + (es.length ? '<div class="tbl-wrap"><table class="mini"><thead><tr><th>EEG signal</th><th>Topic</th><th>Claim</th><th>Pages</th></tr></thead><tbody>' +
     es.slice().sort((a, b) => String(a.pages).localeCompare(String(b.pages), undefined, {numeric: true})).map(e => { const m = M.mById.get(e.measureId), c = M.cById.get(e.constructId); return '<tr><td><button class="link" data-act="open-measure" data-id="' + esc(e.measureId) + '">' + esc(short(m)) + '</button></td><td><button class="link" data-act="open-construct" data-id="' + esc(e.constructId) + '">' + esc(c ? c.name : e.constructId) + '</button></td><td><span class="chips">' + claimChip(e.claimType) + evidChip(e.evidence) + '</span></td><td class="mono">' + esc(e.pages || '') + '</td></tr>'; }).join('') +
-    '</tbody></table></div>' : '<p class="muted small">No entries yet.</p>') + '</div>';
-  if (guid.length) h += '<div class="sec"><h3>Design and reporting guidance from this source</h3><ul class="srcd okl">' + guid.map(g => '<li>' + esc(g.t) + ' ' + refHTML(g.refs) + '</li>').join('') + '</ul></div>';
-  if (cav.length) h += '<div class="sec"><h3>Measure caveats and methods from this source</h3><ul class="srcd warnl">' + cav.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(short(x.m)) + '</button>: ' + esc(x.t.t) + ' ' + refHTML(x.t.refs) + '</li>').join('') + '</ul></div>';
+    '</tbody></table></div>' : '<p class="muted small">No links yet.</p>') + '</div>';
+  if (guid.length) h += '<div class="sec"><h3>Design and reporting guidance from this paper</h3><ul class="srcd okl">' + guid.map(g => '<li>' + esc(g.t) + ' ' + refHTML(g.refs) + '</li>').join('') + '</ul></div>';
+  if (cav.length) h += '<div class="sec"><h3>Cautions and method tips from this paper</h3><ul class="srcd warnl">' + cav.map(x => '<li><button class="link" data-act="open-measure" data-id="' + esc(x.m.id) + '">' + esc(short(x.m)) + '</button>: ' + esc(x.t.t) + ' ' + refHTML(x.t.refs) + '</li>').join('') + '</ul></div>';
   return h;
 }
 
@@ -2865,7 +3050,7 @@ function dupCheck() {
   show($('#f-s-dup'), ss.length ? '<b>This paper may already be on the site</b><ul>' + ss.map(s => '<li>' + useBtn('f-source', s.id, s.short) + ' <span class="muted">' + esc(s.cite || '') + '</span></li>').join('') + '</ul>' : '');
   let strong = cs.some(x => x.name >= 0.85) || ss.length > 0;
   const cid = cSel && cSel !== '__new' ? cSel : null, sid = sSel && sSel !== '__new' ? sSel : null;
-  const pg = e => (M.sById.get(e.sourceId) || {}).short + (e.pages ? ', p. ' + e.pages : '');
+  const pg = e => (M.sById.get(e.sourceId) || {}).short + (e.pages ? ', ' + pgl(e.pages) : '');
   // Each signal card: a new signal that may already be on the site, and links this one would repeat.
   CF.cards.forEach(c => {
     const mSel = cfVal(c, 'measure');
@@ -2895,7 +3080,7 @@ function dupCheck() {
 /* What an edit may change: [key, label, field of the signal card]. The topic, signal and paper of a link can be changed
    by admins only; the electrodes belong to the link in a link's edit, and to the signal in an edit of the signal alone. */
 const EDIT_FIELDS = [
-  ['constructId', 'Topic'], ['measureId', 'EEG signal'], ['sourceId', 'Paper'],
+  ['constructId', 'Topic'], ['aspect', 'Subsection'], ['measureId', 'EEG signal'], ['sourceId', 'Paper'],
   ['claim', 'What the paper says', 'claim'], ['pages', 'Page(s)', 'pages'], ['claimType', 'Link strength', 'ctype'], ['evidence', 'Kind of evidence', 'evid'],
   ['paradigm', 'Task', 'paradigm'], ['population', 'Population', 'pop'], ['behaviour', 'Behavioural outcome', 'beh'], ['cites', 'Original studies cited', 'cites'],
   ['sites', 'Electrodes'], ['points', 'Electrodes placed by position'], ['sitesNote', 'Location in the paper\'s words', 'sites-note'], ['bands', 'Frequency range']
@@ -2926,6 +3111,7 @@ function editSnapshot(entryId, measureId) {
     o.claimType = CLAIM[e.claimType] ? e.claimType : 'attributed';
     o.evidence = EVID[e.evidence] ? e.evidence : 'human-eeg';
     LINK_KEYS.forEach(k => { o[k] = String(e[k] || ''); });
+    o.aspect = String(e.aspect || '').trim();
   }
   return o;
 }
@@ -2962,6 +3148,16 @@ function guideNotesHTML(g, label) {
   GUIDE_KEYS.forEach(k => arr(g[k[0]]).forEach(t => { if (String(t).trim()) items.push('<li><b>' + esc(k[1]) + ':</b> ' + esc(t) + '</li>'); }));
   return items.length ? '<dt>' + esc(label || 'Notes for the guide') + '</dt><dd><ul class="gd-mini">' + items.join('') + '</ul></dd>' : '';
 }
+/* The Subsection field: shown once an existing topic is chosen, offering that topic's subsections. In an edit only admins
+   can move a link to another subsection, as they can move it to another topic. */
+function subField() {
+  const w = $('#f-sub-wrap'), cid = ($('#f-construct') || {}).value || '';
+  if (!w) return;
+  const c = cid && cid !== '__new' ? model().cById.get(cid) : null;
+  w.hidden = !c || (!!S.edit && (!S.edit.entryId || !canRelink()));
+  if (!c) return;
+  $('#f-sub-list').innerHTML = subsOf(model(), c).map(x => '<option value="' + esc(x.name) + '">').join('');
+}
 function startEdit(entryId, measureId) {
   const e = entryId ? S.raw.entries.get(entryId) : null, mid = e ? e.measureId : measureId;
   if (!S.raw.measures.has(mid)) return toast('That signal is no longer on the site.');
@@ -2972,7 +3168,7 @@ function startEdit(entryId, measureId) {
   $('#ct-form').reset(); cfReset();
   const c = cf0();
   cfEl(c, 'measure').value = mid;
-  if (e) { $('#f-construct').value = e.constructId; $('#f-source').value = e.sourceId || ''; }
+  if (e) { $('#f-construct').value = e.constructId; $('#f-source').value = e.sourceId || ''; $('#f-sub').value = b.aspect || ''; }
   EDIT_FIELDS.forEach(f => { if (f[2] && b[f[0]] !== undefined) cfEl(c, f[2]).value = b[f[0]]; });
   const b0 = b.bands[0];
   cfEl(c, 'band-lo').value = b0 ? b0.lo : ''; cfEl(c, 'band-hi').value = b0 ? b0.hi : ''; cfEl(c, 'band-label').value = b0 ? b0.label : '';
@@ -3012,6 +3208,8 @@ function editPayload() {
   if (canRelink()) {
     const now = {constructId: ($('#f-construct').value || '').trim(), measureId: v('measure'), sourceId: ($('#f-source').value || '').trim()};
     LINK_KEYS.forEach(k => { if (now[k] && now[k] !== b[k]) ch[k] = now[k]; });
+    const asp = ($('#f-sub').value || '').trim().replace(/\s+/g, ' ');
+    if (E.entryId && asp !== (b.aspect || '')) ch.aspect = asp;
   }
   if (c.mode === 'free') {
     // Free placement replaces the signal's fixed positions. Only switching over, with the electrodes left where they were, changes nothing.
@@ -3161,12 +3359,14 @@ async function doiFill(auto) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest links from a paper: the paper, the topic it studies, and each EEG signal it links to that topic. ' + (sbConfigured() ? 'The lab\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest links from a paper: the paper, the topic it studies, and each EEG signal it links to that topic. ' + (sbConfigured() ? 'The site\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
       '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest links from a paper</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="ct-sec" id="ct-shared"><h4 class="ct-st"><span class="step" aria-hidden="true">1</span>The paper and the topic</h4>' +
           '<div class="frow"><div class="field"><label for="f-source">Source (the paper)<span class="req">required</span></label><select id="f-source"></select></div>' +
           '<div class="field"><label for="f-construct">Topic<span class="req">required</span></label><select id="f-construct"></select></div></div>' +
+          '<div class="field" id="f-sub-wrap" hidden><label for="f-sub">Subsection<span class="req">optional</span></label><input id="f-sub" list="f-sub-list" autocomplete="off" placeholder="Pick one from the list, or type a new one">' +
+            '<datalist id="f-sub-list"></datalist><p class="small muted" id="f-sub-help">The part of the topic the paper studies, such as covert attention within selective attention. It keeps related findings together under one topic.</p></div>' +
           '<div class="subform" id="f-news" hidden><span class="eyebrow">Other reference</span>' +
             '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
               '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
@@ -3192,7 +3392,7 @@ V.contribute = {
     $('#f-doi').addEventListener('input', () => { clearTimeout(doiT); doiT = setTimeout(() => doiFill(true), 700); });
     $('#f-cite').addEventListener('input', ev => { if (ev.isTrusted) { delete ev.target.dataset.doi; } });
     $('#ct-form').addEventListener('reset', () => { delete $('#f-cite').dataset.doi; doiMsg(DOI_HELP, ''); });
-    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = !!S.edit || $('#f-construct').value !== '__new'; dupCheck(); });
+    $('#f-construct').addEventListener('change', () => { $('#f-newc').hidden = !!S.edit || $('#f-construct').value !== '__new'; if (!S.edit) $('#f-sub').value = ''; subField(); dupCheck(); });
     $('#f-source').addEventListener('change', () => { $('#f-news').hidden = !!S.edit || $('#f-source').value !== '__new'; dupCheck(); });
     // One set of listeners serves every signal card.
     const sigs = $('#sigs');
@@ -3302,6 +3502,7 @@ V.contribute = {
     CF.cards.forEach(c => { cfEl(c, 'newm').hidden = !!E || cfVal(c, 'measure') !== '__new'; plVisibility(c); });
     $('#f-newc').hidden = !!E || $('#f-construct').value !== '__new';
     $('#f-news').hidden = !!E || $('#f-source').value !== '__new';
+    subField();
     dupCheck();
     const lockAll = () => $$('#ct-form input, #ct-form select, #ct-form textarea, #ct-form button').forEach(x => { x.disabled = CF.locked; });
     if (S.sbMode) {
@@ -3311,7 +3512,7 @@ V.contribute = {
         : signed
           ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>' + (isSbAdmin()
             ? 'You\'re an admin, so what you send goes on the site straight away, with no review. Each addition is listed under Activity on the Admin page.'
-            : 'Your suggestion is emailed to the lab\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
+            : 'Your suggestion is emailed to the site\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. New here? Signing in creates your account.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       lockAll();
       if (E) { if (!canRelink()) [cfEl(cf0(), 'measure'), $('#f-construct'), $('#f-source')].forEach(x => { if (x) x.disabled = true; }); $('#f-cancel').disabled = false; }
@@ -3448,6 +3649,7 @@ async function submitEntry(ev) {
   }
   const shared = {
     constructId: cSel === '__new' ? null : cSel,
+    aspect: cSel === '__new' ? '' : v('f-sub').replace(/\s+/g, ' '),
     newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
     sourceId: sSel === '__new' ? null : sSel,
     reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null
@@ -3506,7 +3708,7 @@ async function submitEntry(ev) {
       ln('EEG signal', mName),
       mSel === '__new' ? ln('Signal type', (SIG[cfVal(c, 'm-signal')] || SIG.time).plain) : '',
       mSel === '__new' ? ln('How the paper specifies it', cfVal(c, 'm-spec')) : '',
-      ln('Topic', cName),
+      ln('Topic', cName), ln('Subsection', p.aspect),
       cSel === '__new' ? ln('Topic area', (FAM[v('f-c-family')] || FAM.other).label) : '',
       ln('Paper', sName), ln('Pages', p.pages),
       ln('What the paper says (paraphrase)', p.claim),
@@ -3887,6 +4089,7 @@ V.admin = {
           '<span class="adm-btns"><button class="btn sm" data-act="resend-invite" data-email="' + esc(i.email) + '">Send again</button><button class="btn sm ghost" data-act="withdraw-invite" data-email="' + esc(i.email) + '">Withdraw</button></span></li>';
       }).join('') + '</ul>' : '') + '</section>';
     h += linksAdminHTML(M);
+    h += feedbackAdminHTML(A);
     if (unused.length) h += '<section class="panel"><h3>Records with no links<span class="count">' + unused.length + '</span></h3><p class="small muted">Signals, topics or papers left behind after their last link was deleted.</p><ul class="adm-list">' +
       unused.map(u => '<li><span>' + esc(u[2]) + ' <span class="sub">' + kindLabel(u[0]) + '</span></span>' + delBtn(u[0], u[1], 'Delete') + '</li>').join('') + '</ul></section>';
     h += '</div><div class="adm-col">';
@@ -3949,7 +4152,7 @@ function linksAdminHTML(M) {
     '<p class="small muted">Change anything about a link (its topic, signal, paper, page, claim, link strength, electrodes and the rest), or delete it. Changes go live straight away, and both edits and deletions can be undone from the activity list.</p>' +
     '<input id="lk-q" type="search" placeholder="Find a link by topic, signal, paper or claim" aria-label="Find a link" maxlength="200" value="' + esc(S.lkQ || '') + '">' +
     (shown.length ? '<ul class="adm-list lk-list">' + shown.map(r => '<li><span><b>' + esc(r.c || 'Unknown topic') + '</b> → ' + esc(r.m || 'Unknown signal') +
-        '<br><span class="sub">' + esc((r.s || 'No paper') + (r.e.pages ? ', p. ' + r.e.pages : '')) + (r.e.claim ? ' · ' + esc(String(r.e.claim).slice(0, 90)) + (String(r.e.claim).length > 90 ? '…' : '') : '') + '</span></span>' +
+        '<br><span class="sub">' + esc((r.s || 'No paper') + (r.e.pages ? ', ' + pgl(r.e.pages) : '')) + (r.e.claim ? ' · ' + esc(String(r.e.claim).slice(0, 90)) + (String(r.e.claim).length > 90 ? '…' : '') : '') + '</span></span>' +
         '<span class="adm-btns"><button class="btn sm" data-act="edit-entry" data-id="' + esc(r.e.id) + '">Edit</button>' + delBtn('entries', r.e.id, 'Delete') + '</span></li>').join('') + '</ul>'
       : '<p class="small muted">' + (rows.length ? 'No link matches “' + esc(S.lkQ) + '”.' : 'No links yet.') + '</p>') + '</section>';
 }
@@ -4109,7 +4312,7 @@ function drawerHTML(m, M) {
     ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head.</p>' +
       es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
         const c = M.cById.get(e.constructId), src = e.sourceId ? M.sById.get(e.sourceId) : null;
-        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', p. ' + e.pages : '')) + '</span></button>';
+        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', ' + pgl(e.pages) : '')) + '</span></button>';
       }).join('') +
       '<button data-act="edit-measure" data-id="' + esc(m.id) + '"><span>Only the electrodes and frequency range</span><span class="sub">No link changes</span></button></div>'
     : '';
@@ -4182,7 +4385,7 @@ function guideHTML(m, M) {
     ? '<div class="dr-editmenu" role="group" aria-label="What to edit"><p class="small muted">Which link do you want to edit? Each one includes the electrodes on the head and notes for this guide.</p>' +
       es.slice().sort((a, b) => String((M.cById.get(a.constructId) || {}).name).localeCompare(String((M.cById.get(b.constructId) || {}).name))).map(e => {
         const c = M.cById.get(e.constructId), src = e.sourceId ? M.sById.get(e.sourceId) : null;
-        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', p. ' + e.pages : '')) + '</span></button>';
+        return '<button data-act="edit-entry" data-id="' + esc(e.id) + '"><span>' + esc(c ? c.name : 'Unknown topic') + '</span><span class="sub">' + esc((src ? src.short : 'No paper') + (e.pages ? ', ' + pgl(e.pages) : '')) + '</span></button>';
       }).join('') +
       '<button data-act="edit-measure" data-id="' + esc(m.id) + '"><span>Only the electrodes and frequency range</span><span class="sub">No link changes</span></button></div>'
     : '';
@@ -4211,7 +4414,8 @@ function guideHTML(m, M) {
   }).join('') + '</ul>';
   const note = m.sitesNote && !/^not (given|specified)/i.test(m.sitesNote) ? m.sitesNote : '';
   h += gdStep(1, 'Set up the recording',
-    '<div class="gd-setup"><figure class="gd-fig">' + scalp(m, 220, true) + '<figcaption>Head seen from above, nose at the top</figcaption></figure><div class="gd-setup-r">' +
+    '<div class="gd-setup"><figure class="gd-fig">' + scalp(m, 220, true) + '<figcaption>Head seen from above, nose at the top</figcaption>' +
+      (known.length || pts.length ? '<button class="btn sm ghost fig-save" data-act="save-fig" data-name="' + esc('electrodes-' + slug(short(m) || m.name)) + '">Download image</button>' : '') + '</figure><div class="gd-setup-r">' +
       (known.length || pts.length ? '<h3>Where to put the EEG electrodes</h3><p class="small muted">Click an electrode to find it on the head.</p>' + elList
         : '<div class="callout warn"><b>The papers on the site do not give the electrode sites</b><span>Choose them before you record, and report your choice.' +
           (canSuggestEdit() ? ' If a paper gives them, <button class="link" data-act="edit-measure" data-id="' + esc(m.id) + '">add them</button>.' : '') + '</span></div>') +
@@ -4254,6 +4458,7 @@ function guideHTML(m, M) {
   h += '<details class="more-d"><summary>Evidence from the papers<span class="hint">' + plural(es.length, 'link') + ' with page numbers</span></summary><div class="entries">' +
     (es.length ? es.map(e => entryCard(e, M, {showConstruct: true})).join('') : '<div class="empty">No links yet.</div>') + '</div></details>';
   if (sib.length) h += '<details class="more-d"><summary>Related signals<span class="hint">' + esc(fam.label) + '</span></summary><p class="small">' + sib.map(x => '<button class="link" data-act="open-measure" data-id="' + esc(x.id) + '">' + esc(x.name) + '</button>').join(' · ') + '</p></details>';
+  h += feedbackHTML(m);
   h += '<div class="btns gd-actions"><button class="btn primary" data-act="copy-prereg" data-id="' + esc(m.id) + '">Copy the guide</button><button class="btn" data-act="print">Print this guide</button><button class="btn ghost" data-act="contribute-m" data-id="' + esc(m.id) + '">Suggest a link</button></div>';
   return h;
 }
@@ -4365,14 +4570,21 @@ async function download(filename, data) {
 
 /* ---------- routing + rendering ---------- */
 const DEFAULT_TITLE = document.title;
-const hashFor = r => r === 'guide' && S.guideId ? 'guide/' + S.guideId : r;
-/* The page named in the address bar; a guide's address carries its signal (#guide/<id>). */
+/* Each guide, topic and paper has its own address (#guide/<id>, #topic/<id>, #paper/<id>), so it can be linked to. */
+const hashFor = r => r === 'guide' && S.guideId ? 'guide/' + S.guideId : r === 'constructs' && S.selC ? 'topic/' + S.selC : r === 'sources' && S.selS ? 'paper/' + S.selS : r;
+/* The page named in the address bar. */
 function routeFromHash() {
   let h = (location.hash || '').slice(1);
   try { h = decodeURIComponent(h); } catch (e) {}
   if (h.indexOf('guide/') === 0) { S.guideId = h.slice(6); return 'guide'; }
+  if (h.indexOf('topic/') === 0) { if (S.selC !== h.slice(6)) { S.selC = h.slice(6); S.selSub = ''; } return 'constructs'; }
+  if (h.indexOf('paper/') === 0) { S.selS = h.slice(6); return 'sources'; }
   if (!h) return 'overview';
   return ROUTES.includes(h) && h !== 'guide' ? h : null;
+}
+/* Picking a topic or paper on its page updates the address in place: no reload, no new history entry. */
+function syncHash() {
+  try { const h = hashFor(S.route); if (decodeURIComponent(location.hash.slice(1)) !== h) history.replaceState(null, '', '#' + h); } catch (e) {}
 }
 function go(r, setHash) {
   if (!ROUTES.includes(r) || (r === 'guide' && !S.guideId)) r = 'overview';
@@ -4996,9 +5208,11 @@ function onAct(t) {
     case 'go': closeDrawer(); go(t.getAttribute('data-route')); break;
     case 'more': toggleMore(); break;
     case 'open-measure': closeSearch(); openMeasure(id); break;
-    case 'open-construct': closeSearch(); closeDrawer(); S.selC = id; S.cq = ''; if (M.cById.has(id) && S.cFam !== 'all' && famOf(M.cById.get(id)) !== S.cFam) S.cFam = 'all'; go('constructs'); break;
+    case 'copy-link': copyText(location.href.split('#')[0] + '#' + (t.getAttribute('data-h') || ''), 'Link'); break;
+    case 'sel-sub': S.selSub = S.selSub === t.getAttribute('data-v') ? '' : t.getAttribute('data-v'); render(); break;
+    case 'open-construct': closeSearch(); closeDrawer(); if (S.selC !== id) S.selSub = ''; S.selC = id; S.cq = ''; if (M.cById.has(id) && S.cFam !== 'all' && famOf(M.cById.get(id)) !== S.cFam) S.cFam = 'all'; go('constructs'); break;
     case 'open-source': closeSearch(); closeDrawer(); S.selS = id; go('sources'); break;
-    case 'sel-construct': S.selC = id; TOUR.flags.selc = true; render(); { const d = $('#cv-detail'); if (d && window.innerWidth <= 900) d.scrollIntoView({block: 'start'}); } break;
+    case 'sel-construct': if (S.selC !== id) S.selSub = ''; S.selC = id; TOUR.flags.selc = true; render(); { const d = $('#cv-detail'); if (d && window.innerWidth <= 900) d.scrollIntoView({block: 'start'}); } break;
     case 'sel-source': S.selS = id; render(); { const d = $('#sv-detail'); if (d && window.innerWidth <= 900) d.scrollIntoView({block: 'start'}); } break;
     case 'close-drawer': closeDrawer(); break;
     case 'close-modal': $('#modal').hidden = true; break;
@@ -5030,6 +5244,15 @@ function onAct(t) {
     case 'copy-prereg': { const m = M.mById.get(id); if (m) copyText(preregText(m, M), 'Guide'); TOUR.flags.prereg = true; break; }
     case 'copy-cite': { const s = M.sById.get(id); if (s) copyText(s.cite + (s.doi ? ' https://doi.org/' + s.doi : ''), 'Citation'); break; }
     case 'copy-plan': copyText(planText(M), 'Study plan'); TOUR.flags.plan = true; break;
+    case 'fb-yn': sendFeedback(id, t.getAttribute('data-v') === 'yes'); break;
+    case 'fb-send': sendFeedback(id); break;
+    case 'fb-del':
+      if (S.armed !== 'fb-del/' + id) { armKey('fb-del/' + id); break; }
+      S.armed = null;
+      sbCall('delete_feedback', {p_id: id}, 'Feedback deleted').then(r => { if (r) { loadAdmin(); loadFeedback(); } });
+      break;
+    case 'save-fig': { const f = t.closest('figure'); saveFigure(f && f.querySelector('svg'), t.getAttribute('data-name') || 'eeg-figure', Number(t.getAttribute('data-n')) || 0); } break;
+    case 'copy-methods': { const P = planData(M), x = P && P.fit.concat(P.miss).find(y => y.m.id === S.plan.md); if (x) copyText(methodsDraft(M, P, x), 'Methods draft'); } break;
     case 'copy-index': copyText(indexCSV(M), 'Measure Index CSV'); break;
     case 'copy-entries': copyText(entriesCSV(M), 'Entries CSV'); break;
     case 'copy-refs': copyText(refsText(M) || 'No sources recorded.', 'Reference list'); break;
@@ -5158,6 +5381,7 @@ function bind() {
     TOUR.typedAt = Date.now();
     if (ev.target.id === 'mf-q') { S.mf.q = ev.target.value; V.measures.update($('#v-measures')); }
     else if (ev.target.id === 'cv-q') { S.cq = ev.target.value; V.constructs.update($('#v-constructs')); }
+    else if (ev.target.id === 'fb-text') { if (S.guideId) S.fb.draft[S.guideId] = ev.target.value; }
     else if (ev.target.id === 'acc-q') { S.accQ = ev.target.value; V.admin.update($('#v-admin')); }
     else if (ev.target.id === 'lk-q') { S.lkQ = ev.target.value; V.admin.update($('#v-admin')); }
   });
@@ -5168,13 +5392,14 @@ function bind() {
     else if (t.id === 'mf-src') { S.mf.source = t.value; render(); }
     else if (t.id === 'mf-sort') { S.mf.sort = t.value; render(); }
     else if (t.id === 'pl-c') { S.plan.c = t.value; TOUR.flags.plc = true; render(); }
+    else if (t.id === 'pl-md') { S.plan.md = t.value; render(); }
     else if (t.id === 'ep-review' || t.id === 'ep-added') saveEmailPrefs();
     else if (t.id === 'tm-hints') setHints(t.checked);
     else if (t.id === 'tm-pet') setPet(t.checked);
     else if (t.name === 'pl-pop') { S.plan.pop = t.value; render(); }
     else if (t.name === 'pl-para') { S.plan.para = t.value; render(); }
   });
-  const onNav = () => { const r = routeFromHash(); if (r && (r !== S.route || r === 'guide')) go(r, false); };
+  const onNav = () => { const r = routeFromHash(); if (r && (r !== S.route || r === 'guide')) go(r, false); else if (r === 'constructs' || r === 'sources') render(); };
   window.addEventListener('hashchange', onNav);
   window.addEventListener('popstate', onNav);
   ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input'].forEach(t => document.addEventListener(t, () => { TOUR.lastAct = Date.now(); }, {capture: true, passive: true}));
@@ -5354,9 +5579,64 @@ async function refreshStatus() {
       if (!res.error && res.data) { S.me.canEdit = !!res.data.is_admin; S.me.isOwner = !!res.data.is_owner; S.me.email = res.data.email || S.me.email; }
     } catch (e) {}
   }
-  await loadSubs();
+  await Promise.all([loadSubs(), loadFeedback()]);
   if (S.me.canEdit) await loadAdmin(); else S.adm = {admins: [], invites: [], activity: [], loaded: false};
   renderAcct(); scheduleUpdate();
+}
+/* Feedback on the guides: how many people found each one useful, and what the signed-in person said about each. */
+async function loadFeedback() {
+  if (!S.sb) return;
+  try {
+    const res = await Promise.all([S.sb.rpc('guide_feedback_counts'), S.session ? S.sb.rpc('my_feedback') : Promise.resolve({data: []})]);
+    if (!res[0].error) S.fb.counts = new Map(arr(res[0].data).map(r => [r.measure_id, {yes: Number(r.useful) || 0, no: Number(r.not_useful) || 0}]));
+    S.fb.mine = new Map(res[1].error ? [] : arr(res[1].data).map(r => [r.measure_id, r]));
+  } catch (e) {}
+  scheduleUpdate();
+}
+/* Yes or No sends straight away, with any comment written so far; Send also sends the comment. */
+async function sendFeedback(mid, useful) {
+  const ta = $('#fb-text'), msg = $('#fb-msg'), mine = S.fb.mine.get(mid);
+  const say = (t, err) => { if (msg) { msg.textContent = t; msg.className = 'fmsg' + (err ? ' err' : ''); } };
+  if (!S.sb || !S.session) return say('Sign in first.', true);
+  const u = useful !== undefined ? useful : (mine ? mine.useful : null), comment = ta ? ta.value.trim() : '';
+  if (u === null && !comment) return say('Choose Yes or No, or write a comment.', true);
+  if (S.busy) return;
+  S.busy = true; say('Sending…');
+  try {
+    const res = await S.sb.rpc('send_feedback', {p_measure: mid, p_useful: u, p_comment: comment});
+    if (res.error) throw res.error;
+    S.fb.mine.set(mid, res.data); delete S.fb.draft[mid];
+    toast('Thanks for your feedback');
+    S.busy = false;
+    await Promise.all([loadFeedback(), S.me.canEdit ? loadAdmin() : null]);
+  } catch (e) { S.busy = false; say(sbErr(e), true); }
+}
+function feedbackHTML(m) {
+  if (!S.sbMode || S.sbNote === 'down') return '';
+  const mine = S.fb.mine.get(m.id), cnt = S.fb.counts.get(m.id), yes = cnt ? cnt.yes : 0;
+  let h = '<section class="panel gd-fb" id="gd-fb"><h2>Was this guide useful?</h2>' +
+    (yes ? '<p class="small muted">' + plural(yes, 'signed-in researcher') + (yes === 1 ? ' has' : ' have') + ' found it useful.</p>' : '');
+  if (!S.session) return h + '<p class="small">Sign in to rate this guide, or to tell the admins what is missing or wrong. Feedback is only taken from signed-in accounts, which keeps out spam.</p>' +
+    '<div class="btns"><button class="btn sm" data-act="signin">Sign in</button></div></section>';
+  const u = mine ? mine.useful : null, draft = S.fb.draft[m.id] !== undefined ? S.fb.draft[m.id] : (mine ? mine.comment || '' : '');
+  return h + '<div class="btns fb-yn" role="group" aria-label="Was this guide useful?"><button class="btn sm" data-act="fb-yn" data-v="yes" data-id="' + esc(m.id) + '" aria-pressed="' + (u === true) + '">Yes</button>' +
+      '<button class="btn sm" data-act="fb-yn" data-v="no" data-id="' + esc(m.id) + '" aria-pressed="' + (u === false) + '">No</button></div>' +
+    '<div class="field"><label for="fb-text">What would make it better, or what is wrong? (optional)</label><textarea id="fb-text" rows="3" maxlength="2000" placeholder="For example: the paper gives the time window on page 4, and it is 250–500 ms.">' + esc(draft) + '</textarea></div>' +
+    '<div class="btns"><button class="btn primary sm" data-act="fb-send" data-id="' + esc(m.id) + '">' + (mine ? 'Update my feedback' : 'Send feedback') + '</button>' +
+      '<span class="fmsg" id="fb-msg" role="status">' + (mine ? 'Sent ' + esc(fmtDate(mine.updated_at)) + '. ' : '') + 'Only the site\'s admins see what you write.</span></div></section>';
+}
+function feedbackAdminHTML(A) {
+  const FB = A.feedback || [];
+  return '<section class="panel"><h3>Feedback on the guides<span class="count">' + FB.length + '</span></h3>' +
+    '<p class="small muted">From signed-in accounts only: one piece of feedback per person per guide, at most 30 guides a day each, and at most two links in a comment. Delete spam here' + (S.me.isOwner ? ', and block the email under Blocked emails if it continues' : '') + '.</p>' +
+    (FB.length ? '<ul class="adm-list fb-list">' + FB.map(f => {
+      const armed = S.armed === 'fb-del/' + f.id;
+      return '<li><span><button class="link" data-act="open-measure" data-id="' + esc(f.measure_id) + '">' + esc(f.measure_name || f.measure_id) + '</button> ' +
+        (f.useful === true ? '<span class="bdg ok">Useful</span>' : f.useful === false ? '<span class="bdg no">Not useful</span>' : '') +
+        (f.comment ? '<br><span class="fb-c">' + esc(f.comment) + '</span>' : '') +
+        '<br><span class="sub">' + esc(f.user_email || '') + ' · ' + esc(fmtDate(f.updated_at)) + '</span></span>' +
+        '<button class="btn sm ghost' + (armed ? ' armed' : '') + '" data-act="fb-del" data-id="' + esc(f.id) + '">' + (armed ? 'Click again to delete' : 'Delete') + '</button></li>';
+    }).join('') + '</ul>' : '<p class="small muted">No feedback yet.</p>') + '</section>';
 }
 function subRow(r) {
   return Object.assign({}, r.payload || {}, {id: r.id, status: r.status, submittedAt: r.created_at, submitterEmail: r.submitter_email,
@@ -5382,10 +5662,11 @@ async function loadAdmin() {
       S.me.isOwner ? S.sb.from('blocked_emails').select('email,note,blocked_at').order('blocked_at', {ascending: false}) : Promise.resolve({data: []}),
       S.me.isOwner ? S.sb.rpc('list_accounts') : Promise.resolve({data: []}),
       S.sb.from('account_invites').select('email,invited_by_email,invited_at,expires_at').order('invited_at', {ascending: false}),
-      S.sb.rpc('my_email_prefs')
+      S.sb.rpc('my_email_prefs'),
+      S.sb.rpc('list_feedback', {p_limit: 200})
     ]);
     S.adm = {admins: res[0].data || [], invites: res[1].data || [], activity: res[2].data || [], owners: (res[3].data || []).map(o => String(o.email).toLowerCase()), blocked: res[4].data || [],
-      accounts: res[5].data || [], accountInvites: res[6].data || [], prefs: !res[7].error && res[7].data ? res[7].data : false, loaded: true};
+      accounts: res[5].data || [], accountInvites: res[6].data || [], prefs: !res[7].error && res[7].data ? res[7].data : false, feedback: res[8].error ? [] : arr(res[8].data), loaded: true};
   } catch (e) { console.warn('admin', e); }
   scheduleUpdate();
 }
