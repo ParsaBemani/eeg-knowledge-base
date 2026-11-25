@@ -449,6 +449,8 @@ table.mini{min-width:600px}
 .chip-b[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .cd-head h2{font-size:28px;font-stretch:112%}
 .cd-def{font-size:16px;color:var(--ink-2);max-width:68ch}
+.cd-stat{font-size:14px;color:var(--ink-3);margin:-2px 0 6px}
+.cd-stat b{color:var(--ink-2);font-weight:600}
 .mrow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 20px;padding:14px 0;border-top:1px solid var(--grid)}
 .mrow:first-of-type{border-top:0}
 .mrow .nm{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -1763,14 +1765,13 @@ V.constructs = {
     list.forEach(c => {
       const f = famOf(c);
       if (heads && f !== lastF) { nav += '<h4>' + esc(FAM[f].label) + '</h4>'; lastF = f; }
-      const n = (M.measOfC.get(c.id) || []).length, on = c.id === S.selC;
-      nav += '<button data-act="sel-construct" data-id="' + esc(c.id) + '" aria-current="' + on + '"><span>' + esc(c.name) + '</span><span class="n" title="' + plural(n, 'linked signal') + '">' + n + '</span></button>';
+      // The number beside a topic is how many subsections it splits into (none shown when it is not split).
+      const subs = subsOf(M, c), ns = subs.length > 1 ? subs.length : 0, on = c.id === S.selC;
+      nav += '<button data-act="sel-construct" data-id="' + esc(c.id) + '" aria-current="' + on + '"><span>' + esc(c.name) + '</span>' +
+        (ns ? '<span class="n" title="' + plural(ns, 'subsection') + '">' + ns + '</span>' : '') + '</button>';
       // The open topic lists its subsections underneath, to pick from.
-      if (on) {
-        const subs = subsOf(M, c);
-        if (subs.length > 1) nav += '<div class="cnav-subs" role="group" aria-label="Subsections of ' + esc(c.name) + '">' + subs.map(x =>
-          '<button data-act="sel-sub" data-v="' + esc(x.name) + '" aria-current="' + (subKey(S.selSub) === subKey(x.name)) + '"><span>' + esc(x.name) + '</span><span class="n" title="' + plural(x.ms.size, 'linked signal') + '">' + x.ms.size + '</span></button>').join('') + '</div>';
-      }
+      if (on && ns) nav += '<div class="cnav-subs" role="group" aria-label="Subsections of ' + esc(c.name) + '">' + subs.map(x =>
+        '<button data-act="sel-sub" data-v="' + esc(x.name) + '" aria-current="' + (subKey(S.selSub) === subKey(x.name)) + '"><span>' + esc(x.name) + '</span></button>').join('') + '</div>';
     });
     $('#cv-nav').innerHTML = nav || (M.constructs.length ? '<p class="small muted" style="padding:8px">No topic matches “' + esc(S.cq) + '”.</p>' : emptyState('Topics'));
     const c = S.selC ? M.cById.get(S.selC) : null;
@@ -1797,8 +1798,11 @@ function constructDetail(c, M) {
   const es = sub ? all.filter(e => subKey(e.aspect) === subKey(sub.name)) : all;
   const ms = sub ? uniq(es.map(e => e.measureId)).map(id => M.mById.get(id)).filter(Boolean) : measFor(M, c.id);
   const sigs = uniq(ms.map(sigOf));
+  // How many papers the whole topic rests on, shown under its name.
+  const allSrc = uniq(all.map(e => e.sourceId).filter(Boolean)).length;
   let h = '<div class="cd-head"><div class="chips"><span class="eyebrow">' + esc(FAM[famOf(c)].label) + '</span>' + contribChip(c.provenance) +
       '<button class="btn sm ghost cd-link" data-act="copy-link" data-h="' + esc('topic/' + c.id) + '" title="Copy a link to this topic">Copy link</button></div><h2>' + esc(c.name) + '</h2>' +
+    (allSrc ? '<p class="cd-stat">Based on <b>' + plural(allSrc, 'paper') + '</b></p>' : '') +
     (c.definition ? '<p class="cd-def">' + esc(c.definition) + ' ' + refHTML(c.defRefs) + '</p>' : '') + '</div>' +
     // Subsections: pick one to see only the signals the papers link to that part of the topic.
     (subs.length > 1 ? '<div class="subbar" role="group" aria-label="Subsections"><span class="eyebrow">Subsections</span>' +
@@ -1813,7 +1817,7 @@ function constructDetail(c, M) {
   const srcN = uniq(es.map(e => e.sourceId).filter(Boolean)).length;
   h += '<p class="insum">' + (sub ? 'In <b>' + esc(sub.name.toLowerCase()) + '</b>, the papers link ' : 'The papers link ') + (ms.length === 1
     ? '<b>one EEG signal</b>'
-    : '<b>' + ms.length + ' EEG signals</b>') + (sub ? '' : ' to this topic') + ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') + '. Each one has a step-by-step measurement guide.' +
+    : '<b>' + ms.length + ' EEG signals</b>') + (sub ? ', based on ' + plural(es.length, 'link') + ' from ' + plural(srcN, 'paper') : ' to this topic') + '. Each one has a step-by-step measurement guide.' +
     (sub ? ' <button class="link" data-act="sel-sub" data-v="">Show the whole topic</button>' : '') + '</p>';
   h += '<div class="sec"><h3>Ways to measure it</h3>';
   ms.forEach(m => {
@@ -4772,7 +4776,7 @@ const TRACKS = {
         list: ['Pick a topic', 'See its EEG signals and how firmly each is linked', 'Open the papers behind them', 'See where studies put the electrodes']},
       {target: '.tabs [data-route="constructs"]', place: ['bottom'], task: 'Open Topics', text: 'Topics is the second tab in the top bar.', done: () => S.route === 'constructs'},
       {route: 'constructs', target: () => $('#cv-nav'), place: ['right', 'bottom', 'top'], task: 'Pick a topic from the list',
-        text: 'The number beside each topic is how many EEG signals the papers link to it.',
+        text: 'The number beside a topic is how many subsections it has. Pick one to see them listed underneath.',
         done: () => !!S.selC && !!TOUR.flags.selc && !!$('#cv-detail .mrow')},
       {route: 'constructs', target: () => $('#cv-detail .mrow'), place: SIDE, next: 'Got it',
         text: 'Each EEG signal linked to this topic, with how firmly the papers link it (for example “Stated by the paper”). “How to measure it →” opens its step-by-step guide.'},
