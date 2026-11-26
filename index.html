@@ -2982,7 +2982,7 @@ function updateSubmitLabel() {
   const b = $('#f-submit');
   if (!b || !S.sbMode) return;
   const n = CF.cards.length, E = S.edit, admin = isSbAdmin();
-  b.textContent = E ? (admin ? 'Save edit' : 'Send edit for review') : admin ? (n > 1 ? 'Add ' + n + ' links to the site' : 'Add to the site') : (n > 1 ? 'Send ' + n + ' suggestions' : 'Send suggestion');
+  b.textContent = E ? (admin ? 'Save edit' : 'Send edit for review') : admin ? (n > 1 ? 'Send ' + n + ' links for review' : 'Send for review') : (n > 1 ? 'Send ' + n + ' suggestions' : 'Send suggestion');
 }
 function placeText(s) {
   const el = arr(s.sites).concat(pointsOf(s).map(pointText)).join(', ');
@@ -3363,7 +3363,7 @@ async function doiFill(auto) {
 
 V.contribute = {
   mount(el) {
-    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest links from a paper: the paper, the topic it studies, and each EEG signal it links to that topic. ' + (sbConfigured() ? 'The site\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Links and edits from admins go on the site without review.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
+    el.innerHTML = '<div class="sh"><div><h2>Contribute</h2></div><p>Suggest links from a paper: the paper, the topic it studies, and each EEG signal it links to that topic. ' + (sbConfigured() ? 'The site\'s admins get each suggestion by email and accept or reject it; accepted links appear on the site straight away. Only peer-reviewed papers can be added. New links from admins are reviewed too, by a second admin; edits from admins go on the site straight away.' : window.KB_STATIC ? 'Suggestions posted from here are checked and added to the site automatically within a few minutes.' : 'A curator reviews each suggestion; accepted links appear across the site straight away.') + ' <button class="link" data-act="tour-start" data-track="contribute">Walk me through it</button></p></div>' +
       '<div class="ct"><section class="panel"><h3 id="ct-h">Suggest links from a paper</h3><div id="ct-gate" class="gate"></div><div id="ct-edit" hidden></div>' +
       '<form id="ct-form" novalidate>' +
         '<div class="ct-sec" id="ct-shared"><h4 class="ct-st"><span class="step" aria-hidden="true">1</span>The paper and the topic</h4>' +
@@ -3375,6 +3375,7 @@ V.contribute = {
             '<div class="field wide"><label for="f-doi">DOI or link</label><div class="doi-row"><input id="f-doi" placeholder="e.g. 10.3758/APP.72.8.2031" autocomplete="off" spellcheck="false" aria-describedby="f-doi-msg">' +
               '<button type="button" class="btn sm" data-act="doi-fill">Fill in from DOI</button></div><p class="small muted" id="f-doi-msg" role="status">' + DOI_HELP + '</p></div>' +
             '<div class="field wide"><label for="f-cite">Full citation</label><input id="f-cite" placeholder="Author, A., & Author, B. (Year). Title. Journal, volume, pages."></div>' +
+            '<label class="ep-opt"><input type="checkbox" id="f-peer"><span><b>This paper is peer-reviewed</b><span class="sub">Only peer-reviewed papers can be added: not preprints, theses, posters or conference abstracts.</span></span></label>' +
             '<div class="dupbox" id="f-s-dup" hidden></div></div>' +
           '<div class="subform" id="f-newc" hidden><span class="eyebrow">New topic</span>' +
             '<div class="field"><label for="f-c-name">Topic name</label><input id="f-c-name"></div><div class="dupbox" id="f-c-dup" hidden></div>' +
@@ -3515,7 +3516,7 @@ V.contribute = {
         ? '<div class="callout warn"><b>Suggestions are paused</b><span>The live database could not be reached, so the site is showing a saved copy of the data. Try again later.</span></div>'
         : signed
           ? '<div class="callout"><b>Signed in as ' + esc(S.me.email || '') + '</b><span>' + (isSbAdmin()
-            ? 'You\'re an admin, so what you send goes on the site straight away, with no review. Each addition is listed under Activity on the Admin page.'
+            ? 'You\'re an admin. New links you send go to the other admins, and one of them has to accept each link before it appears. Your edits to existing links go on the site straight away.'
             : 'Your suggestion is emailed to the site\'s admins. You\'ll get an email when it has been reviewed.') + '</span></div>'
           : '<div class="callout"><b>Sign in to suggest a link</b><span>We email you a sign-in code; there\'s no password. Signing in tells the admins who suggested each link, and lets us email you the outcome. New here? Signing in creates your account.</span><div class="btns"><button class="btn primary sm" type="button" data-act="signin">Sign in</button></div></div>';
       lockAll();
@@ -3570,10 +3571,13 @@ function subHTML(s, M) {
       '<span class="qmeta">' + (s.submitterEmail ? 'From ' + esc(s.submitterEmail) + ' · ' : '') + esc(fmtDate(s.submittedAt)) + (s.reviewerEmail ? ' · reviewed by ' + esc(s.reviewerEmail) : '') + '</span>' + act + '</article>';
   }
   if (S.sbMode) {
+    // An admin's own new link needs a second admin: show that instead of Accept, and let them withdraw it.
+    const own = st === 'pending' && S.me.canEdit && !!s.submitterEmail && !!S.me.email && s.submitterEmail.toLowerCase() === S.me.email.toLowerCase();
+    if (own) act = '<div class="qact"><p class="note">You sent this link, so another admin has to accept it.</p><button class="btn sm" data-act="withdraw" data-id="' + esc(s.id) + '">Withdraw</button></div>';
     // Links sent together from one paper: say which one this is, and let an admin accept the rest at once.
     const sib = s.batchId ? M.subs.filter(x => x.batchId === s.batchId).sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0)) : [];
     const pendSib = sib.filter(x => x.status === 'pending');
-    if (S.me.canEdit && st === 'pending' && pendSib.length > 1 && pendSib[0] === s)
+    if (S.me.canEdit && !own && st === 'pending' && pendSib.length > 1 && pendSib[0] === s)
       act += '<div class="btns"><button class="btn sm" data-act="accept-batch" data-batch="' + esc(s.batchId) + '">Accept all ' + pendSib.length + ' waiting links from this paper</button></div>';
     return '<article class="qitem' + (st !== 'pending' ? ' done' : '') + '"><div class="en-top"><span class="st ' + (st === 'rejected' ? 'declined' : st) + '">' + st + '</span><b>' + esc(mName.replace('New measure:', 'New signal:')) + '</b><span aria-hidden="true">→</span><b>' + esc(cName.replace('New construct:', 'New topic:')) + '</b>' + claimChip(s.claimType) +
       (sib.length > 1 ? '<span class="chip" title="Sent together from one paper">Link ' + (sib.indexOf(s) + 1) + ' of ' + sib.length + ' from one paper</span>' : '') + '</div>' +
@@ -3632,6 +3636,7 @@ async function submitEntry(ev) {
   const probs = [], bad = [], seen = {};
   if (!sSel) probs.push('choose a source');
   if (sSel === '__new' && !v('f-cite')) probs.push('give the full citation');
+  if (sSel === '__new' && !$('#f-peer').checked) probs.push('confirm the paper is peer-reviewed (only peer-reviewed papers can be added)');
   if (!cSel) probs.push('choose a topic');
   if (cSel === '__new' && !v('f-c-name')) probs.push('name the new topic');
   CF.cards.forEach((c, i) => {
@@ -3656,7 +3661,8 @@ async function submitEntry(ev) {
     aspect: cSel === '__new' ? '' : v('f-sub').replace(/\s+/g, ' '),
     newConstruct: cSel === '__new' ? {name: v('f-c-name'), family: v('f-c-family') || 'other'} : null,
     sourceId: sSel === '__new' ? null : sSel,
-    reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null
+    reference: sSel === '__new' ? {cite: v('f-cite'), doi: v('f-doi')} : null,
+    peerReviewed: sSel === '__new' ? $('#f-peer').checked : null
   };
   const payloads = CF.cards.map((c, i) => cardPayload(c, i, shared)), n = payloads.length;
   const cleared = () => { $('#ct-form').reset(); $('#f-newc').hidden = true; $('#f-news').hidden = true; cfReset(); dupCheck(); TOUR.flags.sent = true; };
@@ -3686,10 +3692,11 @@ async function submitEntry(ev) {
         toast(n > 1 ? 'Added ' + n + ' links to the site' : 'Added to the site');
         await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
       } else if (isSbAdmin()) {
-        setMsg((added ? 'Added ' + added + ' of ' + n + '. ' + (left > 1 ? 'The other ' + left : 'The other one') : 'Saved, but ' + (left > 1 ? 'they' : 'it')) +
-          ' could not be added to the site automatically, so ' + (left > 1 ? 'they are' : 'it is') + ' waiting in the review queue. The other admins have been emailed.');
-        toast('Saved for review');
-        await Promise.all([loadRecords(), loadSubs(), loadAdmin()]);
+        // An admin's new links wait for a second admin, like everyone else's.
+        setMsg(n > 1 ? 'Sent ' + n + ' links for review. The other admins have been emailed; another admin has to accept them before they appear.'
+          : 'Sent for review. The other admins have been emailed; another admin has to accept it before it appears.');
+        toast(n > 1 ? n + ' links sent for review' : 'Sent for review');
+        await Promise.all([loadSubs(), loadAdmin()]);
       } else {
         setMsg(n > 1 ? 'Sent ' + n + ' suggestions. The admins have been emailed, and you\'ll get one email once all of them have been reviewed.'
           : 'Sent. The admins have been emailed, and you\'ll get an email when it has been reviewed.');
@@ -4099,8 +4106,8 @@ V.admin = {
     h += '</div><div class="adm-col">';
     const P = A.prefs;
     h += '<section class="panel ep-panel"><h3>Email preferences</h3>' + (P ? '<details class="ep"' + (epOpen ? ' open' : '') + '><summary>' + esc(prefsSummary(P)) + '</summary><div class="ep-body">' +
-        '<label class="ep-opt"><input type="checkbox" id="ep-review"' + (P.review ? ' checked' : '') + '><span><b>Suggestions waiting for review</b><span class="sub">When someone who is not an admin sends a link or an edit. The email has Accept and Reject buttons.</span></span></label>' +
-        '<label class="ep-opt"><input type="checkbox" id="ep-added"' + (P.added ? ' checked' : '') + '><span><b>New contributions from other admins</b><span class="sub">When another admin adds a link or makes an edit, which goes on the site without review.</span></span></label>' +
+        '<label class="ep-opt"><input type="checkbox" id="ep-review"' + (P.review ? ' checked' : '') + '><span><b>Suggestions waiting for review</b><span class="sub">When someone else sends a link, or someone who is not an admin sends an edit. Links from other admins come here too, since a second admin has to accept them. The email has Accept and Reject buttons.</span></span></label>' +
+        '<label class="ep-opt"><input type="checkbox" id="ep-added"' + (P.added ? ' checked' : '') + '><span><b>Edits from other admins</b><span class="sub">When another admin edits a link, which goes on the site without review.</span></span></label>' +
         '<p class="small muted">Changes save straight away. People who are not admins only get an email when their own suggestion is accepted or rejected.</p></div></details>'
       : '<p class="small muted">' + (P === false ? 'Your email preferences could not be loaded. Reload the page to try again.' : 'Loading…') + '</p>') + '</section>';
     h += '<section class="panel"><h3>Admins<span class="count">' + A.admins.length + '</span></h3><ul class="adm-list">' +
@@ -4818,7 +4825,7 @@ const TRACKS = {
     start: () => { if (S.edit) cancelEdit(); },
     steps: () => [
       {brief: true, title: 'Add a paper', next: 'Let’s go',
-        text: () => 'Know a paper that links an EEG signal to a topic such as attention or memory? Add it here, so others can find it. ' + (isSbAdmin() ? 'You’re an admin, so it goes on the site straight away.' : 'An admin checks it before it appears.'),
+        text: () => 'Know a paper that links an EEG signal to a topic such as attention or memory? Add it here, so others can find it. ' + (isSbAdmin() ? 'You’re an admin, so another admin checks it before it appears.' : 'An admin checks it before it appears.'),
         list: ['Pick the paper and the topic', 'Pick the brain signal and mark the electrodes on the head', 'Write what it found, and how firmly', 'Add more signals from the same paper, if it has them']}
     ].concat(viaMore('contribute', 'Contribute'), [
       {route: 'contribute', when: () => !!S.sbMode && !S.session, target: () => $('#ct-gate [data-act="signin"]') || $('#ct-gate'), place: ['bottom', 'right', 'top'],
@@ -4843,13 +4850,13 @@ const TRACKS = {
       {route: 'contribute', target: () => cfEl(cf0(), 'guide'), place: ['top', 'bottom'], next: 'Got it',
         text: 'Optional: if the paper explains how to record the signal, add it here. It becomes part of the guide.'},
       {route: 'contribute', target: '#f-submit', place: ['top', 'right', 'bottom'], task: () => isSbAdmin() ? 'Add it to the site' : 'Send it', skip: 'Finish without sending',
-        text: () => isSbAdmin() ? 'You’re an admin, so it goes on the site straight away. Only add real findings, not tests.' : 'An admin checks it first. Only send real findings, not tests.',
+        text: () => isSbAdmin() ? 'Another admin checks it first. Only send real findings from peer-reviewed papers, not tests.' : 'An admin checks it first. Only send real findings from peer-reviewed papers, not tests.',
         wait: () => $('#f-msg') && $('#f-msg').classList.contains('err') ? 'Fix what the message next to the button asks for.' : '',
         done: () => !!TOUR.flags.sent}
     ]),
     end: () => ({title: 'All done', text: isSbAdmin()
-      ? (TOUR.flags.sent ? 'Your paper is on the site now.' : 'You know every part of the form. As an admin, what you add goes on the site straight away.')
-      : (TOUR.flags.sent ? 'Your paper is with the admins. You’ll get an email when it has been checked.'
+      ? (TOUR.flags.sent ? 'Your paper is with the other admins. It appears once one of them accepts it.' : 'You know every part of the form. As an admin, what you add still needs a second admin to accept it.')
+      :(TOUR.flags.sent ? 'Your paper is with the admins. You’ll get an email when it has been checked.'
         : S.sbMode && !S.session ? 'You know every part of the form. To add a paper, sign in with your email (top right): you get a code by email, with no password to remember. An admin checks each paper before it appears.'
         : 'You know every part of the form. When you add a real paper, an admin checks it before it appears.')})},
   tour: {title: 'Quick tour', blurb: 'What each button in the top bar does', len: '30 s',
@@ -5292,6 +5299,7 @@ function onAct(t) {
     case 'dl-entries': download('entries.csv', entriesCSV(M)); break;
     case 'accept': acceptSub(id); break;
     case 'decline': declineSub(id); break;
+    case 'withdraw': sbCall('reject_submission', {p_id: id, p_note: 'Withdrawn by the sender'}, 'Withdrawn.', true); break;
     case 'dl-json': download('eeg-knowledge-base-' + today() + '.json', backupJSON()); break;
     case 'signin': openSignin(); break;
     case 'signout': signOut(); break;

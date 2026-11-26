@@ -557,6 +557,10 @@ begin
     if trim(coalesce(new.payload->>'claim', '')) = '' then
       raise exception 'Describe what the source says.';
     end if;
+    -- Only peer-reviewed papers. Papers already on the site passed this check when they were added.
+    if coalesce(new.payload->>'sourceId', '') = '' and coalesce(new.payload->>'peerReviewed', '') <> 'true' then
+      raise exception 'Only peer-reviewed papers can be added. Confirm that this paper is peer-reviewed.';
+    end if;
   end if;
   new.dup_hints := public._dup_hints(new.payload);
   return new;
@@ -573,9 +577,10 @@ declare
 begin
   perform public._log('submitted', jsonb_build_object('submission', new.id, 'signal', s->>'signal', 'topic', s->>'topic', 'kind', s->>'kind'),
                       new.submitted_by, new.submitter_email);
-  -- Admins and the owner add straight to the site, with no review. If that fails (for example, the chosen
-  -- signal was removed in the meantime), nothing is half-added and the suggestion goes to review instead.
-  if public.is_admin() then
+  -- Edits from admins and the owner go straight on the site (they can be undone). New links from admins
+  -- wait for a second admin, like everyone else's. If an edit fails (for example, the link was removed in
+  -- the meantime), nothing is half-changed and the edit goes to review instead.
+  if public.is_admin() and coalesce(new.payload->>'kind', '') = 'edit' then
     begin
       perform public._accept(new.id, new.submitted_by, new.submitter_email);
     exception when others then
@@ -683,7 +688,9 @@ begin
     v_title := case when v_np > 1 then v_np || ' new links were suggested from one paper'
                     when s->>'k' = 'edit' then 'An edit was suggested' else 'A new link was suggested' end;
     -- Only admins get this email, and only those who have not switched it off in their email preferences.
-    for a in select user_id, email from public.admins where public._wants_email(email, 'review') loop
+    -- An admin who sent the links does not get it: another admin has to review them.
+    for a in select user_id, email from public.admins where public._wants_email(email, 'review')
+        and user_id is distinct from (select submitted_by from public.submissions where id = v_pend[1]) loop
       v_html := ''; v_i := 0;
       for rs in select * from public.submissions where id = any(v_pend) order by public._seq(payload) nulls last, created_at loop
         v_i := v_i + 1;
@@ -806,6 +813,10 @@ begin
   if s.status <> 'pending' then raise exception 'This suggestion was already %.', s.status; end if;
   p := s.payload;
   if p->>'kind' = 'edit' then return public._accept_edit(s.id, p_actor, p_email); end if;
+  -- A new link needs a second person: nobody, admins included, can accept their own.
+  if s.submitted_by is not distinct from p_actor then
+    raise exception 'You sent this link, so another admin needs to review it.';
+  end if;
   v_sites := public._sites(p->'sites');
   -- Electrodes come either at fixed positions or placed by position on the head map, never both.
   v_points := case when jsonb_array_length(v_sites) > 0 then '[]'::jsonb else public._points(p->'points') end;
@@ -931,9 +942,8 @@ begin
   sm := public._sub_summary(p);
   perform public._log('accepted', jsonb_build_object('submission', s.id, 'entry', eid, 'signal', sm->>'signal', 'topic', sm->>'topic',
     'direct', s.submitted_by is not distinct from p_actor), p_actor, p_email);
-  -- An admin's own link is announced to the other admins by _after_submissions, one email per batch.
-  -- Only people who are not admins get an email about the outcome of their suggestion.
-  if s.submitted_by is distinct from p_actor and not exists (select 1 from public.admins where user_id = s.submitted_by) then
+  -- The person who sent the link, admins included, hears that someone else accepted it.
+  if s.submitted_by is distinct from p_actor then
     perform public._outcome_email(s.id);
   end if;
   return eid;
@@ -1108,8 +1118,9 @@ begin
   delete from public.review_tokens where submission_id = s.id;
   sm := public._sub_summary(s.payload);
   perform public._log('rejected', jsonb_build_object('submission', s.id, 'signal', sm->>'signal', 'topic', sm->>'topic', 'note', v_note, 'kind', sm->>'kind'), p_actor, p_email);
-  -- Only people who are not admins get an email about the outcome of their suggestion.
-  if not exists (select 1 from public.admins where user_id = s.submitted_by) then
+  -- The person who sent it hears the outcome, unless they withdrew it themselves. An admin's own edit is
+  -- never reviewed here (it goes straight on the site), so this is about new links.
+  if s.submitted_by is distinct from p_actor then
     perform public._outcome_email(s.id);
   end if;
 end $$;
